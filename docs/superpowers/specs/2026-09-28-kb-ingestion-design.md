@@ -17,11 +17,13 @@ Technical answers cite a public article slug and, where possible, a section. Pol
 - A committed Postgres dump holds articles, passages, keyword data, and vectors. Reviewer startup restores that dump.
 - Change-detecting re-crawls are a bonus, not part of the required path.
 
+
+
 ## Crawl
 
 The crawler identifies itself as `CatoHomeTaskBot/1.0 (educational assignment)`. It fetches `robots.txt` first and skips any path `robots.txt` disallows. It waits at least one second between requests.
 
-Article URLs come from `https://knowledge.catonetworks.com/llms.txt`. Each linked English page is fetched as markdown at `https://knowledge.catonetworks.com/docs/<slug>.md`. The sitemap URL in `robots.txt` returned an error during design and is not the discovery source. Non-English pages are skipped. Image files are not downloaded. Pages outside `/docs/` are skipped.
+Article URLs come from `https://knowledge.catonetworks.com/llms.txt` only. Language-specific indexes such as `https://knowledge.catonetworks.com/fr/llms.txt` are not discovery sources. A page is fetched only when its path is `/docs/<slug>.md` and `<slug>` contains no slash. Translated copies live under a language segment, for example `/docs/fr/<slug>.md`, and those URLs are dropped before any request is sent. The English article that explains how to view translations stays, because its own path has no language segment. Image files are not downloaded. The sitemap URL in `robots.txt` returned an error during design and is not the discovery source.
 
 Each saved file is the raw response body. Its content hash is SHA-256 of those bytes. Parsing does not rewrite the file. The repeated documentation-index banner is removed only when passage text is built.
 
@@ -47,14 +49,18 @@ The database dump is `kb/postgres/kb.dump`. It sits outside the snapshot directo
 
 These files are already in the repo. They are not crawled.
 
-| Id | File |
-|---|---|
+
+| Id           | File                          |
+| ------------ | ----------------------------- |
 | `POL-CREDIT` | `data/policies/POL-CREDIT.md` |
-| `POL-SEV1` | `data/policies/POL-SEV1.md` |
-| `POL-IDV` | `data/policies/POL-IDV.md` |
-| `POL-SEC` | `data/policies/POL-SEC.md` |
-| `POL-CRED` | `data/policies/POL-CRED.md` |
-| `SLA` | `data/sla_policy.md` |
+| `POL-SEV1`   | `data/policies/POL-SEV1.md`   |
+| `POL-IDV`    | `data/policies/POL-IDV.md`    |
+| `POL-SEC`    | `data/policies/POL-SEC.md`    |
+| `POL-CRED`   | `data/policies/POL-CRED.md`   |
+| `POL-SLA`    | `data/policies/POL-SLA.md`    |
+
+
+
 
 ## Tables
 
@@ -102,7 +108,9 @@ erDiagram
     }
 ```
 
-`passages` has a unique key on `(article_slug, position)`. Keyword search uses a GIN index on `search_vector`, built with the Postgres `simple` text configuration so product tokens such as `IKEv2` and `DTLS` are kept intact. Nearest-neighbor search uses an HNSW index on `embedding` with cosine distance. The vector width is 384 and matches `snapshots.embedding_dimensions`.
+
+
+`passages` has a unique key on `(article_slug, position)`. Keyword search uses a GIN index on `search_vector`, built with the Postgres `simple` text configuration so product tokens such as `IKEv2` and `DTLS` are kept intact. Nearest-neighbor search is an exact cosine scan of `embedding`. There is no approximate-neighbor index. A few thousand passages fit in memory, and an HNSW index would spend build time and memory to approximate a scan that is already cheap, while sometimes missing the true neighbor. The vector width is 384 and matches `snapshots.embedding_dimensions`.
 
 `file_path` is the path of the committed file relative to the repository root. The agent does not open that file while answering. The loader uses it to check the hash and to rebuild the dump.
 
@@ -126,7 +134,7 @@ Passage `content_hash` is SHA-256 of `body`. Article `content_hash` is SHA-256 o
 
 ## Embeddings and reranking
 
-Passages are embedded as plain text. A question is embedded with the prefix the model card specifies: `Represent this sentence for searching relevant passages: `. The same prefix is used for every query, including eval runs.
+Passages are embedded as plain text. A question is embedded with the prefix the model card specifies: `Represent this sentence for searching relevant passages:` . The same prefix is used for every query, including eval runs.
 
 Model files are downloaded in the image build at pinned Hugging Face revisions. The running container does not fetch them. On startup the process embeds the fixed probe string `width-check`, checks that the vector width is 384, and checks that this matches `snapshots.embedding_dimensions`. A mismatch stops startup. The probe's numeric values are not compared.
 
@@ -154,8 +162,10 @@ The dump is produced once, on the machine that crawled: crawl to `kb/snapshot/`,
 - A `robots.txt` disallow is a skip, recorded with its reason.
 - A hash mismatch or an embedding-width mismatch stops the process before it answers.
 - Facts that exist only inside images are absent. The snapshot is markdown text.
-- Non-English articles are absent on purpose.
+- Translated articles under a language segment such as `/docs/fr/` are absent on purpose. The English `llms.txt` is the only index that is crawled.
 - When retrieval is down, the caller gets an error from the database or the model load. It does not answer a technical question from memory. The agent design decides what the customer is told. This component's job is to fail visibly.
+
+
 
 ## Tests
 
@@ -166,8 +176,8 @@ These run without a network and without the live site:
 - Overlap text stays inside one section and does not include the next heading.
 - No passage body is longer than 400 tokens under the same tokenizer the embedding model uses.
 - Stored public URLs have no `.md` suffix.
-- The six policy ids load from the known paths, including `SLA`.
-- A non-English URL and a non-`/docs/` URL are rejected by the discovery filter.
+- The six policy ids load from `data/policies/`, including `POL-SLA`.
+- A URL under `/docs/fr/` and a `/{language}/llms.txt` index are rejected by the discovery filter. A URL outside `/docs/` is rejected too.
 - The startup check fails when the probe vector width differs from `snapshots.embedding_dimensions`.
 
 A live crawl is not part of CI. The committed snapshot and dump are the inputs those tests do not need to recreate.

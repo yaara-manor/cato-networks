@@ -1,0 +1,29 @@
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.6-pg18
+    environment:
+      POSTGRES_DB: kb
+      POSTGRES_USER: kb
+      POSTGRES_PASSWORD: kb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+
+  app:
+    build: .
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgresql://kb:kb@postgres:5432/kb
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGUSER: kb
+      PGPASSWORD: kb
+      PGDATABASE: kb
+    volumes:
+      - .:/app
+      - /app/.venv
+
+volumes:
+  pgdata:

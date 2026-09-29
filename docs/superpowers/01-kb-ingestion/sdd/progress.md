@@ -11,3 +11,4 @@ Task 5: complete (commits 8f27436..628e152, review clean).
 Task 4: complete (commits 8f27436..0dddfd2, review clean). Minor: saved crawl has an empty skipped list, so the committed test does not exercise language or robots skips.
 Task 6 minors (pending final review): token counts clip at encoder max+1; tests duplicate _encoder_max.
 Task 6: complete (commits 2e4549d..031346d, review clean). Encoder model_max_length checked at merge. Minors: a first word over 512 is dropped with no error; anchor suffix is not rechecked for collision; tests do not lock the 50-token overlap cap or the over-max raise.
+Task 7: complete (commits 95432f9..ecba4f7, review clean).

@@ -2,10 +2,10 @@ from sentence_transformers import CrossEncoder
 
 from kbindex.config import RERANKER_MODEL, RERANKER_REVISION
 
-_reranker = None
+_reranker: CrossEncoder | None = None
 
 
-def load_reranker():
+def load_reranker() -> CrossEncoder:
     # Load the pinned MiniLM cross-encoder from the local cache.
     global _reranker
     if _reranker is None:
@@ -18,7 +18,7 @@ def load_reranker():
     return _reranker
 
 
-def rerank_pairs(question, passages) -> list[float]:
+def rerank_pairs(question: str, passages: list[str]) -> list[float]:
     # Score each passage against the question and return the raw scores in order.
     scores = load_reranker().predict(
         [[question, passage] for passage in passages],

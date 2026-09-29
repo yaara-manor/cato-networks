@@ -1,0 +1,65 @@
+import os
+from pathlib import Path
+import sys
+
+import psycopg
+
+from kbindex.embed import embed_passages, probe_width
+from kbindex.policies import load_policies
+from kbindex.store import HashMismatch, StartupError, upsert_policies, verify_hashes
+
+__all__ = [
+    "HashMismatch",
+    "StartupError",
+    "run_startup",
+    "main",
+    "verify_hashes",
+    "probe_width",
+]
+
+
+def run_startup(connection=None, embed=None, policies_dir=None, read_file=None):
+    # Reload policies, check file hashes, check the embedding width, and stop on a mismatch.
+    repo = Path(__file__).resolve().parents[1]
+    if policies_dir is None:
+        policies_dir = repo / "data" / "policies"
+    if embed is None:
+        embed = embed_passages
+
+    if connection is None:
+        db_url = os.environ.get("DATABASE_URL")
+        if not db_url:
+            raise StartupError("DATABASE_URL environment variable is not set")
+        with psycopg.connect(db_url) as conn:
+            _execute_startup(conn, embed, policies_dir, read_file)
+    else:
+        _execute_startup(connection, embed, policies_dir, read_file)
+
+
+def _execute_startup(connection, embed, policies_dir, read_file=None):
+    policies = load_policies(policies_dir)
+    upsert_policies(connection, policies)
+
+    verify_hashes(connection, read_file=read_file)
+
+    with connection.cursor() as cursor:
+        cursor.execute("select embedding_dimensions from snapshots order by crawled_at desc limit 1")
+        row = cursor.fetchone()
+        if not row:
+            raise StartupError("No snapshot found in database")
+        expected_dim = row[0]
+
+    width = probe_width(embed)
+    if width != expected_dim or width != 384:
+        raise StartupError(
+            f"Embedding width {width} does not match expected dimensions {expected_dim}"
+        )
+
+
+def main():
+    run_startup()
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()

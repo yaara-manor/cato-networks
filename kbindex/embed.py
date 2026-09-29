@@ -1,10 +1,8 @@
-import json
-from pathlib import Path
+from typing import Any
 
 from sentence_transformers import SentenceTransformer
 
 from kbindex.config import EMBEDDING_MODEL, EMBEDDING_REVISION, QUERY_PREFIX
-from kbindex.rerank import rerank_pairs
 
 BGP_PASSAGE = "BGP route limits cap the number of routes a Socket accepts from a neighbor."
 SLA_PASSAGE = "SLA credits refund a share of the fee after a qualifying service outage."
@@ -47,31 +45,20 @@ def embed_query(text) -> list[float]:
     return embed_passages([embedding_prefix(text)])[0]
 
 
-def write_model_outputs(output_dir):
-    # Write the smoke-test embedding and rerank files.
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-    passages = [BGP_PASSAGE, SLA_PASSAGE]
-    (output_dir / "passage_embeddings.json").write_text(json.dumps(embed_passages(passages)))
-    (output_dir / "query_embedding.json").write_text(json.dumps(embed_query(SMOKE_QUESTION)))
-    (output_dir / "rerank_scores.json").write_text(json.dumps(rerank_pairs(SMOKE_QUESTION, passages)))
-
-
-def probe_width(embed=None) -> int:
+def probe_width(embed: Any = None) -> int:
     # Embed the fixed string width-check and return the vector length.
-    if embed is None:
-        embed = embed_passages
+    target: Any = embed_passages if embed is None else embed
 
-    if hasattr(embed, "encode"):
-        vec = embed.encode("width-check")
+    if hasattr(target, "encode"):
+        vec: Any = target.encode("width-check")
         if hasattr(vec, "shape"):
             return int(vec.shape[-1])
         return len(vec)
 
     try:
-        res = embed(["width-check"])
+        res: Any = target(["width-check"])
     except Exception:
-        res = embed("width-check")
+        res = target("width-check")
 
     if hasattr(res, "shape"):
         return int(res.shape[-1])

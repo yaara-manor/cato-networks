@@ -3,9 +3,17 @@ import json
 import re
 import warnings
 from pathlib import Path
+from typing import TypedDict
 
 from kbindex.config import PASSAGE_TOKEN_CAP, SLICE_NEW_TOKENS, SLICE_OVERLAP_TOKENS
 from kbindex.embed import load_embedder
+
+
+class Passage(TypedDict):
+    heading: str
+    heading_anchor: str
+    position: int
+    body: str
 
 # ponytail: ATX headings only; a hash inside a code fence is treated as a heading. Upgrade path: skip fenced blocks.
 _HEADING = re.compile(r"^(#{1,6})[ \t]+(.+?)\s*$", re.MULTILINE)
@@ -13,12 +21,12 @@ _SENTENCE = re.compile(r"(?<=[.!?])\s+")
 _BANNER = re.compile(r"(?m)^> ## Documentation Index[^\n]*\n(?:>[^\n]*\n)*")
 
 
-def strip_doc_banner(markdown) -> str:
+def strip_doc_banner(markdown: str) -> str:
     # Remove the documentation-index banner from passage text only.
     return _BANNER.sub("", markdown)
 
 
-def heading_anchor(heading, position, used) -> str:
+def heading_anchor(heading: str, position: int, used: set[str]) -> str:
     # Build a unique heading anchor for one article.
     slug = re.sub(r"[^\w-]", "", re.sub(r"\s", "-", heading.lower()))
     if slug in used:
@@ -27,9 +35,9 @@ def heading_anchor(heading, position, used) -> str:
     return slug
 
 
-def chunk_article(markdown, title, slug="") -> list:
+def chunk_article(markdown: str, title: str, slug: str = "") -> list[Passage]:
     # Split one article into citable passages using the pinned bge-small tokenizer.
-    passages = []
+    passages: list[Passage] = []
     used: set[str] = set()
     limit = _encoder_max()
     for heading, body in _sections(strip_doc_banner(markdown), title):
@@ -54,12 +62,12 @@ def chunk_article(markdown, title, slug="") -> list:
     return passages
 
 
-def write_passages(crawl_dir) -> None:
+def write_passages(crawl_dir: Path | str) -> None:
     # Write one passage record per line for the saved crawl.
     crawl_dir = Path(crawl_dir)
     manifest = json.loads((crawl_dir / "manifest.json").read_text())
     repo = Path(__file__).resolve().parents[1]
-    lines = []
+    lines: list[str] = []
     for article in manifest["articles"]:
         raw = (repo / article["file_path"]).read_text()
         for passage in chunk_article(raw, article["title"], article["slug"]):
@@ -83,7 +91,7 @@ def _sections(text: str, title: str) -> list[tuple[str, str]]:
     if not matches:
         body = text.strip()
         return [(title, body)] if body else []
-    sections = []
+    sections: list[tuple[str, str]] = []
     preamble = text[: matches[0].start()].strip()
     if preamble:
         sections.append((title, preamble))

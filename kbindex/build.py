@@ -31,21 +31,21 @@ def write_dump(destination: Path | str = Path("kb/postgres/kb.dump")) -> Path:
 
     db_url = os.environ.get("DATABASE_URL", "postgresql://kb:kb@localhost:5432/kb")
     parsed = urlparse(db_url)
-    user = parsed.username or "kb"
-    password = parsed.password or "kb"
-    host = parsed.hostname or "localhost"
-    port = str(parsed.port or 5432)
-    dbname = parsed.path.lstrip("/") or "kb"
+    user: str = parsed.username or "kb"
+    password: str = parsed.password or "kb"
+    host: str = parsed.hostname or "localhost"
+    port: str = str(parsed.port or 5432)
+    dbname: str = parsed.path.lstrip("/") or "kb"
 
-    env = os.environ.copy()
+    env: dict[str, str] = os.environ.copy()
     if password:
         env["PGPASSWORD"] = password
 
-    def _cleanup_tmp():
+    def _cleanup_tmp() -> None:
         if tmp_dest.exists():
             tmp_dest.unlink()
 
-    commands = [
+    commands: list[tuple[list[str], dict[str, str] | None]] = [
         (["pg_dump", "-Fc", "-h", host, "-p", port, "-U", user, "-d", dbname], env),
     ]
 
@@ -80,7 +80,7 @@ def write_dump(destination: Path | str = Path("kb/postgres/kb.dump")) -> Path:
     raise RuntimeError(f"pg_dump failed: {last_error or 'no pg_dump or docker available'}")
 
 
-def build():
+def build() -> None:
     crawl_dir = newest_crawl_dir()
     db_url = os.environ.get("DATABASE_URL", "postgresql://kb:kb@localhost:5432/kb")
     with psycopg.connect(db_url) as connection:
@@ -90,4 +90,3 @@ def build():
 
 if __name__ == "__main__":
     build()
-

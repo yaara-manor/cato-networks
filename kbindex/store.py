@@ -1,10 +1,13 @@
 from collections import defaultdict
+from collections.abc import Callable
 import json
 from pathlib import Path
+from typing import LiteralString, NotRequired, TypedDict, cast
 import uuid
 
+import psycopg
+import psycopg.sql
 from pgvector.psycopg import register_vector
-from psycopg import ClientCursor
 
 from kbindex.config import (
     EMBEDDING_DIMENSIONS,
@@ -17,6 +20,15 @@ from kbindex.hashing import sha256_bytes, sha256_file
 from kbindex.policies import load_policies
 
 
+class Article(TypedDict):
+    slug: str
+    file_path: str
+    title: str
+    public_url: str
+    content_hash: str
+    site_updated_at: NotRequired[str | None]
+
+
 class HashMismatch(Exception):
     pass
 
@@ -25,14 +37,16 @@ class StartupError(Exception):
     pass
 
 
-def apply_schema(connection):
+def apply_schema(connection: psycopg.Connection) -> None:
     """Create the four knowledge-base tables when they are missing."""
-    with ClientCursor(connection) as cursor:
-        cursor.execute(Path(__file__).with_name("schema.sql").read_text(encoding="utf-8"))
+    schema_text = cast(LiteralString, Path(__file__).with_name("schema.sql").read_text(encoding="utf-8"))
+    sql = psycopg.sql.SQL(schema_text)
+    with connection.cursor() as cursor:
+        cursor.execute(sql)
     connection.commit()
 
 
-def upsert_policies(connection, policies):
+def upsert_policies(connection: psycopg.Connection, policies: list[dict[str, str]]) -> None:
     # Insert or replace each policy row from its file record.
     query = """
     insert into policies (id, title, content_hash, file_path, body)
@@ -54,7 +68,11 @@ def upsert_policies(connection, policies):
     connection.commit()
 
 
-def _insert_passages(cursor, article_slug, passages):
+def _insert_passages(
+    cursor: psycopg.Cursor,
+    article_slug: str,
+    passages: list[dict],
+) -> None:
     if not passages:
         return
     to_embed = [p for p in passages if "embedding" not in p]
@@ -87,7 +105,12 @@ def _insert_passages(cursor, article_slug, passages):
     )
 
 
-def upsert_article(connection, snapshot_id, article, passages):
+def upsert_article(
+    connection: psycopg.Connection,
+    snapshot_id: uuid.UUID,
+    article: Article,
+    passages: list[dict],
+) -> None:
     # Replace an article's passages only when its content hash changes.
     file_path = article.get("file_path", "")
     try:
@@ -144,20 +167,24 @@ def upsert_article(connection, snapshot_id, article, passages):
     connection.commit()
 
 
-def load_index(connection, crawl_dir, policies_dir):
+def load_index(
+    connection: psycopg.Connection,
+    crawl_dir: Path | str,
+    policies_dir: Path | str,
+) -> None:
     # Insert the snapshot, the articles, the embedded passages, and the policies.
     apply_schema(connection)
     register_vector(connection)
     crawl_dir = Path(crawl_dir)
     policies_dir = Path(policies_dir)
     manifest = json.loads((crawl_dir / "manifest.json").read_text(encoding="utf-8"))
-    crawled_at = manifest["crawled_at"]
+    crawled_at: str = manifest["crawled_at"]
 
     with connection.cursor() as cursor:
         cursor.execute("select id from snapshots where crawled_at = %s", (crawled_at,))
         row = cursor.fetchone()
         if row:
-            snapshot_id = row[0]
+            snapshot_id: uuid.UUID = row[0]
         else:
             snapshot_id = uuid.uuid4()
             cursor.execute(
@@ -170,7 +197,7 @@ def load_index(connection, crawl_dir, policies_dir):
     connection.commit()
 
     passages_file = crawl_dir / "passages.jsonl"
-    passages_by_slug = defaultdict(list)
+    passages_by_slug: defaultdict[str, list[dict]] = defaultdict(list)
     if passages_file.exists():
         with passages_file.open(encoding="utf-8") as f:
             for line in f:
@@ -179,10 +206,10 @@ def load_index(connection, crawl_dir, policies_dir):
                     p = json.loads(line)
                     passages_by_slug[p["slug"]].append(p)
 
-    articles = manifest["articles"]
+    articles: list[Article] = manifest["articles"]
     total = len(articles)
     for idx, article in enumerate(articles, 1):
-        slug = article["slug"]
+        slug: str = article["slug"]
         upsert_article(connection, snapshot_id, article, passages_by_slug[slug])
         if idx % 200 == 0 or idx == total:
             print(f"Loaded article {idx}/{total}: {slug}")
@@ -192,13 +219,16 @@ def load_index(connection, crawl_dir, policies_dir):
     connection.commit()
 
 
-def verify_hashes(connection, read_file=None):
+def verify_hashes(
+    connection: psycopg.Connection,
+    read_file: Callable[[Path], bytes | str] | None = None,
+) -> None:
     # Raise HashMismatch when a stored hash differs from the file at file_path.
     with connection.cursor() as cursor:
         cursor.execute("select file_path, content_hash from kb_articles order by slug")
-        kb_articles = cursor.fetchall()
+        kb_articles: list[tuple[str, str]] = cursor.fetchall()
         cursor.execute("select file_path, content_hash from policies order by id")
-        policies = cursor.fetchall()
+        policies: list[tuple[str, str]] = cursor.fetchall()
 
     for file_path, stored_hash in kb_articles + policies:
         path = REPO_ROOT / file_path if not Path(file_path).is_absolute() else Path(file_path)

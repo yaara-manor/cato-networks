@@ -27,6 +27,7 @@ def write_dump(destination: Path | str = Path("kb/postgres/kb.dump")) -> Path:
     if not dest.is_absolute():
         dest = REPO / dest
     dest.parent.mkdir(parents=True, exist_ok=True)
+    tmp_dest = dest.with_name(f"{dest.name}.tmp")
 
     db_url = os.environ.get("DATABASE_URL", "postgresql://kb:kb@localhost:5432/kb")
     parsed = urlparse(db_url)
@@ -40,18 +41,25 @@ def write_dump(destination: Path | str = Path("kb/postgres/kb.dump")) -> Path:
     if password:
         env["PGPASSWORD"] = password
 
+    def _cleanup_tmp():
+        if tmp_dest.exists():
+            tmp_dest.unlink()
+
     # Try local pg_dump first
     try:
         proc = subprocess.run(
-            ["pg_dump", "-Fc", "-h", host, "-p", port, "-U", user, "-d", dbname, "-f", str(dest)],
+            ["pg_dump", "-Fc", "-h", host, "-p", port, "-U", user, "-d", dbname, "-f", str(tmp_dest)],
             env=env,
             capture_output=True,
             text=True,
         )
-        if proc.returncode == 0 and dest.stat().st_size > 0:
+        if proc.returncode == 0 and tmp_dest.stat().st_size > 0:
+            os.replace(tmp_dest, dest)
             return dest
     except FileNotFoundError:
         pass
+    finally:
+        _cleanup_tmp()
 
     # Fallback to docker exec if a postgres container is running
     try:
@@ -62,34 +70,42 @@ def write_dump(destination: Path | str = Path("kb/postgres/kb.dump")) -> Path:
         )
         containers = [c.strip() for c in ps_proc.stdout.splitlines() if c.strip()]
         if containers:
-            with open(dest, "wb") as f:
+            with open(tmp_dest, "wb") as f:
                 exec_proc = subprocess.run(
                     ["docker", "exec", containers[0], "pg_dump", "-U", user, "-Fc", dbname],
                     stdout=f,
                     stderr=subprocess.PIPE,
                 )
-            if exec_proc.returncode == 0 and dest.stat().st_size > 0:
+            if exec_proc.returncode == 0 and tmp_dest.stat().st_size > 0:
+                os.replace(tmp_dest, dest)
                 return dest
     except FileNotFoundError:
         pass
+    finally:
+        _cleanup_tmp()
 
     # Fallback to docker run
-    with open(dest, "wb") as f:
-        run_proc = subprocess.run(
-            [
-                "docker", "run", "--rm", "--network", "host",
-                "-e", f"PGPASSWORD={password}",
-                "pgvector/pgvector:0.8.6-pg18",
-                "pg_dump", "-h", host, "-p", port, "-U", user, "-Fc", dbname,
-            ],
-            stdout=f,
-            stderr=subprocess.PIPE,
-        )
-    if run_proc.returncode != 0 or dest.stat().st_size == 0:
+    try:
+        with open(tmp_dest, "wb") as f:
+            run_proc = subprocess.run(
+                [
+                    "docker", "run", "--rm", "--network", "host",
+                    "-e", f"PGPASSWORD={password}",
+                    "pgvector/pgvector:0.8.6-pg18",
+                    "pg_dump", "-h", host, "-p", port, "-U", user, "-Fc", dbname,
+                ],
+                stdout=f,
+                stderr=subprocess.PIPE,
+            )
+        if run_proc.returncode == 0 and tmp_dest.stat().st_size > 0:
+            os.replace(tmp_dest, dest)
+            return dest
         err = run_proc.stderr.decode("utf-8", errors="replace")
         raise RuntimeError(f"pg_dump failed: {err}")
-
-    return dest
+    except FileNotFoundError:
+        raise RuntimeError("pg_dump failed and docker is not available")
+    finally:
+        _cleanup_tmp()
 
 
 def build():

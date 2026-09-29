@@ -58,7 +58,13 @@ RUN printf '%s\n' \
     'USER="${PGUSER:-kb}"' \
     'DB="${PGDATABASE:-kb}"' \
     'echo "Waiting for postgres at $HOST:$PORT..."' \
-    'until pg_isready -h "$HOST" -p "$PORT" -U "$USER" -d "$DB" > /dev/null 2>&1; do' \
+    'RETRIES=60' \
+    'while ! pg_isready -h "$HOST" -p "$PORT" -U "$USER" -d "$DB" > /dev/null 2>&1; do' \
+    '    RETRIES=$((RETRIES - 1))' \
+    '    if [ "$RETRIES" -le 0 ]; then' \
+    '        echo "Error: Timed out waiting for Postgres at $HOST:$PORT" >&2' \
+    '        exit 1' \
+    '    fi' \
     '    sleep 0.5' \
     'done' \
     'echo "Postgres is ready."' \

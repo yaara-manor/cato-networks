@@ -8,8 +8,16 @@ from psycopg import ClientCursor
 
 from kbindex.config import EMBEDDING_DIMENSIONS, EMBEDDING_MODEL, RERANKER_MODEL
 from kbindex.embed import embed_passages
-from kbindex.hashing import sha256_bytes
+from kbindex.hashing import sha256_bytes, sha256_file
 from kbindex.policies import load_policies
+
+
+class HashMismatch(Exception):
+    pass
+
+
+class StartupError(Exception):
+    pass
 
 
 def apply_schema(connection):
@@ -195,3 +203,28 @@ def load_index(connection, crawl_dir, policies_dir):
     policies = load_policies(policies_dir)
     upsert_policies(connection, policies)
     connection.commit()
+
+
+def verify_hashes(connection, read_file=None):
+    # Raise HashMismatch when a stored hash differs from the file at file_path.
+    repo = Path(__file__).resolve().parents[1]
+    with connection.cursor() as cursor:
+        cursor.execute("select file_path, content_hash from kb_articles order by slug")
+        kb_articles = cursor.fetchall()
+        cursor.execute("select file_path, content_hash from policies order by id")
+        policies = cursor.fetchall()
+
+    for file_path, stored_hash in kb_articles + policies:
+        path = repo / file_path if not Path(file_path).is_absolute() else Path(file_path)
+        if read_file is None:
+            actual_hash = sha256_file(path)
+        else:
+            raw = read_file(path)
+            if isinstance(raw, str):
+                raw = raw.encode("utf-8")
+            actual_hash = sha256_bytes(raw)
+
+        if actual_hash != stored_hash:
+            raise HashMismatch(
+                f"Hash mismatch for {file_path}: expected {stored_hash}, got {actual_hash}"
+            )

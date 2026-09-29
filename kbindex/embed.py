@@ -59,3 +59,26 @@ def write_model_outputs(output_dir):
 
 def _write(path, value):
     path.write_text(json.dumps(value))
+
+
+def probe_width(embed=None) -> int:
+    # Embed the fixed string width-check and return the vector length.
+    if embed is None:
+        embed = embed_passages
+
+    if hasattr(embed, "encode"):
+        vec = embed.encode("width-check")
+        if hasattr(vec, "shape"):
+            return int(vec.shape[-1])
+        return len(vec)
+
+    try:
+        res = embed(["width-check"])
+    except Exception:
+        res = embed("width-check")
+
+    if hasattr(res, "shape"):
+        return int(res.shape[-1])
+    if isinstance(res, (list, tuple)) and len(res) > 0 and isinstance(res[0], (list, tuple)):
+        return len(res[0])
+    return len(res)

@@ -3,7 +3,7 @@ from pathlib import Path
 
 from kbindex.config import EMBEDDING_DIMENSIONS, QUERY_PREFIX
 from kbindex.embed import BGP_PASSAGE, SLA_PASSAGE, SMOKE_QUESTION, embed_passages, embed_query, embedding_prefix
-from kbindex.rerank import rerank_pairs
+from retrieval.rerank import rerank_pairs
 
 OUTPUT = Path(__file__).parent / "output"
 

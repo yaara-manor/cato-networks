@@ -216,7 +216,11 @@ stateDiagram-v2
 
 ## 6. Database Schema Design (PostgreSQL + pgvector)
 
-The database connects the ingested Knowledge Base with live operational state:
+The database schema is managed via sequential SQL migrations under `db/migrations/`:
+- `db/migrations/001_kbindex_schema.sql`: Vector extension, snapshots, kb_articles, passages, and policies (the knowledge base and policies tables).
+- `db/migrations/002_agent_runtime.sql`: Operational tables for persistent conversation state, messages, non-blocking approvals, execution traces, and simulated side effects.
+
+The unified database connects the ingested Knowledge Base with live operational state:
 
 ```mermaid
 erDiagram
@@ -430,8 +434,76 @@ Following the **Functional over Unit Testing** standard:
 
 ---
 
-## 12. Cleanup & Deprecation
+## 12. Directory Structure & Module Layout
 
-- All code files will be structured under clean top-level packages: `core/`, `agents/`, `tools/`, `services/`, `guardrails/`, `storage/`, `ui/`, and `eval/`.
+The codebase is organized into clean, single-responsibility packages separating offline ingestion from online retrieval, business tools, multi-agent logic, and database migrations:
+
+```
+├── db/                                # Unified database management
+│   └── migrations/
+│       ├── 001_kbindex_schema.sql     # Extension (vector) + snapshots, kb_articles, passages, policies
+│       └── 002_agent_runtime.sql      # conversations, messages, approvals, traces, simulated_actions
+│
+├── kbindex/                           # Offline KB ingestion ONLY
+│   ├── crawl.py                       # Respects robots.txt and 1s rate limit
+│   ├── chunk.py                       # Markdown slicing (max 400 tokens)
+│   ├── embed.py                       # BAAI/bge-small-en-v1.5 embeddings
+│   └── store.py                       # Loads articles & passages into Postgres
+│
+├── retrieval/                         # Online RAG & search pipeline
+│   ├── search.py                      # Hybrid lexical (tsvector) + vector (pgvector) + RRF fusion
+│   ├── rerank.py                      # Cross-encoder MiniLM reranker (query-time)
+│   ├── threshold.py                   # RERANK_MIN_SCORE confidence gate & refusal evaluation
+│   └── policies.py                    # Direct authoritative policy reader by ID
+│
+├── core/                              # Central primitives & domain models
+│   ├── clock.py                       # SimulationClock frozen at 2026-08-28T17:00:00Z
+│   ├── config.py                      # Centralized Pydantic settings
+│   └── models.py                      # Pydantic schemas (Accounts, Tickets, Evidence, Citations)
+│
+├── tools/                             # Typed CMA Telemetry inspection tools
+│   ├── telemetry.py                   # get_site_status, get_link_quality, get_bgp_status, etc.
+│   └── formatters.py                  # Raw metric quoting contract [telemetry]
+│
+├── services/                          # Business domain logic
+│   ├── customer_service.py            # Account identification & SLA calculations
+│   ├── ticket_service.py              # Historical tickets & repeat contact analysis
+│   ├── approval_service.py            # Non-blocking HITL approvals lifecycle
+│   └── reporting_service.py           # Daily operations report generator
+│
+├── guardrails/                        # Pre-persistence and post-generation safety
+│   ├── redactor.py                    # Pre-storage credential scrubber (POL-CRED)
+│   ├── injection.py                   # Prompt injection & jailbreak filter
+│   └── validator.py                   # Citation verification & entitlement checks
+│
+├── agents/                            # PydanticAI specialized role agents
+│   ├── base.py                        # Common agent contracts & SupportDeps
+│   ├── triage.py                      # Caller identification, SLA binding, scoping
+│   ├── diagnostics.py                 # Telemetry inspection & evidence extraction
+│   ├── knowledge.py                   # Query generation, RAG execution, policy checks
+│   └── resolution.py                  # Synthesis, grounded response, action proposals
+│
+├── orchestration/                     # State machine & workflow graph
+│   └── workflow.py                    # Multi-turn coordinator with partial-failure fallbacks
+│
+├── ui/                                # Presentation layer (Deliverable B)
+│   ├── customer_app.py                # Customer support chat with citation badges
+│   └── reviewer_app.py                # Reviewer workspace: context, evidence, traces, approvals
+│
+└── eval/                              # Evaluation harness & benchmarks (Deliverables C, F, G)
+    ├── run_questions.py               # Replays 35 questions to generate answers.md
+    ├── run_scenarios.py               # 12-scenario multi-turn replay harness
+    ├── retrieval_metrics.py           # Recall@k and MRR computation
+    └── recorded_traces/               # Committed traces for the 3 representative conversations
+```
+
+---
+
+## 13. Cleanup & Deprecation
+
+- All code files are structured strictly under the packages defined above.
+- Offline indexing code (`kbindex/`) contains zero online query-time logic.
+- Online RAG search and cross-encoder reranking live cleanly under `retrieval/`.
+- Database schema definitions are organized into versioned migrations under `db/migrations/`.
 - No scratch scripts or temporary test files will remain in production trees.
-- Pinned revisions and hashes will ensure 100% reproducible execution.
+- Pinned revisions and hashes ensure 100% reproducible execution.

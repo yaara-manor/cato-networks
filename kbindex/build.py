@@ -11,6 +11,8 @@ POLICIES_DIR = REPO / "data" / "policies"
 
 
 def newest_crawl_dir() -> Path:
+    if not ROOT.exists():
+        raise RuntimeError(f"No crawl directory found under {ROOT}")
     dirs = sorted(p for p in ROOT.iterdir() if p.is_dir())
     if not dirs:
         raise RuntimeError(f"No crawl directory found under {ROOT}")

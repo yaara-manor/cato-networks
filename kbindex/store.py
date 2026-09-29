@@ -15,7 +15,7 @@ from kbindex.policies import load_policies
 def apply_schema(connection):
     """Create the four knowledge-base tables when they are missing."""
     with ClientCursor(connection) as cursor:
-        cursor.execute(Path(__file__).with_name("schema.sql").read_text())
+        cursor.execute(Path(__file__).with_name("schema.sql").read_text(encoding="utf-8"))
     connection.commit()
 
 
@@ -74,7 +74,6 @@ def _insert_passages(cursor, article_slug, passages):
 
 def upsert_article(connection, snapshot_id, article, passages):
     # Replace an article's passages only when its content hash changes.
-    register_vector(connection)
     repo = Path(__file__).resolve().parents[1]
     file_path = article.get("file_path", "")
     try:

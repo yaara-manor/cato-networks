@@ -21,7 +21,7 @@ EXPECTED_POLICY_IDS = {
 
 def test_database_holds_the_crawl_and_policies():
     crawl_dir = sorted(path for path in ROOT.iterdir() if path.is_dir())[-1]
-    manifest = json.loads((crawl_dir / "manifest.json").read_text())
+    manifest = json.loads((crawl_dir / "manifest.json").read_text(encoding="utf-8"))
 
     with psycopg.connect(os.environ["DATABASE_URL"]) as connection:
         register_vector(connection)

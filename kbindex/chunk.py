@@ -1,5 +1,6 @@
 import json
 import re
+import warnings
 from pathlib import Path
 
 from kbindex.config import PASSAGE_TOKEN_CAP, SLICE_NEW_TOKENS, SLICE_OVERLAP_TOKENS
@@ -27,16 +28,22 @@ def heading_anchor(heading, position, used) -> str:
     return slug
 
 
-def chunk_article(markdown, title) -> list:
+def chunk_article(markdown, title, slug="") -> list:
     # Split one article into citable passages using the pinned bge-small tokenizer.
     passages = []
     used: set[str] = set()
+    limit = _encoder_max()
     for heading, body in _sections(strip_doc_banner(markdown), title):
         slices = _slice_bodies(_sentences(body))
         if not slices:
             continue
         anchor = heading_anchor(heading, len(passages), used)
         for body_slice in slices:
+            count = _tokens(body_slice)
+            if count > limit:
+                raise ValueError(f"{slug} passage is {count} tokens")
+            if count > PASSAGE_TOKEN_CAP:
+                warnings.warn(f"{slug} passage is {count} tokens", stacklevel=2)
             passages.append(
                 {
                     "heading": heading,
@@ -56,7 +63,7 @@ def write_passages(crawl_dir) -> None:
     lines = []
     for article in manifest["articles"]:
         raw = (repo / article["file_path"]).read_text()
-        for passage in chunk_article(raw, article["title"]):
+        for passage in chunk_article(raw, article["title"], article["slug"]):
             lines.append(
                 json.dumps(
                     {
@@ -97,16 +104,22 @@ def _join(parts: list[str]) -> str:
     return " ".join(part for part in parts if part)
 
 
+def _encoder_max() -> int:
+    limit = load_embedder().tokenizer.model_max_length
+    if isinstance(limit, int) and not isinstance(limit, bool) and 0 < limit <= 512:
+        return limit
+    return 512
+
+
 def _tokens(text: str) -> int:
     if not text:
         return 0
-    # Stop once the passage cap is exceeded so a long sentence is not fully tokenized.
     return len(
         load_embedder().tokenizer.encode(
             text,
             add_special_tokens=False,
             truncation=True,
-            max_length=PASSAGE_TOKEN_CAP + 1,
+            max_length=_encoder_max() + 1,
         )
     )
 
@@ -116,10 +129,11 @@ def _hard_cut(sentence: str) -> str:
     low = 0
     high = len(words)
     best = ""
+    limit = _encoder_max()
     while low < high:
         mid = (low + high + 1) // 2
         candidate = " ".join(words[:mid])
-        if _tokens(candidate) <= PASSAGE_TOKEN_CAP:
+        if _tokens(candidate) <= limit:
             best = candidate
             low = mid
         else:
@@ -156,8 +170,9 @@ def _with_overlap(previous: str, new_body: str) -> str:
 def _slice_bodies(sentences: list[str]) -> list[str]:
     slices: list[str] = []
     index = 0
+    limit = _encoder_max()
     while index < len(sentences):
-        if _tokens(sentences[index]) > PASSAGE_TOKEN_CAP:
+        if _tokens(sentences[index]) > limit:
             kept = _hard_cut(sentences[index])
             if kept:
                 slices.append(kept)
@@ -165,7 +180,7 @@ def _slice_bodies(sentences: list[str]) -> list[str]:
             continue
         budget = PASSAGE_TOKEN_CAP if not slices else SLICE_NEW_TOKENS
         parts: list[str] = []
-        while index < len(sentences) and _tokens(sentences[index]) <= PASSAGE_TOKEN_CAP:
+        while index < len(sentences) and _tokens(sentences[index]) <= limit:
             if not _within(parts, sentences[index], budget):
                 if not parts:
                     parts.append(sentences[index])

@@ -1,6 +1,7 @@
 import re
 from pathlib import Path
 
+from kbindex.chunk import chunk_article, heading_anchor, strip_doc_banner
 from kbindex.config import PASSAGE_TOKEN_CAP
 from kbindex.embed import load_embedder
 
@@ -13,13 +14,20 @@ _HEADING = re.compile(r"^(#{1,6})[ \t]+(.+?)\s*$", re.MULTILINE)
 _SENTENCE_END = ".!?"
 
 
+def _encoder_max() -> int:
+    limit = load_embedder().tokenizer.model_max_length
+    if isinstance(limit, int) and not isinstance(limit, bool) and 0 < limit <= 512:
+        return limit
+    return 512
+
+
 def _token_count(text: str) -> int:
     return len(
         load_embedder().tokenizer.encode(
             text,
             add_special_tokens=False,
             truncation=True,
-            max_length=PASSAGE_TOKEN_CAP + 1,
+            max_length=_encoder_max() + 1,
         )
     )
 
@@ -44,23 +52,26 @@ def _sections(text: str, title: str) -> list[tuple[str, str]]:
 
 def test_chunks_are_whole_sentences():
     assert (_crawl_dir() / "passages.jsonl").is_file()
-    from kbindex.chunk import chunk_article, heading_anchor, strip_doc_banner
 
     fixture = FIXTURE.read_text()
     assert "> ## Documentation Index" in fixture
-    passages = chunk_article(fixture, FIXTURE_TITLE)
+    passages = chunk_article(fixture, FIXTURE_TITLE, "fixture-article")
     assert passages[0]["heading"] == FIXTURE_TITLE
     assert passages[0]["position"] == 0
     assert all(passage["heading"] != "Empty Heading" for passage in passages)
     assert all("Documentation Index" not in passage["body"] for passage in passages)
     assert [passage["position"] for passage in passages] == list(range(len(passages)))
 
+    within = next(passage for passage in passages if passage["heading"] == "Within Encoder Maximum")
+    assert within["body"].rstrip()[-1] in _SENTENCE_END
+    assert PASSAGE_TOKEN_CAP < _token_count(within["body"]) <= _encoder_max()
+
     stripped = strip_doc_banner(fixture)
     sections = {heading: body for heading, body in _sections(stripped, FIXTURE_TITLE)}
     hard_cuts = []
     for passage in passages:
         body = passage["body"]
-        assert _token_count(body) <= PASSAGE_TOKEN_CAP
+        assert _token_count(body) <= _encoder_max()
         assert NEXT_HEADING not in body
         section = _norm(sections[passage["heading"]])
         normal_body = _norm(body)
@@ -81,8 +92,8 @@ def test_chunks_are_whole_sentences():
     words = source.split()
     kept = hard["body"].split()
     assert hard["body"] == " ".join(words[: len(kept)])
-    assert _token_count(hard["body"]) <= PASSAGE_TOKEN_CAP
-    assert _token_count(" ".join(words[: len(kept) + 1])) > PASSAGE_TOKEN_CAP
+    assert _token_count(hard["body"]) <= _encoder_max()
+    assert _token_count(" ".join(words[: len(kept) + 1])) > _encoder_max()
 
     long_slices = [passage for passage in passages if passage["heading"] == "Long Section"]
     assert len(long_slices) >= 2

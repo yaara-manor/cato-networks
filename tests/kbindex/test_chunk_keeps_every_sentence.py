@@ -1,7 +1,9 @@
 import json
 import re
+import warnings
 from pathlib import Path
 
+from kbindex.chunk import chunk_article, strip_doc_banner
 from kbindex.config import PASSAGE_TOKEN_CAP
 from kbindex.embed import load_embedder
 
@@ -9,8 +11,16 @@ REPO = Path(__file__).resolve().parents[2]
 ROOT = REPO / "data" / "kb_ingestion"
 FIXTURE = Path(__file__).parent / "fixtures" / "article.md"
 FIXTURE_TITLE = "Fixture Article"
+FIXTURE_SLUG = "fixture-article"
 _HEADING = re.compile(r"^(#{1,6})[ \t]+(.+?)\s*$", re.MULTILINE)
 _SENTENCE = re.compile(r"(?<=[.!?])\s+")
+
+
+def _encoder_max() -> int:
+    limit = load_embedder().tokenizer.model_max_length
+    if isinstance(limit, int) and not isinstance(limit, bool) and 0 < limit <= 512:
+        return limit
+    return 512
 
 
 def _token_count(text: str) -> int:
@@ -19,7 +29,7 @@ def _token_count(text: str) -> int:
             text,
             add_special_tokens=False,
             truncation=True,
-            max_length=PASSAGE_TOKEN_CAP + 1,
+            max_length=_encoder_max() + 1,
         )
     )
 
@@ -52,7 +62,6 @@ def _sentences(text: str) -> list[str]:
 def test_chunk_keeps_every_sentence():
     passage_path = _crawl_dir() / "passages.jsonl"
     assert passage_path.is_file()
-    from kbindex.chunk import chunk_article, strip_doc_banner
 
     crawl_dir = _crawl_dir()
     manifest = json.loads((crawl_dir / "manifest.json").read_text())
@@ -71,19 +80,50 @@ def test_chunk_keeps_every_sentence():
     _assert_fitting_sentences_kept(strip_doc_banner(raw), article["title"], expected)
 
     fixture = FIXTURE.read_text()
-    fixture_passages = chunk_article(fixture, FIXTURE_TITLE)
+    with warnings.catch_warnings(record=True):
+        warnings.simplefilter("always")
+        fixture_passages = chunk_article(fixture, FIXTURE_TITLE)
     assert fixture_passages
-    assert all(_token_count(passage["body"]) <= PASSAGE_TOKEN_CAP for passage in fixture_passages)
-    _assert_fitting_sentences_kept(strip_doc_banner(fixture), FIXTURE_TITLE, fixture_passages)
-    counts = _sentence_counts(strip_doc_banner(fixture), FIXTURE_TITLE, fixture_passages)
+    assert all(_token_count(passage["body"]) <= _encoder_max() for passage in fixture_passages)
+    stripped = strip_doc_banner(fixture)
+    sections = dict(_sections(stripped, FIXTURE_TITLE))
+    within_sentence = _sentences(sections["Within Encoder Maximum"])[0]
+    assert PASSAGE_TOKEN_CAP < _token_count(within_sentence) <= _encoder_max()
+    within_body = next(
+        passage["body"]
+        for passage in fixture_passages
+        if passage["heading"] == "Within Encoder Maximum"
+    )
+    assert within_body == within_sentence
+    _assert_fitting_sentences_kept(stripped, FIXTURE_TITLE, fixture_passages)
+    counts = _sentence_counts(stripped, FIXTURE_TITLE, fixture_passages)
     assert any(count == 2 for count in counts.values())
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        warned = chunk_article(fixture, FIXTURE_TITLE, FIXTURE_SLUG)
+    within_count = str(_token_count(within_sentence))
+    assert any(
+        issubclass(item.category, UserWarning)
+        and FIXTURE_SLUG in str(item.message)
+        and within_count in str(item.message)
+        for item in caught
+    )
+    for passage in warned:
+        count = _token_count(passage["body"])
+        if count > PASSAGE_TOKEN_CAP:
+            assert any(
+                FIXTURE_SLUG in str(item.message) and str(count) in str(item.message)
+                for item in caught
+            )
 
 
 def _assert_fitting_sentences_kept(text: str, title: str, passages: list) -> None:
     bodies = [passage["body"] for passage in passages]
+    limit = _encoder_max()
     for _heading, body in _sections(text, title):
         for sentence in _sentences(body):
-            if _token_count(sentence) <= PASSAGE_TOKEN_CAP:
+            if _token_count(sentence) <= limit:
                 assert any(sentence in passage_body for passage_body in bodies)
                 continue
             assert all(sentence not in passage_body for passage_body in bodies)
@@ -94,9 +134,10 @@ def _assert_fitting_sentences_kept(text: str, title: str, passages: list) -> Non
 
 def _sentence_counts(text: str, title: str, passages: list) -> dict[str, int]:
     bodies = [passage["body"] for passage in passages]
+    limit = _encoder_max()
     counts = {}
     for _heading, body in _sections(text, title):
         for sentence in _sentences(body):
-            if _token_count(sentence) <= PASSAGE_TOKEN_CAP:
+            if _token_count(sentence) <= limit:
                 counts[sentence] = sum(passage_body.count(sentence) for passage_body in bodies)
     return counts

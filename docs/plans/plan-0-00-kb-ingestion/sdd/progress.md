@@ -13,4 +13,4 @@ Task 6 minors (pending final review): token counts clip at encoder max+1; tests 
 Task 6: complete (commits 2e4549d..031346d, review clean). Encoder model_max_length checked at merge. Minors: a first word over 512 is dropped with no error; anchor suffix is not rechecked for collision; tests do not lock the 50-token overlap cap or the over-max raise.
 Task 7: complete (commits 95432f9..ecba4f7, review clean).
 Task 8: complete (commits a437ae5..38fdf9e, review clean). Minor: error message on dimension mismatch could clarify required constant 384; HashMismatch could inherit from StartupError.
-Task 9: complete (commits 180cc14..c3c6bc2, review clean). Dump written atomically via pg_dump custom format to kb/postgres/kb.dump, pinned offline models in Dockerfile, docker compose verified.
+Task 9: complete (commits 180cc14..c3c6bc2, review clean). Dump written atomically via pg_dump custom format to db/kb.dump, pinned offline models in Dockerfile, docker compose verified.

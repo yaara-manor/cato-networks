@@ -21,7 +21,7 @@ def newest_crawl_dir() -> Path:
     return dirs[-1]
 
 
-def write_dump(destination: Path | str = Path("kb/postgres/kb.dump")) -> Path:
+def write_dump(destination: Path | str = Path("db/kb.dump")) -> Path:
     # Write a custom-format Postgres dump of the filled database.
     dest = Path(destination)
     if not dest.is_absolute():

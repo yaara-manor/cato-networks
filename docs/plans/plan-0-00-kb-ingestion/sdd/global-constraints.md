@@ -4,7 +4,7 @@
 - Discovery index is only `https://knowledge.catonetworks.com/llms.txt`. Keep a URL only when its path is `/docs/<slug>.md` and the slug has no slash. Drop `/{language}/llms.txt` and `/docs/fr/<slug>.md` before any request.
 - Save the raw response bytes. The article hash is SHA-256 of those bytes. The public URL has no `.md`. `site_updated_at` comes from the article `updated` field and is null when that field is missing. The crawl time is never copied into `site_updated_at`.
 - Each crawl writes `data/kb_ingestion/<YYYY-MM-DDTHHMMSSZ>/`. Article files are `<slug>.md`. The manifest is `manifest.json` in that same directory. Chunking adds `passages.jsonl` there. Nothing else is written into that directory.
-- The dump is `kb/postgres/kb.dump`. It sits outside the crawl directory.
+- The dump is `db/kb.dump`. It sits outside the crawl directory.
 - Policy ids and files: `POL-CREDIT`, `POL-SEV1`, `POL-IDV`, `POL-SEC`, `POL-CRED`, `POL-SLA`, each `data/policies/<id>.md`.
 - A stored passage is at most 400 tokens of the pinned bge-small tokenizer. A sliced section keeps the same heading, takes at most 350 new tokens, plus at most 50 tokens of whole sentences from the previous slice of that same section, and never copies text across headings. A heading with no body produces no passage.
 - Passages are embedded as plain text. A question is embedded with the prefix `Represent this sentence for searching relevant passages: `, including the trailing space. The smoke test checks that prefix. Query-time search is not part of this plan.

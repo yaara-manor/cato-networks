@@ -63,7 +63,7 @@ Failed fetches are listed in the manifest and omitted. The crawl does not invent
 | `data/kb_ingestion/<YYYY-MM-DDTHHMMSSZ>/<slug>.md` | Raw article bytes for one crawl. |
 | `data/kb_ingestion/<YYYY-MM-DDTHHMMSSZ>/manifest.json` | Crawl date, user agent, rate limit, robots decision, discovery source `llms.txt`, per-article slug, path, hash, title, public URL, site updated time, plus every skip and failure. |
 | `data/kb_ingestion/<YYYY-MM-DDTHHMMSSZ>/passages.jsonl` | Passage records chunked from that crawl. Written after the article files exist. |
-| `kb/postgres/kb.dump` | Custom-format Postgres dump. It sits outside the snapshot and is documented as an addition. |
+| `db/kb.dump` | Custom-format Postgres dump. It sits outside the snapshot and is documented as an addition. |
 | `data/policies/POL-*.md` | The six policy files. Not crawled. |
 
 Change-detecting re-crawls are a bonus in the brief, not the required path. The required path is one polite crawl, a pinned snapshot, and a dump. An unchanged article hash does let a later rebuild skip that article's passages. That check is in the loader because it is cheap. It is not a second product feature.
@@ -82,7 +82,7 @@ The passage vectors are tens of megabytes. A file of vectors would hold them. Po
 
 A separate vector-database server would be a second service for the same job. `pgvector` is the vector store.
 
-The dump is what gets committed, not a live Postgres data directory. A data directory is tied to one machine and one Postgres version. `docker compose up` restores `kb/postgres/kb.dump`. The reviewer does not crawl and does not embed the corpus.
+The dump is what gets committed, not a live Postgres data directory. A data directory is tied to one machine and one Postgres version. `docker compose up` restores `db/kb.dump`. The reviewer does not crawl and does not embed the corpus.
 
 Startup then hashes every article file and every policy file and compares them to the rows. A mismatch stops the process before it answers. An embedding-width mismatch does the same. When retrieval or the model fails to load, this component returns an error. It does not answer a technical question from memory. The later agent design decides what the customer is told.
 
@@ -191,7 +191,7 @@ A reranker is not a chat model. A cross-encoder packs the question, a separator,
 The brief requires a clone to reach a working chat in under 10 minutes, with the knowledge base already in the repo, and no crawl. For this subsystem the runnable check is:
 
 1. `docker compose up` starts Postgres 18 with pgvector, image `pgvector/pgvector:0.8.6-pg18`. The data volume is `/var/lib/postgresql`. The dump is taken on that same major version, because nothing had been dumped when 18 was chosen.
-2. The entrypoint restores `kb/postgres/kb.dump` when the file exists.
+2. The entrypoint restores `db/kb.dump` when the file exists.
 3. `python -m kbindex.startup` reloads the six policies, checks every file hash, checks the embedding width, and exits 0.
 
 If the dump is missing, startup exits with a message that the operator must build it. Building is not the reviewer's job.

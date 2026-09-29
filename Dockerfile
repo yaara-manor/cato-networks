@@ -48,7 +48,7 @@ COPY . .
 RUN printf '%s\n' \
     '#!/bin/sh' \
     'set -e' \
-    'DUMP_FILE="${DUMP_FILE:-kb/postgres/kb.dump}"' \
+    'DUMP_FILE="${DUMP_FILE:-db/kb.dump}"' \
     'if [ ! -f "$DUMP_FILE" ]; then' \
     '    echo "Error: Database dump $DUMP_FILE is absent. Operator must run the build: python -m kbindex.build" >&2' \
     '    exit 1' \

@@ -43,7 +43,7 @@ The manifest records:
 - every skipped URL and the reason (language, robots, not an article)
 - every failed URL, the HTTP status or error, and that the article is absent from the snapshot
 
-The database dump is `kb/postgres/kb.dump`. It sits outside the snapshot directory and is listed as an added file in the repository README. The README also states that model weights are downloaded at image build and are not part of the snapshot.
+The database dump is `db/kb.dump`. It sits outside the snapshot directory and is listed as an added file in the repository README. The README also states that model weights are downloaded at image build and are not part of the snapshot.
 
 ### Policies on disk
 
@@ -152,9 +152,9 @@ Scores are not stored on `passages`. The caller stores them on the conversation 
 
 ## How a row is kept in sync with a file
 
-Reviewer startup restores `kb/postgres/kb.dump`, then reads the six policy files and upserts `policies`. It compares each `kb_articles.content_hash` and each `policies.content_hash` to a fresh SHA-256 of the file at `file_path`. A mismatch stops startup. The reviewer does not crawl and does not embed the corpus.
+Reviewer startup restores `db/kb.dump`, then reads the six policy files and upserts `policies`. It compares each `kb_articles.content_hash` and each `policies.content_hash` to a fresh SHA-256 of the file at `file_path`. A mismatch stops startup. The reviewer does not crawl and does not embed the corpus.
 
-The dump is produced once, on the machine that crawled: crawl to `data/kb_ingestion/<timestamp>/`, chunk, embed, load Postgres, write `kb/postgres/kb.dump`. Rebuilding from markdown is a maintenance command used after a new crawl. It is not part of reviewer setup.
+The dump is produced once, on the machine that crawled: crawl to `data/kb_ingestion/<timestamp>/`, chunk, embed, load Postgres, write `db/kb.dump`. Rebuilding from markdown is a maintenance command used after a new crawl. It is not part of reviewer setup.
 
 ## Failure behavior
 

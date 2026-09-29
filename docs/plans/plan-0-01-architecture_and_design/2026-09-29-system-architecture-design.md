@@ -405,7 +405,7 @@ sequenceDiagram
 
 | Home Task Deliverable | Architectural Component / File | Verification Criteria |
 |---|---|---|
-| **A. Git Repository & Docker** | `Dockerfile`, `docker-compose.yml`, `kb/postgres/kb.dump` | Reviewer runs `docker compose up` and accesses chat in < 10 min without external downloads. |
+| **A. Git Repository & Docker** | `Dockerfile`, `docker-compose.yml`, `db/kb.dump` | Reviewer runs `docker compose up` and accesses chat in < 10 min without external downloads. |
 | **B. Working Chat UI** | `ui/customer_app.py` & `ui/reviewer_app.py` | Customer view with citations & evidence; Reviewer view with context, traces, and Approve/Edit/Reject. |
 | **C. `answers.md`** | `eval/run_questions.py`, `eval/retrieval_metrics.py` | 35 questions answered with citations, top chunks, scores, latency, token costs, Recall@k, and MRR. |
 | **D. Architecture Diagrams** | Logical & Deployment views in `docs/architecture/` | Diagrams match implemented PydanticAI agents, Postgres schema, and Docker topology. |

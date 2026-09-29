@@ -1,3 +1,7 @@
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
 USER_AGENT = "CatoHomeTaskBot/1.0 (educational assignment)"
 RATE_LIMIT_SECONDS = 1
 EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"

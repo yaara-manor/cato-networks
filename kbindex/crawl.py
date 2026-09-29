@@ -1,18 +1,20 @@
 import json
-import re
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
-from urllib.robotparser import RobotFileParser
 
 import httpx
 
 from kbindex.config import RATE_LIMIT_SECONDS, USER_AGENT
+from kbindex.discover import classify_url, parse_llms_links, robots_allows
 
 ROBOTS_URL = "https://knowledge.catonetworks.com/robots.txt"
 LLMS_URL = "https://knowledge.catonetworks.com/llms.txt"
-_LINK = re.compile(r"\]\(([^)\s]+)")
+_SKIP_REASON = {
+    "skip_language": "language",
+    "skip_not_article": "not an article",
+}
 
 
 def crawl(snapshot_root, fetch, sleep, now) -> Path:
@@ -36,10 +38,7 @@ def crawl(snapshot_root, fetch, sleep, now) -> Path:
     elif llms_status != 200:
         failed.append({"url": LLMS_URL, "status": llms_status})
     else:
-        links = _LINK.findall(llms_body.decode("utf-8", "replace"))
-
-    robots = RobotFileParser()
-    robots.parse(robots_text.splitlines())
+        links = parse_llms_links(llms_body.decode("utf-8", "replace"))
 
     articles = []
     skipped = []
@@ -48,9 +47,12 @@ def crawl(snapshot_root, fetch, sleep, now) -> Path:
         if url in seen:
             continue
         seen.add(url)
-        reason = _skip_reason(url, robots)
-        if reason is not None:
-            skipped.append({"url": url, "reason": reason})
+        decision = classify_url(url)
+        if decision != "keep":
+            skipped.append({"url": url, "reason": _SKIP_REASON[decision]})
+            continue
+        if not robots_allows(robots_text, url, USER_AGENT):
+            skipped.append({"url": url, "reason": "robots"})
             continue
         sleep(RATE_LIMIT_SECONDS)
         status, body, error = _call(fetch, url)
@@ -112,29 +114,6 @@ def _remember(url, status, body, error, failed):
         failed.append({"url": url, "status": status})
         return ""
     return body.decode("utf-8", "replace")
-
-
-def _skip_reason(url, robots):
-    parsed = urlparse(url)
-    parts = [part for part in parsed.path.split("/") if part]
-    english_article = (
-        parsed.scheme == "https"
-        and parsed.netloc == "knowledge.catonetworks.com"
-        and len(parts) == 2
-        and parts[0] == "docs"
-        and parts[1].endswith(".md")
-        and not parsed.query
-        and not parsed.fragment
-    )
-    if english_article:
-        if robots.can_fetch(USER_AGENT, url):
-            return None
-        return "robots"
-    if len(parts) == 2 and parts[1] == "llms.txt":
-        return "language"
-    if len(parts) == 3 and parts[0] == "docs" and parts[2].endswith(".md"):
-        return "language"
-    return "not an article"
 
 
 def _front_matter(body):

@@ -180,15 +180,17 @@ def _slice_bodies(sentences: list[str]) -> list[str]:
             continue
         budget = PASSAGE_TOKEN_CAP if not slices else SLICE_NEW_TOKENS
         parts: list[str] = []
+        alone = False
         while index < len(sentences) and _tokens(sentences[index]) <= limit:
             if not _within(parts, sentences[index], budget):
                 if not parts:
                     parts.append(sentences[index])
                     index += 1
+                    alone = True
                 break
             parts.append(sentences[index])
             index += 1
-        body = _with_overlap(slices[-1], _join(parts)) if slices else _join(parts)
+        body = _join(parts) if alone or not slices else _with_overlap(slices[-1], _join(parts))
         if body:
             slices.append(body)
     return slices

@@ -2,7 +2,7 @@ import re
 from pathlib import Path
 
 from kbindex.chunk import chunk_article, heading_anchor, strip_doc_banner
-from kbindex.config import PASSAGE_TOKEN_CAP
+from kbindex.config import PASSAGE_TOKEN_CAP, SLICE_NEW_TOKENS
 from kbindex.embed import load_embedder
 
 REPO = Path(__file__).resolve().parents[2]
@@ -11,6 +11,7 @@ FIXTURE = Path(__file__).parent / "fixtures" / "article.md"
 FIXTURE_TITLE = "Fixture Article"
 NEXT_HEADING = "Sentinel Heading After Long Section"
 _HEADING = re.compile(r"^(#{1,6})[ \t]+(.+?)\s*$", re.MULTILINE)
+_SENTENCE = re.compile(r"(?<=[.!?])\s+")
 _SENTENCE_END = ".!?"
 
 
@@ -34,6 +35,10 @@ def _token_count(text: str) -> int:
 
 def _norm(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
+
+
+def _sentences(text: str) -> list[str]:
+    return [part.strip() for part in _SENTENCE.split(text.strip()) if part.strip()]
 
 
 def _sections(text: str, title: str) -> list[tuple[str, str]]:
@@ -65,6 +70,17 @@ def test_chunks_are_whole_sentences():
     within = next(passage for passage in passages if passage["heading"] == "Within Encoder Maximum")
     assert within["body"].rstrip()[-1] in _SENTENCE_END
     assert PASSAGE_TOKEN_CAP < _token_count(within["body"]) <= _encoder_max()
+
+    stripped = strip_doc_banner(fixture)
+    sections = {heading: body for heading, body in _sections(stripped, FIXTURE_TITLE)}
+    over_budget_sentence = _sentences(sections["Over Budget Sentence"])[-1]
+    assert SLICE_NEW_TOKENS < _token_count(over_budget_sentence) <= PASSAGE_TOKEN_CAP
+    over_budget = next(
+        passage["body"]
+        for passage in passages
+        if passage["heading"] == "Over Budget Sentence" and over_budget_sentence in passage["body"]
+    )
+    assert over_budget == over_budget_sentence
 
     stripped = strip_doc_banner(fixture)
     sections = {heading: body for heading, body in _sections(stripped, FIXTURE_TITLE)}

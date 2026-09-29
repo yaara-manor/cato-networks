@@ -4,3 +4,7 @@ __pycache__/
 *.pyc
 tests/kbindex/output/
 .cache/huggingface/
+.env
+.env.*
+!.env.example
+braintrust-test.py

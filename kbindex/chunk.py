@@ -1,3 +1,4 @@
+import functools
 import json
 import re
 import warnings
@@ -111,6 +112,7 @@ def _encoder_max() -> int:
     return 512
 
 
+@functools.lru_cache(maxsize=16384)
 def _tokens(text: str) -> int:
     if not text:
         return 0

@@ -6,7 +6,12 @@ import uuid
 from pgvector.psycopg import register_vector
 from psycopg import ClientCursor
 
-from kbindex.config import EMBEDDING_DIMENSIONS, EMBEDDING_MODEL, RERANKER_MODEL
+from kbindex.config import (
+    EMBEDDING_DIMENSIONS,
+    EMBEDDING_MODEL,
+    REPO_ROOT,
+    RERANKER_MODEL,
+)
 from kbindex.embed import embed_passages
 from kbindex.hashing import sha256_bytes, sha256_file
 from kbindex.policies import load_policies
@@ -39,11 +44,13 @@ def upsert_policies(connection, policies):
         body = excluded.body
     """
     with connection.cursor() as cursor:
-        for p in policies:
-            cursor.execute(
-                query,
-                (p["id"], p["title"], p["content_hash"], p["file_path"], p["body"]),
-            )
+        cursor.executemany(
+            query,
+            [
+                (p["id"], p["title"], p["content_hash"], p["file_path"], p["body"])
+                for p in policies
+            ],
+        )
     connection.commit()
 
 
@@ -82,10 +89,9 @@ def _insert_passages(cursor, article_slug, passages):
 
 def upsert_article(connection, snapshot_id, article, passages):
     # Replace an article's passages only when its content hash changes.
-    repo = Path(__file__).resolve().parents[1]
     file_path = article.get("file_path", "")
     try:
-        file_path = Path(file_path).resolve().relative_to(repo).as_posix()
+        file_path = Path(file_path).resolve().relative_to(REPO_ROOT).as_posix()
     except ValueError:
         pass
 
@@ -207,7 +213,6 @@ def load_index(connection, crawl_dir, policies_dir):
 
 def verify_hashes(connection, read_file=None):
     # Raise HashMismatch when a stored hash differs from the file at file_path.
-    repo = Path(__file__).resolve().parents[1]
     with connection.cursor() as cursor:
         cursor.execute("select file_path, content_hash from kb_articles order by slug")
         kb_articles = cursor.fetchall()
@@ -215,7 +220,7 @@ def verify_hashes(connection, read_file=None):
         policies = cursor.fetchall()
 
     for file_path, stored_hash in kb_articles + policies:
-        path = repo / file_path if not Path(file_path).is_absolute() else Path(file_path)
+        path = REPO_ROOT / file_path if not Path(file_path).is_absolute() else Path(file_path)
         if read_file is None:
             actual_hash = sha256_file(path)
         else:

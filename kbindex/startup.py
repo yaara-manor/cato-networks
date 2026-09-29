@@ -4,6 +4,7 @@ import sys
 
 import psycopg
 
+from kbindex.config import REPO_ROOT
 from kbindex.embed import embed_passages, probe_width
 from kbindex.policies import load_policies
 from kbindex.store import HashMismatch, StartupError, upsert_policies, verify_hashes
@@ -20,9 +21,8 @@ __all__ = [
 
 def run_startup(connection=None, embed=None, policies_dir=None, read_file=None):
     # Reload policies, check file hashes, check the embedding width, and stop on a mismatch.
-    repo = Path(__file__).resolve().parents[1]
     if policies_dir is None:
-        policies_dir = repo / "data" / "policies"
+        policies_dir = REPO_ROOT / "data" / "policies"
     if embed is None:
         embed = embed_passages
 

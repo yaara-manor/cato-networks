@@ -53,16 +53,17 @@ def test_database_holds_the_crawl_and_policies():
                 assert row[3].isoformat().replace("+00:00", "Z") == manifest_article["site_updated_at"]
 
         passages_file = crawl_dir / "passages.jsonl"
+        sample_slug = None
+        expected_bodies = []
         with passages_file.open(encoding="utf-8") as f:
-            first_line = json.loads(f.readline())
-            sample_slug = first_line["slug"]
-
-        with passages_file.open(encoding="utf-8") as f:
-            expected_bodies = [
-                json.loads(line)["body"]
-                for line in f
-                if json.loads(line)["slug"] == sample_slug
-            ]
+            for line in f:
+                item = json.loads(line)
+                if sample_slug is None:
+                    sample_slug = item["slug"]
+                if item["slug"] == sample_slug:
+                    expected_bodies.append(item["body"])
+                elif expected_bodies:
+                    break
 
         passage_rows = connection.execute(
             "select body, embedding from passages where article_slug = %s order by position",

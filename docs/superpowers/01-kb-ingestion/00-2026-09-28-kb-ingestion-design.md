@@ -31,7 +31,7 @@ The public citation URL stored for an article is `https://knowledge.catonetworks
 
 ### Snapshot layout
 
-Raw articles live in `kb/snapshot/articles/<slug>.md`. The manifest is `kb/snapshot/manifest.json`. Nothing else is written into `kb/snapshot/`.
+Each crawl writes one directory, `data/kb_ingestion/<YYYY-MM-DDTHHMMSSZ>/`. Article files in that directory are `<slug>.md`. The manifest is `manifest.json` in the same directory. `passages.jsonl` is written there later, when the articles are chunked. Nothing else is written into that directory.
 
 The manifest records:
 
@@ -154,7 +154,7 @@ Scores are not stored on `passages`. The caller stores them on the conversation 
 
 Reviewer startup restores `kb/postgres/kb.dump`, then reads the six policy files and upserts `policies`. It compares each `kb_articles.content_hash` and each `policies.content_hash` to a fresh SHA-256 of the file at `file_path`. A mismatch stops startup. The reviewer does not crawl and does not embed the corpus.
 
-The dump is produced once, on the machine that crawled: crawl to `kb/snapshot/`, chunk, embed, load Postgres, write `kb/postgres/kb.dump`. Rebuilding from markdown is a maintenance command used after a new crawl. It is not part of reviewer setup.
+The dump is produced once, on the machine that crawled: crawl to `data/kb_ingestion/<timestamp>/`, chunk, embed, load Postgres, write `kb/postgres/kb.dump`. Rebuilding from markdown is a maintenance command used after a new crawl. It is not part of reviewer setup.
 
 ## Failure behavior
 

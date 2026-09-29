@@ -39,7 +39,8 @@ class StartupError(Exception):
 
 def apply_schema(connection: psycopg.Connection) -> None:
     """Create the four knowledge-base tables when they are missing."""
-    schema_text = cast(LiteralString, Path(__file__).with_name("schema.sql").read_text(encoding="utf-8"))
+    schema_path = REPO_ROOT / "db" / "migrations" / "20260929_1500_kb-schema.sql"
+    schema_text = cast(LiteralString, schema_path.read_text(encoding="utf-8"))
     sql = psycopg.sql.SQL(schema_text)
     with connection.cursor() as cursor:
         cursor.execute(sql)

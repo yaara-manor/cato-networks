@@ -4,13 +4,13 @@ This task starts Postgres and creates the four tables with no rows. Later tasks 
 
 `docker-compose.yml` starts image `pgvector/pgvector:0.8.6-pg18`, creates database `kb`, and publishes port 5432. The data volume is mounted at `/var/lib/postgresql`. Postgres 18 keeps the cluster at `/var/lib/postgresql/18/docker`, so a mount at `/var/lib/postgresql/data` does not start.
 
-`apply_schema` runs `kbindex/schema.sql` once. The script creates the tables below if they are missing. It does not insert a snapshot, an article, a passage, or a policy. After it runs, a count of each table is 0.
+`apply_schema` runs `db/migrations/20260929_1500_kb-schema.sql` once. The script creates the tables below if they are missing. It does not insert a snapshot, an article, a passage, or a policy. After it runs, a count of each table is 0.
 
 `snapshots` will later hold one row for this crawl: when it was crawled, which embedding model was used, the width 384, and which reranker was used. `kb_articles` will later hold one row per saved English article, keyed by slug. `passages` will later hold the chunked text, a `simple` full-text column, and a `vector(384)` embedding. The full-text column is generated from `body` so tokens such as `IKEv2` are not stemmed. The GIN index is on that column. There is no HNSW index, because nearest-neighbor search will be an exact cosine scan. `policies` will later hold the six policy files whole, with no embedding and no snapshot id.
 
 **Files:**
 - Create: `docker-compose.yml`
-- Create: `kbindex/schema.sql`
+- Create: `db/migrations/20260929_1500_kb-schema.sql`
 - Create: `kbindex/store.py`
 - Test: `tests/kbindex/test_tables_are_readable.py`
 

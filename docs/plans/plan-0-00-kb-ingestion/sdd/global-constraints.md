@@ -19,7 +19,7 @@
 - `kbindex/config.py` — the constants in Global Constraints.
 - `kbindex/embed.py` — load bge-small, embed passages, embed a question, write the smoke-test files, probe width.
 - `kbindex/rerank.py` — load the MiniLM cross-encoder and score question-passage pairs.
-- `kbindex/schema.sql` — the four empty tables.
+- `db/migrations/20260929_1500_kb-schema.sql` — the four empty tables.
 - `kbindex/store.py` — apply the schema, load the crawl and the policies, compare hashes.
 - `kbindex/crawl.py` — fetch allowed URLs and write one timestamped directory.
 - `kbindex/discover.py` — classify a URL, parse `llms.txt`, apply `robots.txt`.

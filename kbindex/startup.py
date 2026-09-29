@@ -1,6 +1,8 @@
 import os
-from pathlib import Path
 import sys
+from collections.abc import Callable
+from pathlib import Path
+from typing import Any
 
 import psycopg
 
@@ -19,7 +21,12 @@ __all__ = [
 ]
 
 
-def run_startup(connection=None, embed=None, policies_dir=None, read_file=None):
+def run_startup(
+    connection: psycopg.Connection | None = None,
+    embed: Callable[[list[str]], list[list[float]]] | None = None,
+    policies_dir: Path | str | None = None,
+    read_file: Callable[[Path], bytes | str] | None = None,
+) -> None:
     # Reload policies, check file hashes, check the embedding width, and stop on a mismatch.
     if policies_dir is None:
         policies_dir = REPO_ROOT / "data" / "policies"
@@ -36,7 +43,12 @@ def run_startup(connection=None, embed=None, policies_dir=None, read_file=None):
         _execute_startup(connection, embed, policies_dir, read_file)
 
 
-def _execute_startup(connection, embed, policies_dir, read_file=None):
+def _execute_startup(
+    connection: psycopg.Connection,
+    embed: Callable[[list[str]], list[list[float]]],
+    policies_dir: Path | str,
+    read_file: Callable[[Path], bytes | str] | None = None,
+) -> None:
     policies = load_policies(policies_dir)
     upsert_policies(connection, policies)
 
@@ -47,7 +59,7 @@ def _execute_startup(connection, embed, policies_dir, read_file=None):
         row = cursor.fetchone()
         if not row:
             raise StartupError("No snapshot found in database")
-        expected_dim = row[0]
+        expected_dim: int = row[0]
 
     width = probe_width(embed)
     if width != expected_dim or width != 384:
@@ -56,7 +68,7 @@ def _execute_startup(connection, embed, policies_dir, read_file=None):
         )
 
 
-def main():
+def main() -> None:
     run_startup()
     sys.exit(0)
 

@@ -41,10 +41,11 @@ def test_startup_rejects_a_hash_or_width_mismatch():
             run_startup(connection, embed=bad_embedder, policies_dir=policies_dir)
 
         # real probe_width equals 384 and equals the snapshot row
-        (snapshot_dim,) = connection.execute(
+        row = connection.execute(
             "select embedding_dimensions from snapshots order by crawled_at desc limit 1"
         ).fetchone()
-        assert snapshot_dim == 384
+        assert row is not None
+        assert row[0] == 384
         assert probe_width(embed_passages) == 384
         assert probe_width(load_embedder()) == 384
         assert probe_width() == 384

@@ -1,5 +1,6 @@
 import json
 import time
+from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
@@ -17,7 +18,12 @@ _SKIP_REASON = {
 }
 
 
-def crawl(snapshot_root, fetch, sleep, now) -> Path:
+def crawl(
+    snapshot_root: Path | str,
+    fetch: Callable[[str], tuple[int, bytes]],
+    sleep: Callable[[float], None],
+    now: Callable[[], datetime],
+) -> Path:
     """Fetch the English knowledge-base articles and write one timestamped directory of raw markdown."""
     moment = now()
     if moment.tzinfo is not None:
@@ -30,9 +36,9 @@ def crawl(snapshot_root, fetch, sleep, now) -> Path:
     llms_status, llms_body, llms_error = _call(fetch, LLMS_URL)
     sleep(RATE_LIMIT_SECONDS)
 
-    failed = []
+    failed: list[dict[str, str | int | None]] = []
     robots_text = _remember(ROBOTS_URL, robots_status, robots_body, robots_error, failed)
-    links = []
+    links: list[str] = []
     if llms_error is not None:
         failed.append({"url": LLMS_URL, "error": llms_error})
     elif llms_status != 200:
@@ -40,9 +46,9 @@ def crawl(snapshot_root, fetch, sleep, now) -> Path:
     else:
         links = parse_llms_links(llms_body.decode("utf-8", "replace"))
 
-    articles = []
-    skipped = []
-    seen = set()
+    articles: list[dict[str, str | None]] = []
+    skipped: list[dict[str, str]] = []
+    seen: set[str] = set()
     for url in links:
         if url in seen:
             continue
@@ -98,7 +104,10 @@ def crawl(snapshot_root, fetch, sleep, now) -> Path:
     return directory
 
 
-def _call(fetch, url):
+def _call(
+    fetch: Callable[[str], tuple[int, bytes]],
+    url: str,
+) -> tuple[int | None, bytes, str | None]:
     try:
         status, body = fetch(url)
     except Exception as exc:
@@ -106,7 +115,13 @@ def _call(fetch, url):
     return status, body, None
 
 
-def _remember(url, status, body, error, failed):
+def _remember(
+    url: str,
+    status: int | None,
+    body: bytes,
+    error: str | None,
+    failed: list[dict[str, str | int | None]],
+) -> str:
     if error is not None:
         failed.append({"url": url, "error": error})
         return ""
@@ -116,14 +131,15 @@ def _remember(url, status, body, error, failed):
     return body.decode("utf-8", "replace")
 
 
-def _front_matter(body):
+def _front_matter(body: bytes) -> tuple[str | None, str | None]:
     text = body.decode("utf-8", "replace").lstrip("\ufeff")
     if not text.startswith("---"):
         return None, None
     end = text.find("\n---", 3)
     if end < 0:
         return None, None
-    title = updated = None
+    title: str | None = None
+    updated: str | None = None
     for line in text[3:end].splitlines():
         if line.startswith("title:"):
             title = _scalar(line.split(":", 1)[1])
@@ -132,23 +148,19 @@ def _front_matter(body):
     return title, updated
 
 
-def _scalar(raw):
-    value = raw.strip()
-    if value in {"", "null", "~", "''", '""'}:
-        return None
-    if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
-        value = value[1:-1]
-    return value or None
+def _scalar(raw: str) -> str | None:
+    value = raw.strip().strip("\"'")
+    return None if value in {"", "null", "~"} else value
 
 
-def main():
+def main() -> None:
     with httpx.Client(
         headers={"User-Agent": USER_AGENT},
         follow_redirects=True,
         timeout=60,
     ) as client:
 
-        def fetch(url):
+        def fetch(url: str) -> tuple[int, bytes]:
             response = client.get(url)
             return response.status_code, response.content
 

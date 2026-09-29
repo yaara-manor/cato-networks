@@ -4,18 +4,13 @@ from kbindex.config import REPO_ROOT
 from kbindex.hashing import sha256_file
 
 
-def load_policies(policies_dir) -> list:
+def load_policies(policies_dir: Path | str) -> list[dict[str, str]]:
     # Read the six policy files into records, including POL-SLA.
     policies_dir = Path(policies_dir)
-    records = []
+    records: list[dict[str, str]] = []
     for path in sorted(policies_dir.glob("POL-*.md")):
         text = path.read_text(encoding="utf-8")
-        title = ""
-        for line in text.splitlines():
-            line = line.strip()
-            if line.startswith("#"):
-                title = line.lstrip("#").strip()
-                break
+        title = next((line.lstrip("#").strip() for line in text.splitlines() if line.strip().startswith("#")), "")
         try:
             rel_path = path.resolve().relative_to(REPO_ROOT).as_posix()
         except ValueError:

@@ -20,9 +20,7 @@ def strip_doc_banner(markdown) -> str:
 
 def heading_anchor(heading, position, used) -> str:
     # Build a unique heading anchor for one article.
-    slug = "".join(
-        char for char in re.sub(r"\s", "-", heading.lower()) if char.isalnum() or char == "-"
-    )
+    slug = re.sub(r"[^\w-]", "", re.sub(r"\s", "-", heading.lower()))
     if slug in used:
         slug = f"{slug}-{position}"
     used.add(slug)

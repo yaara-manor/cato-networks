@@ -52,13 +52,9 @@ def write_model_outputs(output_dir):
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     passages = [BGP_PASSAGE, SLA_PASSAGE]
-    _write(output_dir / "passage_embeddings.json", embed_passages(passages))
-    _write(output_dir / "query_embedding.json", embed_query(SMOKE_QUESTION))
-    _write(output_dir / "rerank_scores.json", rerank_pairs(SMOKE_QUESTION, passages))
-
-
-def _write(path, value):
-    path.write_text(json.dumps(value))
+    (output_dir / "passage_embeddings.json").write_text(json.dumps(embed_passages(passages)))
+    (output_dir / "query_embedding.json").write_text(json.dumps(embed_query(SMOKE_QUESTION)))
+    (output_dir / "rerank_scores.json").write_text(json.dumps(rerank_pairs(SMOKE_QUESTION, passages)))
 
 
 def probe_width(embed=None) -> int:

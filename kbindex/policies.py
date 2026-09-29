@@ -10,12 +10,7 @@ def load_policies(policies_dir) -> list:
     records = []
     for path in sorted(policies_dir.glob("POL-*.md")):
         text = path.read_text(encoding="utf-8")
-        title = ""
-        for line in text.splitlines():
-            line = line.strip()
-            if line.startswith("#"):
-                title = line.lstrip("#").strip()
-                break
+        title = next((line.lstrip("#").strip() for line in text.splitlines() if line.strip().startswith("#")), "")
         try:
             rel_path = path.resolve().relative_to(REPO_ROOT).as_posix()
         except ValueError:

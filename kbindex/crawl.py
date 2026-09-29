@@ -133,12 +133,8 @@ def _front_matter(body):
 
 
 def _scalar(raw):
-    value = raw.strip()
-    if value in {"", "null", "~", "''", '""'}:
-        return None
-    if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
-        value = value[1:-1]
-    return value or None
+    value = raw.strip().strip("\"'")
+    return None if value in {"", "null", "~"} else value
 
 
 def main():

@@ -116,7 +116,7 @@ def upsert_article(connection, snapshot_id, article, passages):
                 ),
             )
             _insert_passages(cursor, article["slug"], passages)
-        elif row[0] != article["content_hash"]:
+        else:
             cursor.execute(
                 """
                 update kb_articles
@@ -138,28 +138,9 @@ def upsert_article(connection, snapshot_id, article, passages):
                     article["slug"],
                 ),
             )
-            cursor.execute("delete from passages where article_slug = %s", (article["slug"],))
-            _insert_passages(cursor, article["slug"], passages)
-        else:
-            cursor.execute(
-                """
-                update kb_articles
-                set snapshot_id = %s,
-                    title = %s,
-                    public_url = %s,
-                    site_updated_at = %s,
-                    file_path = %s
-                where slug = %s
-                """,
-                (
-                    snapshot_id,
-                    article["title"],
-                    article["public_url"],
-                    article.get("site_updated_at"),
-                    file_path,
-                    article["slug"],
-                ),
-            )
+            if row[0] != article["content_hash"]:
+                cursor.execute("delete from passages where article_slug = %s", (article["slug"],))
+                _insert_passages(cursor, article["slug"], passages)
     connection.commit()
 
 

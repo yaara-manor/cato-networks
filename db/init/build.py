@@ -1,6 +1,6 @@
 import os
-from pathlib import Path
 import subprocess
+from pathlib import Path
 from urllib.parse import urlparse
 
 import psycopg
@@ -67,6 +67,7 @@ def write_dump(destination: Path | str = Path("db/seed.dump")) -> Path:
                     env=run_env if run_env is not None else env,
                     stdout=f,
                     stderr=subprocess.PIPE,
+                    check=False,
                 )
             if proc.returncode == 0 and tmp_dest.stat().st_size > 0:
                 os.replace(tmp_dest, dest)

@@ -1,5 +1,6 @@
 import os
 import subprocess
+from typing import LiteralString
 from urllib.parse import urlparse
 
 import psycopg
@@ -144,7 +145,7 @@ def test_seed_dump_contains_all_six_tables_and_restores_cleanly() -> None:
     restored = False
     for cmd in restore_cmds:
         try:
-            proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
+            proc = subprocess.run(cmd, env=env, capture_output=True, text=True, check=False)
             if proc.returncode == 0:
                 restored = True
                 break
@@ -154,7 +155,7 @@ def test_seed_dump_contains_all_six_tables_and_restores_cleanly() -> None:
     assert restored, "Failed to restore db/seed.dump via pg_restore or docker fallback"
 
     with psycopg.connect(db_url) as connection:
-        expected_counts = {
+        expected_counts: dict[LiteralString, int] = {
             "snapshots": 1,
             "policies": 6,
             "accounts": 12,
@@ -185,18 +186,22 @@ def test_seed_dump_contains_all_six_tables_and_restores_cleanly() -> None:
 def test_apply_schema_is_idempotent_and_stems_search_vector() -> None:
     with psycopg.connect(os.environ["DATABASE_URL"]) as connection:
         apply_schema(connection)
-        apply_schema(connection)
 
         expression = _search_vector_expression(connection)
         assert "english" in expression
 
-        count_row = connection.execute("select count(*) from passages").fetchone()
-        assert count_row is not None
-        passage_count_before = count_row[0]
+        relfilenode_row = connection.execute(
+            "select relfilenode from pg_class where oid = 'passages'::regclass"
+        ).fetchone()
+        assert relfilenode_row is not None
+        relfilenode_before = relfilenode_row[0]
 
         apply_schema(connection)
-        count_row = connection.execute("select count(*) from passages").fetchone()
-        assert count_row is not None and count_row[0] == passage_count_before
+
+        relfilenode_row = connection.execute(
+            "select relfilenode from pg_class where oid = 'passages'::regclass"
+        ).fetchone()
+        assert relfilenode_row is not None and relfilenode_row[0] == relfilenode_before
 
         match_row = connection.execute(
             "select count(*) from passages where search_vector @@ 'polici'::tsquery"

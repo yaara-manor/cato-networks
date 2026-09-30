@@ -4,6 +4,7 @@
 # scikit-learn's ENGLISH_STOP_WORDS (Glasgow IR group list), copied as data to avoid
 # the scikit-learn dependency and its import cost. Regenerate via:
 # uv run python -c "from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS as s; print(sorted(s))"
+# ponytail: sklearn list also drops domain stems (call, bill, system, show, side); swap for a hand-curated list if repeat-contact recall on voice/billing tickets matters.
 ENGLISH_STOP_WORDS: frozenset[str] = frozenset(
     {
         "a",

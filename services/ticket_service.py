@@ -157,10 +157,13 @@ class TicketService:
         if symptom_text is not None:
             texts.append(symptom_text)
         stems = self._stem_texts(texts)
+        if symptom_text is not None:
+            *ticket_stems, symptom_stems = stems
+        else:
+            ticket_stems, symptom_stems = stems, None
         stems_by_ticket: dict[str, frozenset[str]] = {
-            t.ticket_id: stem for t, stem in zip(candidates, stems)
+            t.ticket_id: stem for t, stem in zip(candidates, ticket_stems, strict=True)
         }
-        symptom_stems = stems[-1] if symptom_text is not None else None
         matching = [
             t
             for t in candidates

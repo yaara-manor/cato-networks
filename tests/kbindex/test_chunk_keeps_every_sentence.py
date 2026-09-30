@@ -3,9 +3,9 @@ import re
 import warnings
 from pathlib import Path
 
-from kbindex.chunk import chunk_article, strip_doc_banner
 from core.config import PASSAGE_TOKEN_CAP
 from encoders.embed import load_embedder
+from kbindex.chunk import chunk_article, strip_doc_banner
 
 REPO = Path(__file__).resolve().parents[2]
 ROOT = REPO / "data" / "kb_ingestion"
@@ -35,7 +35,7 @@ def _token_count(text: str) -> int:
 
 
 def _crawl_dir() -> Path:
-    return sorted(path for path in ROOT.iterdir() if path.is_dir())[-1]
+    return max(path for path in ROOT.iterdir() if path.is_dir())
 
 
 def _sections(text: str, title: str) -> list[tuple[str, str]]:

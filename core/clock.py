@@ -1,9 +1,9 @@
-from collections.abc import Callable
-from datetime import datetime, timedelta, timezone
 import math
 import time
+from collections.abc import Callable
+from datetime import UTC, datetime, timedelta
 
-DEFAULT_ANCHOR: datetime = datetime(2026, 8, 28, 17, 0, 0, tzinfo=timezone.utc)
+DEFAULT_ANCHOR: datetime = datetime(2026, 8, 28, 17, 0, 0, tzinfo=UTC)
 
 
 class SimulationClock:

@@ -10,11 +10,11 @@ from core.models import (
 )
 
 __all__ = [
+    "DEFAULT_ANCHOR",
+    "REPO_ROOT",
     "AccountTier",
     "Citation",
     "CustomerAccount",
-    "DEFAULT_ANCHOR",
-    "REPO_ROOT",
     "Settings",
     "SimulationClock",
     "Ticket",

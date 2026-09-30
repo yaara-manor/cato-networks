@@ -1,9 +1,9 @@
+import json
+import uuid
 from collections import defaultdict
 from collections.abc import Callable
-import json
 from pathlib import Path
 from typing import Any, NotRequired, TypedDict
-import uuid
 
 import psycopg
 from pgvector.psycopg import register_vector

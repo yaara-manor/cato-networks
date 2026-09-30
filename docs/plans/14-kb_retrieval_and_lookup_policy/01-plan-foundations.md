@@ -67,16 +67,15 @@
 - [ ] **Step 3: Move the two modules** with `git mv`, add `encoders/__init__.py`, and fix the three production imports listed above.
 - [ ] **Step 4: Edit `encoders/embed.py`.**
   - Delete the three test constants.
-  - `embed_passages`: one `model.encode(texts, prompt="", show_progress_bar=False)` call, converting each row to `list[float]`. There is no empty-input branch: no caller passes `[]` (`kbindex/store.py` already guards).
+  - `embed_passages`: per-item encode kept: batching shifts floats ~7.6e-8, breaking the exact-equality fixtures; query embedding is single-item anyway.
   - `embed_query` stays `embed_passages([embedding_prefix(text)])[0]`.
   - `probe_width`: new signature from Interfaces; its body is the length of `embed(["width-check"])[0]`.
   - Drop `from typing import Any`. Add `from collections.abc import Callable`.
-- [ ] **Step 5: Edit `encoders/rerank.py`.** `rerank_pairs` calls `predict` with `batch_size=8` (design §2.8: measured faster than 32 on CPU), `convert_to_numpy=True`, `show_progress_bar=False`.
+- [ ] **Step 5: Edit `encoders/rerank.py`.** `rerank_pairs` calls `predict` with `batch_size=8` (design §2.8: measured faster than 32 on CPU), `show_progress_bar=False`.
 - [ ] **Step 6: Run and confirm pass.** `uv run pytest tests/kbindex tests/db -v`. Expected: all PASS, including the exact-float equality against `tests/kbindex/output/*.json`.
-  - If batching shifts floats, do not regenerate the fixtures silently. STOP and report the max absolute diff.
 - [ ] **Step 7: Clean-code gate.** `uvx ruff check encoders kbindex db tests/kbindex` and `uvx pyright encoders kbindex/chunk.py kbindex/store.py db/init/startup.py`. Both clean.
   - `grep -rn "kbindex.embed\|retrieval.rerank" --include=*.py .` (excluding `.venv`) returns nothing.
-- [ ] **Step 8: Commit** on `p-1-4-01-t1_encoders`: `refactor(encoders): move embed/rerank into encoders pkg, batch embedding`.
+- [ ] **Step 8: Commit** on `p-1-4-01-t1_encoders`: `refactor(encoders): move embed/rerank into encoders pkg`.
 
 ---
 

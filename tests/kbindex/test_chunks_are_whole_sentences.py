@@ -1,9 +1,10 @@
 import re
+from itertools import pairwise
 from pathlib import Path
 
-from kbindex.chunk import chunk_article, heading_anchor, strip_doc_banner
 from core.config import PASSAGE_TOKEN_CAP, SLICE_NEW_TOKENS
 from encoders.embed import load_embedder
+from kbindex.chunk import chunk_article, heading_anchor, strip_doc_banner
 
 REPO = Path(__file__).resolve().parents[2]
 ROOT = REPO / "data" / "kb_ingestion"
@@ -115,7 +116,7 @@ def test_chunks_are_whole_sentences():
     assert len(long_slices) >= 2
     assert len({passage["heading_anchor"] for passage in long_slices}) == 1
     overlapped = False
-    for previous, current in zip(long_slices, long_slices[1:]):
+    for previous, current in pairwise(long_slices):
         assert NEXT_HEADING not in current["body"]
         for match in re.finditer(r"(?<=[.!?])\s+", current["body"]):
             copied = current["body"][: match.start()]
@@ -130,4 +131,4 @@ def test_chunks_are_whole_sentences():
 
 
 def _crawl_dir() -> Path:
-    return sorted(path for path in ROOT.iterdir() if path.is_dir())[-1]
+    return max(path for path in ROOT.iterdir() if path.is_dir())

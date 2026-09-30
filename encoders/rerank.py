@@ -23,7 +23,6 @@ def rerank_pairs(question: str, passages: list[str]) -> list[float]:
     scores = load_reranker().predict(
         [[question, passage] for passage in passages],
         batch_size=8,
-        convert_to_numpy=True,
         show_progress_bar=False,
     )
     return [float(score) for score in scores]

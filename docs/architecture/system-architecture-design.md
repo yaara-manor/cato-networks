@@ -1,8 +1,8 @@
 # System Architecture & Technical Design Specification
 **Topic**: Cato AI Support Engineer — Multi-Agent System  
 **Date**: 2026-09-29  
-**Status**: In Review (Phase 0 / Ticket 0.1)  
-**Target Path**: `docs/superpowers/plan-0-01-architecture_and_design/2026-09-29-system-architecture-design.md`  
+**Status**: Approved (Phase 0 / Ticket 0.1)  
+**Target Path**: `docs/system-architecture-design.md`  
 
 ---
 
@@ -217,8 +217,8 @@ stateDiagram-v2
 ## 6. Database Schema Design (PostgreSQL + pgvector)
 
 The database schema is managed via sequential SQL migrations under `db/migrations/`:
-- `db/migrations/001_kbindex_schema.sql`: Vector extension, snapshots, kb_articles, passages, and policies (the knowledge base and policies tables).
-- `db/migrations/002_agent_runtime.sql`: Operational tables for persistent conversation state, messages, non-blocking approvals, execution traces, and simulated side effects.
+- `db/migrations/20260929_1500_kb-schema.sql`: Vector extension, snapshots, kb_articles, passages, and policies (the knowledge base and policies tables).
+- `db/migrations/20260930_1000_agent-runtime.sql`: Operational tables for persistent conversation state, messages, non-blocking approvals, execution traces, and simulated side effects.
 
 The unified database connects the ingested Knowledge Base with live operational state:
 
@@ -440,14 +440,28 @@ The codebase is organized into clean, single-responsibility packages separating 
 
 ```
 ├── db/                                # Unified database management
+│   ├── kb.dump                        # Seed database dump (articles, passages, embeddings)
+│   ├── connection.py                  # Database connection pooling
 │   └── migrations/
-│       ├── 001_kbindex_schema.sql     # Extension (vector) + snapshots, kb_articles, passages, policies
-│       └── 002_agent_runtime.sql      # conversations, messages, approvals, traces, simulated_actions
+│       ├── 20260929_1500_kb-schema.sql        # Vector extension + snapshots, kb_articles, passages, policies
+│       └── 20260930_1000_agent-runtime.sql    # conversations, messages, approvals, traces, simulated_actions
+│
+├── docs/                              # Project documentation, plans & evaluation reports
+│   ├── overview/                      # Deliverable D diagrams (logical & deployment views)
+│       ├── technical_overview.md      # Ingestion & retrieval design & quality analysis
+│       ├── runbook.md                 # Operational runbook
+│       ├── eval_report.md             # Evaluation report & metric analysis
+│       ├── demo_playbook.md           # Live interview demo rehearsal guide
+│   ├── architecture/                  # Deliverable D diagrams (logical & deployment views)
+│       ├── system-architecture-design.md      # Master architecture & technical design specification
+│   └── plans/                         # Implementation plans and execution task guides
 │
 ├── kbindex/                           # Offline KB ingestion ONLY
 │   ├── crawl.py                       # Respects robots.txt and 1s rate limit
+│   ├── discover.py                    # llms.txt discovery parser
 │   ├── chunk.py                       # Markdown slicing (max 400 tokens)
 │   ├── embed.py                       # BAAI/bge-small-en-v1.5 embeddings
+│   ├── hashing.py                     # SHA-256 integrity verifier
 │   └── store.py                       # Loads articles & passages into Postgres
 │
 ├── retrieval/                         # Online RAG & search pipeline
@@ -483,6 +497,12 @@ The codebase is organized into clean, single-responsibility packages separating 
 │   ├── knowledge.py                   # Query generation, RAG execution, policy checks
 │   └── resolution.py                  # Synthesis, grounded response, action proposals
 │
+├── prompts/                           # Dedicated editable prompt templates
+│   ├── triage.md
+│   ├── diagnostics.md
+│   ├── knowledge.md
+│   └── resolution.md
+│
 ├── orchestration/                     # State machine & workflow graph
 │   └── workflow.py                    # Multi-turn coordinator with partial-failure fallbacks
 │
@@ -494,6 +514,9 @@ The codebase is organized into clean, single-responsibility packages separating 
     ├── run_questions.py               # Replays 35 questions to generate answers.md
     ├── run_scenarios.py               # 12-scenario multi-turn replay harness
     ├── retrieval_metrics.py           # Recall@k and MRR computation
+    ├── scenario_scorer.py             # Scores groundedness, citations, tool calls, guardrails
+    ├── braintrust_tracer.py           # Braintrust waterfall spans & eval logging
+    ├── test_prompt.py                 # CLI playground to test & iterate on isolated prompts
     └── recorded_traces/               # Committed traces for the 3 representative conversations
 ```
 
@@ -504,6 +527,7 @@ The codebase is organized into clean, single-responsibility packages separating 
 - All code files are structured strictly under the packages defined above.
 - Offline indexing code (`kbindex/`) contains zero online query-time logic.
 - Online RAG search and cross-encoder reranking live cleanly under `retrieval/`.
-- Database schema definitions are organized into versioned migrations under `db/migrations/`.
+- Database schema definitions are organized into versioned migrations under `db/migrations/`, and seed dump lives in `db/kb.dump`.
+- Implementation plans are located directly under `docs/plans/`.
 - No scratch scripts or temporary test files will remain in production trees.
 - Pinned revisions and hashes ensure 100% reproducible execution.

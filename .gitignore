@@ -9,3 +9,4 @@ tests/kbindex/output/
 !.env.example
 braintrust-test.py
 *.pptx
+*.pptx#

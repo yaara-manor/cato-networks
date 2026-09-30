@@ -5,8 +5,24 @@ from urllib.parse import urlparse
 import psycopg
 
 from core.config import REPO_ROOT
-from db.init.seed import load_accounts_seed, load_tickets_seed, seed_all
+from db.init.seed import apply_schema, load_accounts_seed, load_tickets_seed, seed_all
 from db.init.startup import run_startup
+
+
+def _search_vector_expression(connection: psycopg.Connection) -> str:
+    row = connection.execute(
+        """
+        select pg_get_expr(adbin, adrelid)
+        from pg_attrdef
+        join pg_attribute
+            on pg_attribute.attrelid = pg_attrdef.adrelid
+            and pg_attribute.attnum = pg_attrdef.adnum
+        where pg_attrdef.adrelid = 'passages'::regclass
+            and pg_attribute.attname = 'search_vector'
+        """
+    ).fetchone()
+    assert row is not None
+    return row[0]
 
 
 def test_seed_accounts_and_tickets_and_startup_preserves_live_status() -> None:
@@ -160,3 +176,29 @@ def test_seed_dump_contains_all_six_tables_and_restores_cleanly() -> None:
         }
         assert "tickets_customer_created_idx" in indexes
         assert "tickets_customer_site_idx" in indexes
+
+        expression = _search_vector_expression(connection)
+        assert "english" in expression
+        assert "simple" not in expression
+
+
+def test_apply_schema_is_idempotent_and_stems_search_vector() -> None:
+    with psycopg.connect(os.environ["DATABASE_URL"]) as connection:
+        apply_schema(connection)
+        apply_schema(connection)
+
+        expression = _search_vector_expression(connection)
+        assert "english" in expression
+
+        count_row = connection.execute("select count(*) from passages").fetchone()
+        assert count_row is not None
+        passage_count_before = count_row[0]
+
+        apply_schema(connection)
+        count_row = connection.execute("select count(*) from passages").fetchone()
+        assert count_row is not None and count_row[0] == passage_count_before
+
+        match_row = connection.execute(
+            "select count(*) from passages where search_vector @@ 'polici'::tsquery"
+        ).fetchone()
+        assert match_row is not None and match_row[0] >= 1

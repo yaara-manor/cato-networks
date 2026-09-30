@@ -3,7 +3,7 @@
 **Issue**: `#5` ([Phase 1] 1.5: Deterministic Guardrails Engine)
 **Date**: 2026-09-30
 **Status**: Ready for Review
-**Target Files**: `guardrails/__init__.py`, `guardrails/models.py`, `guardrails/redactor.py`, `guardrails/injection.py`, `guardrails/entitlement.py`, `guardrails/citations.py`, `guardrails/gates.py`, `db/init/seed.py`, `db/seed.dump`, `tests/guardrails/*`
+**Target Files**: `guardrails/__init__.py`, `guardrails/models.py`, `guardrails/redactor.py`, `guardrails/injection.py`, `guardrails/validator.py`, `db/init/seed.py`, `db/seed.dump`, `tests/guardrails/*`
 
 ---
 
@@ -18,10 +18,10 @@ flowchart LR
     Msg["Customer message"] --> Red["redactor.redact()"]
     Red --> Inj["injection.detect()"]
     Inj -- blocked --> Refuse["Orchestrator: canned refusal for this turn"]
-    Inj -- clean --> Ent["entitlement.check_claims(text, CallerIdentity)"]
+    Inj -- clean --> Ent["validator.check_claims(text, CallerIdentity)"]
     Ent --> Agents["Triage → Diagnostics → Knowledge → Resolution"]
-    Agents --> Act["gates.check_action(ProposedAction, CallerIdentity)"]
-    Agents --> Out["gates.check_outgoing_message() + citations.validate()"]
+    Agents --> Act["validator.check_action(ProposedAction, CallerIdentity)"]
+    Agents --> Out["validator.check_outgoing_message() + validator.check_citations()"]
     Red -. secret hashes .-> Hist["SessionGuardHistory (immutable, per session)"]
     Inj -. verdict .-> Hist
     Ent -. false claims .-> Hist
@@ -40,14 +40,12 @@ flowchart LR
 | `guardrails/models.py` | All guard contracts (enums + frozen Pydantic models), incl. `SessionGuardHistory`. |
 | `guardrails/redactor.py` | `redact(text) -> RedactionResult`. POL-CRED. Also the `redact_credentials` agent tool target (SC-08 `must_use_tools`). |
 | `guardrails/injection.py` | `detect(text) -> InjectionVerdict` (prompt injection / jailbreak / exfil / fake authority / delimiter injection) and `quarantine(text) -> str` for untrusted tool output (§4.6). |
-| `guardrails/entitlement.py` | `check_claims(text, identity) -> EntitlementVerdict`. Extracts tier / authority / account claims from free text, compares with `CallerIdentity`. |
-| `guardrails/citations.py` | `validate(message, context) -> CitationReport`. Citation validity, uncited technical claims, refusal consistency. |
-| `guardrails/gates.py` | `check_action(action, identity) -> GateDecision` and `check_outgoing_message(message, history, approved) -> list[OutputViolation]`. POL-CREDIT / POL-IDV / POL-SEC. |
+| `guardrails/validator.py` | Post-checks against ground truth: `check_claims(text, identity) -> EntitlementVerdict` (§4.3), `check_citations(message, context) -> CitationReport` (§4.4), `check_action(action, identity) -> GateDecision` and `check_outgoing_message(message, history, approved) -> list[OutputViolation]` (§4.5). |
 | `guardrails/__init__.py` | Re-exports only, zero logic. |
 | `db/init/seed.py` | `seed_all` redacts ticket `subject` + `body` via `redact()` before `upsert_tickets`. Seed data holds the SC-08 PSK in TCK-20264230 → currently in Postgres, violating POL-CRED. |
 | `db/seed.dump` | Regenerated after the seed change. |
 
-Deviation from issue deliverables: issue lists a single `validator.py`. Split into `entitlement.py`, `citations.py`, `gates.py` — three unrelated concerns (SRP). Enums use `StrEnum`, matching `tools/models.py` (ADR-005).
+File layout matches issue deliverables and architecture §12. `redactor.py` and `injection.py` stand alone (multiple callers: ingestion, agent tool, seed, tool-output quarantine); the three post-checks share `validator.py` (~170 lines). Enums use `StrEnum`, matching `tools/models.py` (ADR-005).
 
 ---
 
@@ -98,22 +96,22 @@ Same normalization as the redactor, plus lowercase and whitespace collapse. Rule
 - `INSTRUCTION_OVERRIDE`: ignore/disregard/forget (all) (previous|prior|above) (instructions|rules|prompt); "new instructions:".
 - `ROLE_OVERRIDE`: "you are now", "(maintenance|developer|debug|admin|god|DAN) mode", "act as (an? )?(admin|system|developer)", "pretend (you are|to be)".
 - `PROMPT_EXFILTRATION`: (reveal|print|show|repeat|reply with|output) … (system prompt|your instructions|hidden prompt|initial prompt).
-- `FAKE_AUTHORITY`: "authorized (test|request) by (cato|anthropic|engineering|security)", "this is (cato|the) (engineering|security|support) team" — only in combination with an imperative to the agent; standalone job-title claims belong to entitlement.
+- `FAKE_AUTHORITY`: "authorized (test|request) by (cato|anthropic|engineering|security)", "this is (cato|the) (engineering|security|support) team" — only in combination with an imperative to the agent; standalone job-title claims belong to `check_claims`.
 - `DELIMITER_INJECTION`: `</?system>`, `<|im_start|>`, `<|endoftext|>`, `[INST]`, `### (system|instruction)`, `BEGIN SYSTEM PROMPT`.
 
 Skipped: base64/rot13 decoding of payloads — add when a scenario needs it.
 
 Orchestrator behavior (Phase 2, documented here): blocked → canned refusal for *that turn*, verdict appended to `SessionGuardHistory`, conversation continues (SC-05 follow-up still answered).
 
-### 4.3 Entitlement Validator (`entitlement.py`)
+### 4.3 Entitlement Validator (`validator.check_claims`)
 Reuses `CustomerService.authenticate_caller` output — does not re-derive tier/admin status. Pure regex claim extraction on the (redacted) message:
 - **Tier**: "we are/we're (a) (premium|vip|enterprise|platinum|gold) (customer|account|tier)" → claimed tier; false if ≠ `identity.effective_tier` (SC-07, TCK-20264221).
 - **Authority**: "I'm/I am (the) (CEO|CTO|CISO|VP|director|admin|administrator|security lead|owner)", "assistant to (our|the) (CEO|…)", "(this is )?approved on our side", "I'm authoriz(ing|ed)" → false if `not identity.is_registered_admin` (SC-04, SC-10).
 - **Account**: any `ACC-\d+` in text ≠ `identity.account.account_id` → false cross-account claim (SC-05 `ACC-1005`).
 
-Non-blocking: verdict goes to `SessionGuardHistory` and agent context. Hard enforcement of what those claims would unlock lives in `gates.py`.
+Non-blocking: verdict goes to `SessionGuardHistory` and agent context. Hard enforcement of what those claims would unlock lives in `check_action` (§4.5).
 
-### 4.4 Citation & Grounding Validator (`citations.py`) — ~20% of effort
+### 4.4 Citation & Grounding Validator (`validator.check_citations`) — ~20% of effort
 Marker grammar: `[kb:<slug>#<anchor>]`, `[policy:POL-XXX]`, `[telemetry:<tool>]`.
 1. **Validity**: every `kb` marker's (slug, anchor) ∈ `context.kb_refs`; every policy ∈ `context.policy_ids`; every telemetry tool ∈ `context.telemetry_tools`. Else `UNKNOWN_*`.
 2. **Uncited claims**: split message into paragraphs → sentences. Sentence flagged `UNCITED_CLAIM` when it has a technical-claim signal and neither it nor its paragraph carries a marker. Signals: number + unit (`ms|s|sec|bytes|B|KB|MB|GB|kbps|Mbps|Gbps|%|dBm`), port expressions (`UDP|TCP \d+`, `port \d+`), all-caps error codes (`[A-Z]+(_[A-Z]+)+`, e.g. `NO_PROPOSAL_CHOSEN`), CLI/config tokens (backtick spans, `set …`, `show …`).
@@ -121,7 +119,7 @@ Marker grammar: `[kb:<slug>#<anchor>]`, `[policy:POL-XXX]`, `[telemetry:<tool>]`
 
 Orchestrator (Phase 2): not grounded → re-prompt once, then route to human (per architecture §4.2).
 
-### 4.5 Hard Security Gates (`gates.py`)
+### 4.5 Hard Security Gates (`validator.check_action`, `validator.check_outgoing_message`)
 **`check_action(action, identity)`** — first matching rule wins:
 | Condition | Outcome | Policy |
 |---|---|---|
@@ -157,9 +155,10 @@ Actual exposure = **indirect prompt injection via tool output**. Seed ticket TCK
 Functional, table-driven, zero LLM, zero DB.
 - `test_redactor.py`: SC-08 message + TCK-20264230 body redacted, PSK absent from output, finding kind `CONTEXTUAL`; one case per structural and vendor-config pattern (FortiGate, Cisco, strongSwan, `.env`, PEM, JWT, Bearer, URL userinfo); **negative corpus** — all 35 `questions.jsonl` questions and all 54 ticket bodies except TCK-20264230 produce zero findings.
 - `test_injection.py`: SC-05 opening message + TCK-20264246 blocked with `INSTRUCTION_OVERRIDE`, `ROLE_OVERRIDE`, `PROMPT_EXFILTRATION`, `FAKE_AUTHORITY`; zero-width / full-width evasion still caught; one case per delimiter; negative corpus as above plus all scenario follow-ups (SC-05 genuine follow-up must pass); `quarantine()` replaces TCK-20264246 body and leaves every other ticket body unchanged.
-- `test_entitlement.py`: SC-07 false Premium (Standard account); SC-04 gmail "assistant to our CEO" + "approved on our side"; SC-10 "security lead" from non-admin; SC-05 cross-account `ACC-1005`; registered-admin true claim yields no false claim. Uses real `CallerIdentity` objects built in-test (no DB).
-- `test_citations.py`: valid markers pass; unknown slug / wrong anchor / uncalled tool flagged; uncited `1350 bytes` sentence flagged; same sentence with paragraph marker passes; refusal context with KB marker flagged.
-- `test_gates.py`: full decision table; output gate flags `$3,600` credit sentence pre-approval, passes it post-approval; secret echo detected via history hashes.
+- `test_validator.py`:
+  - Entitlement: SC-07 false Premium (Standard account); SC-04 gmail "assistant to our CEO" + "approved on our side"; SC-10 "security lead" from non-admin; SC-05 cross-account `ACC-1005`; registered-admin true claim yields no false claim. Uses real `CallerIdentity` objects built in-test (no DB).
+  - Citations: valid markers pass; unknown slug / wrong anchor / uncalled tool flagged; uncited `1350 bytes` sentence flagged; same sentence with paragraph marker passes; refusal context with KB marker flagged.
+  - Gates: full decision table; output gate flags `$3,600` credit sentence pre-approval, passes it post-approval; secret echo detected via history hashes.
 - `test_session_history.py`: history immutability, `agent_context_note()` content for SC-05 and SC-07 sequences, `None` when clean.
 - `tests/db/test_init.py`: extend — seeded TCK-20264230 body contains `[REDACTED:` and not the PSK.
 
@@ -168,4 +167,3 @@ Functional, table-driven, zero LLM, zero DB.
 ## 6. Cleanup
 - No unused models/rules; every rule id exercised by at least one test.
 - `ApprovalRecord.action_type` literal in `services/models.py` left untouched (Phase 2 aligns it with `ActionType`).
-- Architecture doc §12 directory listing updated to the split `guardrails/` modules.

@@ -169,21 +169,21 @@ class CustomerService:
                     """
                     select customer_id, company, tier, email_domain, registered_admin_contact, country
                     from accounts
-                    where lower(registered_admin_contact) = lower(%s)
-                       or lower(email_domain) = lower(%s)
+                    where lower(registered_admin_contact) = lower(%(email)s)
+                       or lower(email_domain) = lower(%(domain)s)
                     limit 1
                     """,
-                    (value, domain),
+                    {"email": value, "domain": domain},
                 )
             else:
                 cur.execute(
                     """
                     select customer_id, company, tier, email_domain, registered_admin_contact, country
                     from accounts
-                    where upper(customer_id) = upper(%s)
+                    where upper(customer_id) = upper(%(customer_id)s)
                     limit 1
                     """,
-                    (value,),
+                    {"customer_id": value},
                 )
             row = cur.fetchone()
 
@@ -203,8 +203,8 @@ class CustomerService:
     def update_account_country(self, account_id: str, country_code: str) -> None:
         with self._conn.cursor() as cur:
             cur.execute(
-                "update accounts set country = %s where upper(customer_id) = upper(%s)",
-                (country_code.strip().upper(), account_id.strip()),
+                "update accounts set country = %(country)s where upper(customer_id) = upper(%(account_id)s)",
+                {"country": country_code.strip().upper(), "account_id": account_id.strip()},
             )
         self._conn.commit()
 

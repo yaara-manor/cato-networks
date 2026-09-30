@@ -122,8 +122,8 @@ class TicketService:
             return None
         with self._conn.cursor() as cur:
             cur.execute(
-                f"select {_TICKET_COLUMNS} from tickets where ticket_id = %s",
-                (value,),
+                f"select {_TICKET_COLUMNS} from tickets where ticket_id = %(ticket_id)s",
+                {"ticket_id": value},
             )
             row = cur.fetchone()
         return _row_to_ticket(row) if row is not None else None
@@ -135,15 +135,15 @@ class TicketService:
         product_area: str | None = None,
         include_open: bool = True,
     ) -> list[Ticket]:
-        clauses: list[LiteralString] = ["customer_id = %s"]
-        params: list[Any] = [account_id.strip()]
+        clauses: list[LiteralString] = ["customer_id = %(account_id)s"]
+        params: dict[str, Any] = {"account_id": account_id.strip()}
 
         if site_id is not None:
-            clauses.append("site_id = %s")
-            params.append(site_id.strip())
+            clauses.append("site_id = %(site_id)s")
+            params["site_id"] = site_id.strip()
         if product_area is not None:
-            clauses.append("lower(product_area) = lower(%s)")
-            params.append(product_area.strip())
+            clauses.append("lower(product_area) = lower(%(product_area)s)")
+            params["product_area"] = product_area.strip()
         if not include_open:
             clauses.append("status != 'open'")
 
@@ -225,24 +225,26 @@ class TicketService:
                         )::text
                         from tickets
                     ),
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'open'
+                    %(created_at)s, %(channel)s, %(customer_id)s, %(customer_name)s,
+                    %(requester_email)s, %(company)s, %(tier)s, %(site_id)s,
+                    %(product_area)s, %(priority)s, %(subject)s, %(body)s, 'open'
                 )
                 returning {_TICKET_COLUMNS}
                 """,
-                (
-                    created_at,
-                    channel,
-                    customer_id,
-                    customer_name,
-                    requester_email,
-                    company,
-                    tier,
-                    site_id,
-                    product_area,
-                    priority,
-                    subject,
-                    body,
-                ),
+                {
+                    "created_at": created_at,
+                    "channel": channel,
+                    "customer_id": customer_id,
+                    "customer_name": customer_name,
+                    "requester_email": requester_email,
+                    "company": company,
+                    "tier": tier,
+                    "site_id": site_id,
+                    "product_area": product_area,
+                    "priority": priority,
+                    "subject": subject,
+                    "body": body,
+                },
             )
             row = cur.fetchone()
         if row is None:
@@ -255,11 +257,11 @@ class TicketService:
             cur.execute(
                 f"""
                 update tickets
-                set status = %s
-                where ticket_id = %s
+                set status = %(status)s
+                where ticket_id = %(ticket_id)s
                 returning {_TICKET_COLUMNS}
                 """,
-                (status, ticket_id.strip()),
+                {"status": status, "ticket_id": ticket_id.strip()},
             )
             row = cur.fetchone()
         if row is None:

@@ -85,7 +85,7 @@ All models frozen (`model_config = ConfigDict(frozen=True)`), collections as `tu
 ### 4.1 Redactor (`redactor.py`) — ~40% of effort
 Input normalized first: NFKC + zero-width char removal (spans mapped back to original). Code fences / inline code are scanned like any text (customers paste configs and logs).
 
-Three layers, applied in order; overlapping spans merged, earliest layer's kind wins:
+Four layers, applied in order; overlapping spans merged, earliest layer's kind wins:
 1. **Structural** (high precision): PEM `BEGIN … PRIVATE KEY` blocks; `Bearer <token>` / `Authorization:` headers; JWT (three base64url segments); vendor key prefixes (`AKIA…`, `sk-…`, `ghp_…`, `xox[bp]-…`); `key=value` / `key: value` / JSON/YAML `"key": "value"` where key matches a secret-name list (password, passwd, pwd, psk, pre_shared_key, secret, token, api_key, apikey, shared_key, radius_secret, scim_token, client_secret); credentials in URLs (`scheme://user:pass@`); curl `-u user:pass`.
 2. **Vendor config** (`VENDOR_CONFIG`): FortiGate `set psksecret`, Cisco `pre-shared-key` / `key 0|7 …` / `password 0|7 …` / `secret 5 …`, strongSwan `: PSK "…"`, `.env`-style `*_KEY=` / `*_SECRET=` / `*_TOKEN=` / `*_PASSWORD=`.
 3. **Contextual** (`CONTEXTUAL`): trigger phrase (`psk|pre-shared key|password|passphrase|secret|token|api key|shared key`) → up to 5 words → separator (`is|:|=|was`) → next whitespace-delimited token redacted (trailing sentence punctuation stripped). Catches SC-08 `PSK on our side is: Fg7!qwe-DC-2026-tunnel`.

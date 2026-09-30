@@ -33,3 +33,17 @@ class RedactionResult(_GuardModel):
     @property
     def was_redacted(self) -> bool:
         return bool(self.findings)
+
+
+class InjectionCategory(StrEnum):
+    INSTRUCTION_OVERRIDE = "INSTRUCTION_OVERRIDE"
+    ROLE_OVERRIDE = "ROLE_OVERRIDE"
+    PROMPT_EXFILTRATION = "PROMPT_EXFILTRATION"
+    FAKE_AUTHORITY = "FAKE_AUTHORITY"
+    DELIMITER_INJECTION = "DELIMITER_INJECTION"
+
+
+class InjectionVerdict(_GuardModel):
+    blocked: bool
+    categories: frozenset[InjectionCategory]
+    rule_ids: tuple[str, ...]

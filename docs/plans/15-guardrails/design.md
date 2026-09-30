@@ -43,7 +43,7 @@ flowchart LR
 | `guardrails/validator.py` | Post-checks against ground truth: `check_claims(text, identity) -> EntitlementVerdict` (§4.3), `check_citations(message, context) -> CitationReport` (§4.4), `check_action(action, identity) -> GateDecision` and `check_outgoing_message(message, history, approved) -> list[OutputViolation]` (§4.5). |
 | `guardrails/__init__.py` | Re-exports only, zero logic. |
 
-File layout matches issue deliverables and architecture §12. `redactor.py` and `injection.py` stand alone (multiple callers: ingestion, agent tool, seed, tool-output quarantine); the three post-checks share `validator.py` (~170 lines). Enums use `StrEnum`, matching `tools/models.py` (ADR-005).
+File layout matches issue deliverables and architecture §12. `redactor.py` and `injection.py` stand alone (multiple callers: ingestion, agent tool, tool-output sanitization); the three post-checks share `validator.py` (~170 lines). Enums use `StrEnum`, matching `tools/models.py` (ADR-005).
 
 ---
 

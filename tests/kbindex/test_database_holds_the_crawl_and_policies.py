@@ -2,8 +2,8 @@ import json
 import os
 from pathlib import Path
 
-from pgvector.psycopg import register_vector
 import psycopg
+from pgvector.psycopg import register_vector
 
 REPO = Path(__file__).resolve().parents[2]
 ROOT = REPO / "data" / "kb_ingestion"
@@ -20,7 +20,7 @@ EXPECTED_POLICY_IDS = {
 
 
 def test_database_holds_the_crawl_and_policies():
-    crawl_dir = sorted(path for path in ROOT.iterdir() if path.is_dir())[-1]
+    crawl_dir = max(path for path in ROOT.iterdir() if path.is_dir())
     manifest = json.loads((crawl_dir / "manifest.json").read_text(encoding="utf-8"))
 
     with psycopg.connect(os.environ["DATABASE_URL"]) as connection:

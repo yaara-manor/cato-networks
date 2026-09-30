@@ -2,10 +2,13 @@ import json
 from pathlib import Path
 
 from core.config import EMBEDDING_DIMENSIONS, QUERY_PREFIX
-from kbindex.embed import BGP_PASSAGE, SLA_PASSAGE, SMOKE_QUESTION, embed_passages, embed_query, embedding_prefix
-from retrieval.rerank import rerank_pairs
+from encoders.embed import embed_passages, embed_query, embedding_prefix
+from encoders.rerank import rerank_pairs
 
 OUTPUT = Path(__file__).parent / "output"
+BGP_PASSAGE = "BGP route limits cap the number of routes a Socket accepts from a neighbor."
+SLA_PASSAGE = "SLA credits refund a share of the fee after a qualifying service outage."
+SMOKE_QUESTION = "What happens when a Socket hits its BGP route limit?"
 
 
 def test_embed_and_rerank_prefer_the_relevant_passage():

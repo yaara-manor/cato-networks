@@ -1,6 +1,6 @@
-from collections.abc import Iterator
-from datetime import datetime, timedelta, timezone
 import logging
+from collections.abc import Iterator
+from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import psycopg
@@ -69,8 +69,8 @@ def test_repeat_contact_and_regional_sla_flow(db_conn: psycopg.Connection) -> No
     )
     assert us_p2_sla.timezone_name == "America/New_York"
     assert us_p2_sla.is_24x7 is False
-    assert us_p2_sla.first_response_due == datetime(2026, 8, 28, 21, 0, 0, tzinfo=timezone.utc)
-    assert us_p2_sla.resolution_due == datetime(2026, 8, 31, 17, 0, 0, tzinfo=timezone.utc)
+    assert us_p2_sla.first_response_due == datetime(2026, 8, 28, 21, 0, 0, tzinfo=UTC)
+    assert us_p2_sla.resolution_due == datetime(2026, 8, 31, 17, 0, 0, tzinfo=UTC)
     assert us_p2_sla.update_cadence == "every 4 business hours"
 
     # DE (Europe/Berlin): 2026-08-28T17:00:00Z is Friday 19:00 CEST (after 18:00 business hours)
@@ -82,8 +82,8 @@ def test_repeat_contact_and_regional_sla_flow(db_conn: psycopg.Connection) -> No
         country_code="DE",
     )
     assert de_p2_sla.timezone_name == "Europe/Berlin"
-    assert de_p2_sla.first_response_due == datetime(2026, 8, 31, 10, 0, 0, tzinfo=timezone.utc)
-    assert de_p2_sla.resolution_due == datetime(2026, 8, 31, 16, 0, 0, tzinfo=timezone.utc)
+    assert de_p2_sla.first_response_due == datetime(2026, 8, 31, 10, 0, 0, tzinfo=UTC)
+    assert de_p2_sla.resolution_due == datetime(2026, 8, 31, 16, 0, 0, tzinfo=UTC)
 
     # Premium + performance on P4 overrides first response to 8 business hours; Standard P4 is 20h (2 business days)
     prem_perf_p4 = cust_svc.calculate_sla_deadlines(
@@ -92,7 +92,7 @@ def test_repeat_contact_and_regional_sla_flow(db_conn: psycopg.Connection) -> No
         country_code="DE",
         product_area="performance",
     )
-    assert prem_perf_p4.first_response_due == datetime(2026, 8, 31, 14, 0, 0, tzinfo=timezone.utc)
+    assert prem_perf_p4.first_response_due == datetime(2026, 8, 31, 14, 0, 0, tzinfo=UTC)
     assert prem_perf_p4.update_cadence == "on every state change"
 
     # Clock pause rules: pending_customer pauses resolution; pending_approval does NOT pause; elapsed_before_pause deducts time
@@ -111,7 +111,7 @@ def test_repeat_contact_and_regional_sla_flow(db_conn: psycopg.Connection) -> No
         status="pending_customer",
     )
     assert paused_sla_1.resolution_paused is True
-    assert paused_sla_1.resolution_due == datetime(2026, 8, 31, 17, 0, 0, tzinfo=timezone.utc)
+    assert paused_sla_1.resolution_due == datetime(2026, 8, 31, 17, 0, 0, tzinfo=UTC)
 
     # Advance SimulationClock.now() by 2 hours while ticket remains pending_customer with omitted created_at
     current_monotonic += 7200.0
@@ -130,7 +130,7 @@ def test_repeat_contact_and_regional_sla_flow(db_conn: psycopg.Connection) -> No
             tier="Standard",
             priority="P2",
             country_code="US",
-            created_at=datetime(2026, 8, 28, 17, 0, 0),
+            created_at=datetime(2026, 8, 28, 17, 0, 0),  # noqa: DTZ001 -- naive on purpose: exercises the reject-naive-created_at guard
         )
 
     approval_sla = cust_svc.calculate_sla_deadlines(
@@ -141,7 +141,7 @@ def test_repeat_contact_and_regional_sla_flow(db_conn: psycopg.Connection) -> No
         elapsed_before_pause=timedelta(hours=3),
     )
     assert approval_sla.resolution_paused is False
-    assert approval_sla.resolution_due == datetime(2026, 8, 31, 13, 0, 0, tzinfo=timezone.utc)
+    assert approval_sla.resolution_due == datetime(2026, 8, 31, 13, 0, 0, tzinfo=UTC)
 
     # 3. Unbounded ticket history & repeat-contact detection for Chicago site S-1008-01 (SC-06)
     chicago_history = ticket_svc.get_ticket_history("ACC-1008", site_id="S-1008-01")
@@ -343,3 +343,75 @@ def test_live_ticket_creation_and_status_lifecycle(db_conn: psycopg.Connection) 
     )
     assert repeat_after_close.is_repeat_contact is True
     assert [t.ticket_id for t in repeat_after_close.prior_closed_tickets] == ["TCK-20264254"]
+
+
+def _open_ticket(svc: TicketService, site_id: str, product_area: str, subject: str) -> None:
+    svc.create_ticket(
+        customer_id="ACC-1001",
+        customer_name="Erik Iyer",
+        requester_email="erik.iyer@northwind-logistics.com",
+        company="Northwind Logistics",
+        tier="Premium",
+        priority="P3",
+        product_area=product_area,
+        subject=subject,
+        body="",
+        site_id=site_id,
+    )
+
+
+def test_short_technical_terms_and_inflections_mark_repeat_contact(
+    db_conn: psycopg.Connection,
+) -> None:
+    clock = SimulationClock.frozen(DEFAULT_ANCHOR)
+    ticket_svc = TicketService(db_conn, clock)
+
+    _open_ticket(ticket_svc, "S-1001-99", "connectivity", "VPN DNS failing")
+    _open_ticket(ticket_svc, "S-1001-99", "voice", "DNS over VPN broken")
+    first_pair = ticket_svc.detect_repeat_contact(account_id="ACC-1001", site_id="S-1001-99")
+    assert first_pair.is_repeat_contact is True
+
+    _open_ticket(ticket_svc, "S-1001-98", "connectivity", "tunnels dropping hourly")
+    _open_ticket(ticket_svc, "S-1001-98", "voice", "tunnel drops again")
+    second_pair = ticket_svc.detect_repeat_contact(account_id="ACC-1001", site_id="S-1001-98")
+    assert second_pair.is_repeat_contact is True
+
+
+def test_noise_words_alone_do_not_mark_repeat_contact(db_conn: psycopg.Connection) -> None:
+    clock = SimulationClock.frozen(DEFAULT_ANCHOR)
+    ticket_svc = TicketService(db_conn, clock)
+
+    _open_ticket(
+        ticket_svc, "S-1001-99", "connectivity", "please escalate power issue today near this site"
+    )
+    _open_ticket(
+        ticket_svc,
+        "S-1001-99",
+        "voice",
+        "issue is still unresolved please contact site support today",
+    )
+    noise_only = ticket_svc.detect_repeat_contact(account_id="ACC-1001", site_id="S-1001-99")
+    assert noise_only.is_repeat_contact is False
+
+    noise_symptom = ticket_svc.detect_repeat_contact(
+        account_id="ACC-1001",
+        site_id="S-1001-99",
+        symptom_text="please, still the same issue today",
+    )
+    assert noise_symptom.is_repeat_contact is False
+
+
+def test_symptom_text_with_sql_and_tsquery_characters_is_safe(
+    db_conn: psycopg.Connection,
+) -> None:
+    clock = SimulationClock.frozen(DEFAULT_ANCHOR)
+    ticket_svc = TicketService(db_conn, clock)
+
+    _open_ticket(ticket_svc, "S-1001-99", "connectivity", "VPN DNS failing")
+    _open_ticket(ticket_svc, "S-1001-99", "voice", "DNS over VPN broken")
+    result = ticket_svc.detect_repeat_contact(
+        account_id="ACC-1001",
+        site_id="S-1001-99",
+        symptom_text="O'Brien a & b | !c :*",
+    )
+    assert result.is_repeat_contact is False

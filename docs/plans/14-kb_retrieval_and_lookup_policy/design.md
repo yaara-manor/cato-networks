@@ -144,8 +144,8 @@ Replace the hand-rolled tokenizer with the same standard pipeline as KB search.
 
 1. Move files (§2.1); update imports in `kbindex/chunk.py`, `kbindex/store.py`, `db/init/startup.py`, and tests.
 2. Move test constants `BGP_PASSAGE`, `SLA_PASSAGE`, `SMOKE_QUESTION` from `encoders/embed.py` into `tests/kbindex/test_embed_and_rerank_prefer_the_relevant_passage.py`.
-3. `embed_passages`: replace the per-string loop with one batched `model.encode(texts, ...)` call (no empty-input branch; no caller passes `[]`). Risk: batch padding can shift floats slightly; the exact-equality assertions in the embed test are the check.
-4. `rerank_pairs`: pass `batch_size=8` (§2.8), `convert_to_numpy=True`, `show_progress_bar=False`.
+3. `embed_passages`: per-item encode kept: batching shifts floats ~7.6e-8, breaking the exact-equality fixtures; query embedding is single-item anyway.
+4. `rerank_pairs`: pass `batch_size=8` (§2.8), `show_progress_bar=False`.
 5. `probe_width`: typed as `probe_width(embed: Callable[[list[str]], list[list[float]]] = embed_passages) -> int`, returning the length of the first vector. Drops the `Any` + `hasattr` duck-typing; the only runtime caller (`db/init/startup.py`) already passes that callable type. The test line passing a raw `SentenceTransformer` goes.
 
 ---

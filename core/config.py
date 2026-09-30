@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from pydantic import AwareDatetime
@@ -16,7 +16,7 @@ class Settings(BaseSettings):
 
     repo_root: Path = REPO_ROOT
     database_url: str = "postgresql://kb:kb@localhost:5432/kb"
-    simulation_time: AwareDatetime = datetime(2026, 8, 28, 17, 0, 0, tzinfo=timezone.utc)
+    simulation_time: AwareDatetime = datetime(2026, 8, 28, 17, 0, 0, tzinfo=UTC)
     user_agent: str = "CatoHomeTaskBot/1.0 (educational assignment)"
     rate_limit_seconds: float = 1.0
     embedding_model: str = "BAAI/bge-small-en-v1.5"

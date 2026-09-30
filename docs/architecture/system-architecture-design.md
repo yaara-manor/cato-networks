@@ -351,7 +351,7 @@ erDiagram
 ```
 
 ### Key Table Responsibilities
-- **`passages`**: Lexical index (`GIN` on `search_vector`, `simple` configuration) + Vector column (`vector(384)`, exact cosine distance scan).
+- **`passages`**: Lexical index (`GIN` on `search_vector`, `english` configuration) + Vector column (`vector(384)`, exact cosine distance scan).
 - **`policies`**: Read-only store for the 6 internal governance policies.
 - **`accounts`**: Ground-truth customer account records (`ACC-1001`..`ACC-1012`) enriched with primary `-01` site `country` codes for SLA timezone resolution.
 - **`tickets`**: Historical and live support tickets (`TCK-*`), indexed on `(customer_id, created_at)` and `(customer_id, site_id)` for repeat-contact detection and live status updates.
@@ -366,7 +366,7 @@ erDiagram
 The retrieval pipeline (`RetrievalService` in `retrieval/service.py`) implements the hybrid retrieval and reranking contract:
 
 1. **Query Construction**:
-   - Vector search prefixes questions with: `Represent this sentence for searching relevant passages: ` (required by `BAAI/bge-small-en-v1.5` via `kbindex.embed.embed_query`).
+   - Vector search prefixes questions with: `Represent this sentence for searching relevant passages: ` (required by `BAAI/bge-small-en-v1.5` via `encoders.embed.embed_query`).
    - Lexical search passes the query through PostgreSQL's built-in `'english'` Snowball stemmer (`tsvector_to_array(to_tsvector('english', :query))`), strips English stopwords, appends `:*` prefix wildcards joined with `|` (`OR`), and matches against `passages.search_vector` (`'simple'` GIN index).
 2. **Single-Roundtrip First-Stage Hybrid Retrieval & RRF**:
    - **Lexical CTE**: Top 20 passages via `search_vector @@ tsq` ordered by `ts_rank_cd(search_vector, tsq) DESC`.
@@ -495,13 +495,15 @@ The codebase is organized into clean, single-responsibility packages separating 
 │   ├── crawl.py                       # Respects robots.txt and 1s rate limit
 │   ├── discover.py                    # llms.txt discovery parser
 │   ├── chunk.py                       # Markdown slicing (max 400 tokens)
-│   ├── embed.py                       # BAAI/bge-small-en-v1.5 embeddings
 │   ├── hashing.py                     # SHA-256 integrity verifier
 │   └── store.py                       # Loads KB articles & passages into Postgres
 │
-├── retrieval/                         # Online RAG & policy lookup pipeline
-│   ├── service.py                     # RetrievalService: single-roundtrip hybrid SQL + RRF + threshold gate + policy lookup
+├── encoders/                          # Shared embedding & reranking models
+│   ├── embed.py                       # BAAI/bge-small-en-v1.5 embeddings
 │   └── rerank.py                      # Cross-encoder MiniLM reranker (query-time)
+│
+├── retrieval/                         # Online RAG & policy lookup pipeline
+│   └── service.py                     # RetrievalService: single-roundtrip hybrid SQL + RRF + threshold gate + policy lookup
 │
 ├── core/                              # Central primitives & shared domain models
 │   ├── clock.py                       # SimulationClock frozen at 2026-08-28T17:00:00Z

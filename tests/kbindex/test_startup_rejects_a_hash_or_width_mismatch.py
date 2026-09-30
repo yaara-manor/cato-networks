@@ -1,13 +1,13 @@
 import os
-from pathlib import Path
 import subprocess
 import sys
+from pathlib import Path
 
 import psycopg
 import pytest
 
-from db.init.startup import HashMismatch, StartupError, main, run_startup
-from kbindex.embed import embed_passages, load_embedder, probe_width
+from db.init.startup import HashMismatch, StartupError, run_startup
+from encoders.embed import embed_passages, probe_width
 from kbindex.store import HashMismatch as StoreHashMismatch
 from kbindex.store import StartupError as StoreStartupError
 from kbindex.store import verify_hashes
@@ -46,8 +46,6 @@ def test_startup_rejects_a_hash_or_width_mismatch() -> None:
         ).fetchone()
         assert row is not None
         assert row[0] == 384
-        assert probe_width(embed_passages) == 384
-        assert probe_width(load_embedder()) == 384
         assert probe_width() == 384
 
 
@@ -57,6 +55,7 @@ def test_startup_cli() -> None:
         env=os.environ.copy(),
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0
 

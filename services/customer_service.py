@@ -1,6 +1,6 @@
-from datetime import datetime, time, timedelta, timezone
-from functools import lru_cache
 import logging
+from datetime import UTC, datetime, time, timedelta
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, cast
 from zoneinfo import ZoneInfo
@@ -299,7 +299,7 @@ class CustomerService:
         raw_start = created_at if created_at is not None else self._clock.now()
         if raw_start.tzinfo is None or raw_start.tzinfo.utcoffset(raw_start) is None:
             raise ValueError("SimulationClock returned a naive datetime")
-        started_utc = raw_start.astimezone(timezone.utc)
+        started_utc = raw_start.astimezone(UTC)
         tz = self.resolve_timezone_for_country(country_code) if country_code else None
         tz_info = tz if tz is not None else ZoneInfo("UTC")
         tz_name = tz_info.key
@@ -354,14 +354,14 @@ class CustomerService:
             if pause_key not in self._paused_resolution_due:
                 self._paused_resolution_due[pause_key] = _advance_business_hours(
                     started_local, remaining_resolution_hours
-                ).astimezone(timezone.utc)
+                ).astimezone(UTC)
             resolution_due = self._paused_resolution_due[pause_key]
         else:
             if not resolution_paused:
                 self._paused_resolution_due.pop(pause_key, None)
             resolution_due = _advance_business_hours(
                 started_local, remaining_resolution_hours
-            ).astimezone(timezone.utc)
+            ).astimezone(UTC)
 
         return SLADeadlines(
             priority=priority,
@@ -369,7 +369,7 @@ class CustomerService:
             timezone_name=tz_name,
             product_area=product_area,
             started_at=started_utc,
-            first_response_due=first_response_local.astimezone(timezone.utc),
+            first_response_due=first_response_local.astimezone(UTC),
             resolution_due=resolution_due,
             update_cadence=cadence,
             is_24x7=False,

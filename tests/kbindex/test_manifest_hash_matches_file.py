@@ -8,7 +8,7 @@ ROOT = REPO / "data" / "kb_ingestion"
 
 
 def test_manifest_hash_matches_file(tmp_path):
-    crawl_dir = sorted(path for path in ROOT.iterdir() if path.is_dir())[-1]
+    crawl_dir = max(path for path in ROOT.iterdir() if path.is_dir())
     manifest = json.loads((crawl_dir / "manifest.json").read_text())
     articles = manifest["articles"]
     assert articles

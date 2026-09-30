@@ -1,15 +1,13 @@
 from collections.abc import Callable
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 import csv
-from datetime import datetime, timedelta
+from datetime import datetime
 from functools import lru_cache
 import io
 from pathlib import Path
 import re
 from re import Pattern
-import time
 
-from pydantic import AwareDatetime, BaseModel, TypeAdapter
+from pydantic import AwareDatetime, BaseModel
 
 from core.clock import SimulationClock
 from core.config import settings
@@ -33,8 +31,6 @@ ACCOUNT_ID_PATTERN: Pattern[str] = re.compile(r"^ACC-\d{4}$")
 SITE_ID_PATTERN: Pattern[str] = re.compile(r"^S-\d{4}-\d{2}$")
 USER_EMAIL_PATTERN: Pattern[str] = re.compile(r"^[^/\\@\s]+@[^/\\@\s]+\.[^/\\@\s]+$")
 WINDOW_PATTERN: Pattern[str] = re.compile(r"^(\d+(?:\.\d+)?)\s*([hd])$", re.IGNORECASE)
-
-_DATETIME_ADAPTER: TypeAdapter[AwareDatetime] = TypeAdapter(AwareDatetime)
 
 
 class _SitesFileSchema(BaseModel):
@@ -87,22 +83,20 @@ def _read_text_cached(resolved_path: str, mtime_ns: int) -> str:
     return Path(resolved_path).read_text(encoding="utf-8")
 
 
-def _load_with_timeout[R](fn: Callable[[], R], timeout_seconds: float) -> R:
-    if timeout_seconds <= 0:
-        raise TimeoutError(f"Telemetry read timed out (timeout_seconds={timeout_seconds})")
-    started = time.monotonic()
-    executor = ThreadPoolExecutor(max_workers=1)
-    try:
-        future = executor.submit(fn)
-        try:
-            result = future.result(timeout=timeout_seconds)
-        except FuturesTimeoutError as exc:
-            raise TimeoutError(f"Telemetry read timed out after {timeout_seconds}s") from exc
-    finally:
-        executor.shutdown(wait=False, cancel_futures=True)
-    if (time.monotonic() - started) > timeout_seconds:
-        raise TimeoutError(f"Telemetry read exceeded {timeout_seconds}s")
-    return result
+def _ev(
+    tool_name: str,
+    timestamp: AwareDatetime,
+    metric_key: str,
+    raw_value: str,
+    is_anomaly: bool = False,
+) -> TelemetryEvidence:
+    return TelemetryEvidence(
+        tool_name=tool_name,
+        metric_key=metric_key,
+        raw_value=raw_value,
+        timestamp=timestamp,
+        is_anomaly=is_anomaly,
+    )
 
 
 class TelemetryService:
@@ -117,11 +111,10 @@ class TelemetryService:
         self.timeout_seconds: float = timeout_seconds
 
     def _read_file_text(self, path: Path) -> str:
-        def _do_read() -> str:
-            stat = path.stat()
-            return _read_text_cached(str(path), stat.st_mtime_ns)
-
-        return _load_with_timeout(_do_read, self.timeout_seconds)
+        if self.timeout_seconds <= 0:
+            raise TimeoutError(f"Telemetry read timed out (timeout_seconds={self.timeout_seconds})")
+        stat = path.stat()
+        return _read_text_cached(str(path), stat.st_mtime_ns)
 
     def _load_validated[P: TelemetryPayload, R](
         self,
@@ -188,14 +181,8 @@ class TelemetryService:
             )
 
         evidence = [
-            TelemetryEvidence(
-                tool_name=tool_name,
-                metric_key=f"{site.site_id}.status",
-                raw_value=site.status,
-                timestamp=site.last_seen,
-                is_anomaly=(site.status != "connected"),
-            )
-            for site in matching_sites
+            _ev(tool_name, s.last_seen, f"{s.site_id}.status", s.status, s.status != "connected")
+            for s in matching_sites
         ]
         payload = SiteListPayload(
             account_id=account_id,
@@ -233,39 +220,21 @@ class TelemetryService:
 
         is_disconnected = site.status != "connected"
         evidence: list[TelemetryEvidence] = [
-            TelemetryEvidence(
-                tool_name=tool_name,
-                metric_key="status",
-                raw_value=site.status,
-                timestamp=site.last_seen,
-                is_anomaly=is_disconnected,
-            ),
-            TelemetryEvidence(
-                tool_name=tool_name,
-                metric_key="last_seen",
-                raw_value=site.last_seen.isoformat().replace("+00:00", "Z"),
-                timestamp=site.last_seen,
-                is_anomaly=is_disconnected,
+            _ev(tool_name, site.last_seen, "status", site.status, is_disconnected),
+            _ev(
+                tool_name,
+                site.last_seen,
+                "last_seen",
+                site.last_seen.isoformat().replace("+00:00", "Z"),
+                is_disconnected,
             ),
         ]
         if site.socket_version is not None:
             evidence.append(
-                TelemetryEvidence(
-                    tool_name=tool_name,
-                    metric_key="socket_version",
-                    raw_value=site.socket_version,
-                    timestamp=site.last_seen,
-                    is_anomaly=False,
-                )
+                _ev(tool_name, site.last_seen, "socket_version", site.socket_version)
             )
         evidence.append(
-            TelemetryEvidence(
-                tool_name=tool_name,
-                metric_key="wan_links",
-                raw_value=", ".join(site.wan_links),
-                timestamp=site.last_seen,
-                is_anomaly=False,
-            )
+            _ev(tool_name, site.last_seen, "wan_links", ", ".join(site.wan_links))
         )
         return TelemetryToolResult(
             tool_name=tool_name,
@@ -309,7 +278,7 @@ class TelemetryService:
                     raise ValueError("Empty or missing CSV field in row")
                 rows.append(
                     (
-                        _DATETIME_ADAPTER.validate_python(row["ts"].strip()),
+                        datetime.fromisoformat(row["ts"].strip()),
                         row["link"].strip(),
                         float(row["packet_loss_pct"]),
                         float(row["latency_ms"]),
@@ -335,13 +304,7 @@ class TelemetryService:
             return loaded
 
         assert window_hours is not None
-        now = self.clock.now()
-        is_all = window.strip().lower() == "all"
-        filtered_rows = [
-            r
-            for r in loaded
-            if is_all or (timedelta(0) <= (now - r[0]) <= timedelta(hours=window_hours))
-        ]
+        filtered_rows = [r for r in loaded if self.clock.is_within(r[0], window_hours)]
 
         grouped: dict[str, list[tuple[datetime, str, float, float, float, float, float]]] = {}
         for r in filtered_rows:
@@ -378,17 +341,17 @@ class TelemetryService:
             summaries.append(summary)
 
             evidence.append(
-                TelemetryEvidence(
-                    tool_name=tool_name,
-                    metric_key=f"{link_name}.packet_loss_pct",
-                    raw_value=(
+                _ev(
+                    tool_name,
+                    summary.window_end,
+                    f"{link_name}.packet_loss_pct",
+                    (
                         f"avg={summary.avg_packet_loss_pct}%, "
                         f"max={summary.max_packet_loss_pct}%, "
                         f"latest={summary.latest_packet_loss_pct}% "
                         f"(down_intervals={summary.down_intervals})"
                     ),
-                    timestamp=summary.window_end,
-                    is_anomaly=(
+                    (
                         summary.max_packet_loss_pct >= 2.0
                         or summary.latest_packet_loss_pct >= 100.0
                         or summary.down_intervals > 0
@@ -396,12 +359,12 @@ class TelemetryService:
                 )
             )
             evidence.append(
-                TelemetryEvidence(
-                    tool_name=tool_name,
-                    metric_key=f"{link_name}.jitter_ms",
-                    raw_value=f"avg={summary.avg_jitter_ms}ms, max={summary.max_jitter_ms}ms",
-                    timestamp=summary.window_end,
-                    is_anomaly=(summary.max_jitter_ms >= 30.0),
+                _ev(
+                    tool_name,
+                    summary.window_end,
+                    f"{link_name}.jitter_ms",
+                    f"avg={summary.avg_jitter_ms}ms, max={summary.max_jitter_ms}ms",
+                    summary.max_jitter_ms >= 30.0,
                 )
             )
 
@@ -471,12 +434,12 @@ class TelemetryService:
                 or "not ready" in ev.sub_type.lower()
             )
             evidence.append(
-                TelemetryEvidence(
-                    tool_name=tool_name,
-                    metric_key=f"{ev.event_type}/{ev.sub_type} ({ev.action})",
-                    raw_value=raw_val,
-                    timestamp=ev.ts,
-                    is_anomaly=is_anom,
+                _ev(
+                    tool_name,
+                    ev.ts,
+                    f"{ev.event_type}/{ev.sub_type} ({ev.action})",
+                    raw_val,
+                    is_anom,
                 )
             )
 
@@ -510,59 +473,44 @@ class TelemetryService:
         evidence: list[TelemetryEvidence] = []
         for n in payload.neighbors:
             evidence.append(
-                TelemetryEvidence(
-                    tool_name=tool_name,
-                    metric_key="routes_count",
-                    raw_value=f"{n.routes_count}/{n.routes_limit}",
-                    timestamp=payload.queried_at,
-                    is_anomaly=(n.routes_limit > 0 and n.routes_count >= n.routes_limit),
+                _ev(
+                    tool_name,
+                    payload.queried_at,
+                    "routes_count",
+                    f"{n.routes_count}/{n.routes_limit}",
+                    n.routes_limit > 0 and n.routes_count >= n.routes_limit,
                 )
             )
             if n.last_error:
                 evidence.append(
-                    TelemetryEvidence(
-                        tool_name=tool_name,
-                        metric_key="last_error",
-                        raw_value=n.last_error,
-                        timestamp=payload.queried_at,
-                        is_anomaly=True,
-                    )
+                    _ev(tool_name, payload.queried_at, "last_error", n.last_error, True)
                 )
             if n.flaps_24h > 0:
                 evidence.append(
-                    TelemetryEvidence(
-                        tool_name=tool_name,
-                        metric_key="flaps_24h",
-                        raw_value=str(n.flaps_24h),
-                        timestamp=payload.queried_at,
-                        is_anomaly=True,
-                    )
+                    _ev(tool_name, payload.queried_at, "flaps_24h", str(n.flaps_24h), True)
                 )
             evidence.append(
-                TelemetryEvidence(
-                    tool_name=tool_name,
-                    metric_key="hold_time",
-                    raw_value=(
+                _ev(
+                    tool_name,
+                    payload.queried_at,
+                    "hold_time",
+                    (
                         f"negotiated {n.hold_time_negotiated}s "
                         f"(configured {n.hold_time_configured}s, "
                         f"keepalive {n.keepalive_configured}s, "
                         f"peer {n.peer_hold_time}s/{n.peer_keepalive}s)"
                     ),
-                    timestamp=payload.queried_at,
-                    is_anomaly=(
-                        n.hold_time_negotiated > 0
-                        and n.hold_time_negotiated != n.hold_time_configured
-                    ),
+                    n.hold_time_negotiated > 0 and n.hold_time_negotiated != n.hold_time_configured,
                 )
             )
             if n.static_ranges_overriding:
                 evidence.append(
-                    TelemetryEvidence(
-                        tool_name=tool_name,
-                        metric_key="static_ranges_overriding",
-                        raw_value=", ".join(n.static_ranges_overriding),
-                        timestamp=payload.queried_at,
-                        is_anomaly=True,
+                    _ev(
+                        tool_name,
+                        payload.queried_at,
+                        "static_ranges_overriding",
+                        ", ".join(n.static_ranges_overriding),
+                        True,
                     )
                 )
 
@@ -588,33 +536,28 @@ class TelemetryService:
 
         payload = loaded
         evidence: list[TelemetryEvidence] = [
-            TelemetryEvidence(
-                tool_name=tool_name,
-                metric_key="primary.status",
-                raw_value=f"{payload.primary.status}"
+            _ev(
+                tool_name,
+                payload.queried_at,
+                "primary.status",
+                f"{payload.primary.status}"
                 + (f" ({payload.primary.last_error})" if payload.primary.last_error else ""),
-                timestamp=payload.queried_at,
-                is_anomaly=(
-                    payload.primary.status != "up" or payload.primary.last_error is not None
-                ),
+                payload.primary.status != "up" or payload.primary.last_error is not None,
             )
         ]
         if payload.secondary:
             evidence.append(
-                TelemetryEvidence(
-                    tool_name=tool_name,
-                    metric_key="secondary.status",
-                    raw_value=f"{payload.secondary.status}"
+                _ev(
+                    tool_name,
+                    payload.queried_at,
+                    "secondary.status",
+                    f"{payload.secondary.status}"
                     + (
                         f" ({payload.secondary.last_error})"
                         if payload.secondary.last_error
                         else ""
                     ),
-                    timestamp=payload.queried_at,
-                    is_anomaly=(
-                        payload.secondary.status != "up"
-                        or payload.secondary.last_error is not None
-                    ),
+                    payload.secondary.status != "up" or payload.secondary.last_error is not None,
                 )
             )
         if payload.init_message_parameters and payload.peer_reported_parameters_from_pcap:
@@ -622,32 +565,31 @@ class TelemetryService:
             peer_enc = payload.peer_reported_parameters_from_pcap.child_sa_encryption
             peer_dh = payload.peer_reported_parameters_from_pcap.child_sa_dh_group
             evidence.append(
-                TelemetryEvidence(
-                    tool_name=tool_name,
-                    metric_key="cipher_proposal",
-                    raw_value=f"Cato configured {cato_enc} vs peer PCAP {peer_enc} (DH group {peer_dh})",
-                    timestamp=payload.queried_at,
-                    is_anomaly=(cato_enc != peer_enc),
+                _ev(
+                    tool_name,
+                    payload.queried_at,
+                    "cipher_proposal",
+                    f"Cato configured {cato_enc} vs peer PCAP {peer_enc} (DH group {peer_dh})",
+                    cato_enc != peer_enc,
                 )
             )
         if payload.psk_last_changed:
             evidence.append(
-                TelemetryEvidence(
-                    tool_name=tool_name,
-                    metric_key="psk_last_changed",
-                    raw_value=payload.psk_last_changed.isoformat().replace("+00:00", "Z"),
-                    timestamp=payload.queried_at,
-                    is_anomaly=False,
+                _ev(
+                    tool_name,
+                    payload.queried_at,
+                    "psk_last_changed",
+                    payload.psk_last_changed.isoformat().replace("+00:00", "Z"),
                 )
             )
         if payload.note:
             evidence.append(
-                TelemetryEvidence(
-                    tool_name=tool_name,
-                    metric_key="note",
-                    raw_value=payload.note,
-                    timestamp=payload.queried_at,
-                    is_anomaly=(payload.primary.status != "up"),
+                _ev(
+                    tool_name,
+                    payload.queried_at,
+                    "note",
+                    payload.note,
+                    payload.primary.status != "up",
                 )
             )
 
@@ -677,37 +619,28 @@ class TelemetryService:
         evidence: list[TelemetryEvidence] = []
         if payload.last_error:
             evidence.append(
-                TelemetryEvidence(
-                    tool_name=tool_name,
-                    metric_key="last_error",
-                    raw_value=payload.last_error,
-                    timestamp=payload.queried_at,
-                    is_anomaly=True,
-                )
+                _ev(tool_name, payload.queried_at, "last_error", payload.last_error, True)
             )
         evidence.append(
-            TelemetryEvidence(
-                tool_name=tool_name,
-                metric_key="captive_portal_detected",
-                raw_value=str(payload.network.captive_portal_detected).lower(),
-                timestamp=payload.queried_at,
-                is_anomaly=payload.network.captive_portal_detected,
+            _ev(
+                tool_name,
+                payload.queried_at,
+                "captive_portal_detected",
+                str(payload.network.captive_portal_detected).lower(),
+                payload.network.captive_portal_detected,
             )
         )
         evidence.append(
-            TelemetryEvidence(
-                tool_name=tool_name,
-                metric_key="reachability",
-                raw_value=(
+            _ev(
+                tool_name,
+                payload.queried_at,
+                "reachability",
+                (
                     f"udp_443={payload.network.udp_443_reachable}, "
                     f"tcp_443={payload.network.tcp_443_reachable}"
                     + (f", ssid={payload.network.ssid}" if payload.network.ssid else "")
                 ),
-                timestamp=payload.queried_at,
-                is_anomaly=(
-                    not payload.network.udp_443_reachable
-                    or not payload.network.tcp_443_reachable
-                ),
+                not payload.network.udp_443_reachable or not payload.network.tcp_443_reachable,
             )
         )
 

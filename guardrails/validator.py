@@ -1,16 +1,25 @@
 import re
 from re import Pattern
+from typing import NamedTuple
 
 from guardrails.models import (
+    ActionType,
     CitationReport,
     CitationViolation,
     CitationViolationKind,
     ClaimKind,
     EntitlementVerdict,
     FalseClaim,
+    GateDecision,
+    GateOutcome,
     GroundingContext,
+    OutputViolation,
+    OutputViolationKind,
+    ProposedAction,
+    SessionGuardHistory,
 )
 from guardrails.normalize import normalize
+from guardrails.redactor import redact, secret_hash
 from services.models import CallerIdentity
 
 # ponytail: every matched tier word means "Premium"; Standard-side claims ("we're on basic") are not extracted.
@@ -98,3 +107,108 @@ def check_citations(message: str, context: GroundingContext) -> CitationReport:
     if context.is_refusal and offenders:
         violations.append(CitationViolation(kind=CitationViolationKind.REFUSAL_BREACH, detail=offenders[0]))
     return CitationReport(violations=tuple(violations))
+
+
+def check_action(action: ProposedAction, identity: CallerIdentity) -> GateDecision:
+    if identity.account is None or action.target_account_id != identity.account.account_id:
+        return GateDecision(
+            outcome=GateOutcome.DENY,
+            policy_id="POL-IDV",
+            reason="Action target is not the authenticated caller's account.",
+        )
+    match action.action_type:
+        case ActionType.VERDICT_OVERRIDE:
+            return GateDecision(
+                outcome=GateOutcome.DENY,
+                policy_id="POL-SEC",
+                reason="Malware/C2 verdict overrides are not a support decision; escalate to Security Ops with the event IDs.",
+            )
+        case ActionType.MFA_RESET if not identity.is_registered_admin:
+            return GateDecision(
+                outcome=GateOutcome.DENY, policy_id="POL-IDV", reason="MFA reset requires the registered admin contact."
+            )
+        case ActionType.MFA_RESET:
+            return GateDecision(
+                outcome=GateOutcome.REQUIRE_APPROVAL, policy_id="POL-IDV", reason="MFA reset requires human approval."
+            )
+        case ActionType.CREDIT if not identity.is_verified_account_member:
+            return GateDecision(
+                outcome=GateOutcome.DENY,
+                policy_id="POL-CREDIT",
+                reason="Credits can only be requested by verified account members.",
+            )
+        case ActionType.CREDIT:
+            return GateDecision(
+                outcome=GateOutcome.REQUIRE_APPROVAL, policy_id="POL-CREDIT", reason="Credits require human approval."
+            )
+        case ActionType.CLOSE_TICKET:
+            return GateDecision(
+                outcome=GateOutcome.ALLOW, policy_id=None, reason="Closing a ticket needs no approval."
+            )
+
+
+class _OutputRule(NamedTuple):
+    kind: OutputViolationKind
+    patterns: tuple[Pattern[str], ...]  # all must match within one sentence
+    approved_by: ActionType | None  # None: always a violation
+
+
+_OUTPUT_RULES: tuple[_OutputRule, ...] = (
+    _OutputRule(
+        OutputViolationKind.CREDIT_AMOUNT_PROMISE,
+        (
+            re.compile(
+                r"(?i)[$€£]\s?\d[\d,]*(?:\.\d+)?|\b\d[\d,]*(?:\.\d+)?\s?(?:USD|EUR)\b|\b(?:USD|EUR)\s?\d[\d,]*"
+            ),
+            re.compile(r"(?i)\b(?:credits?|refunds?|compensation)\b"),
+        ),
+        ActionType.CREDIT,
+    ),
+    _OutputRule(
+        OutputViolationKind.MFA_RESET_CLAIM,
+        (re.compile(r"(?i)\b(?:have|has|i['’]ve)\s+(?:already\s+)?reset\s+(?:your|the|his|her|their)\s+mfa\b"),),
+        ActionType.MFA_RESET,
+    ),
+    _OutputRule(
+        OutputViolationKind.VERDICT_OVERRIDE_CLAIM,
+        (
+            re.compile(r"(?i)\b(?:whitelisted|allowlisted|unblocked|overrode|overridden)\b"),
+            re.compile(r"(?i)\b(?:domain|verdict|c2|malware)\b"),
+        ),
+        None,
+    ),
+)
+_EDGE_PUNCTUATION = ".,;:()\"'"
+
+
+def check_outgoing_message(
+    message: str, history: SessionGuardHistory, approved: frozenset[ActionType]
+) -> list[OutputViolation]:
+    body = _ANY_MARKER.sub(" ", message)
+    violations = [
+        OutputViolation(kind=rule.kind, detail=sentence)
+        for sentence in _sentences(body)
+        for rule in _OUTPUT_RULES
+        if rule.approved_by not in approved and all(pattern.search(sentence) for pattern in rule.patterns)
+    ]
+    # details are fixed descriptions: a SECRET_ECHO must never carry the secret it reports
+    findings = redact(body).findings
+    repeats_secret = any(finding.sha256 in history.secret_hashes for finding in findings) or any(
+        secret_hash(candidate) in history.secret_hashes
+        for token in normalize(body).text.split()
+        for candidate in (token, token.strip(_EDGE_PUNCTUATION))
+    )
+    if repeats_secret:
+        violations.append(
+            OutputViolation(
+                kind=OutputViolationKind.SECRET_ECHO, detail="message repeats a previously redacted secret"
+            )
+        )
+    violations.extend(
+        OutputViolation(
+            kind=OutputViolationKind.SECRET_ECHO, detail=f"message contains an unredacted {finding.kind} secret"
+        )
+        for finding in findings
+        if finding.sha256 not in history.secret_hashes
+    )
+    return violations

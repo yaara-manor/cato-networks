@@ -143,3 +143,40 @@ class CitationReport(_GuardModel):
     @property
     def is_grounded(self) -> bool:
         return not self.violations
+
+
+class ActionType(StrEnum):
+    CREDIT = "CREDIT"
+    MFA_RESET = "MFA_RESET"
+    VERDICT_OVERRIDE = "VERDICT_OVERRIDE"
+    CLOSE_TICKET = "CLOSE_TICKET"
+
+
+class ProposedAction(_GuardModel):
+    action_type: ActionType
+    target_account_id: str
+    payload: dict[str, str]
+
+
+class GateOutcome(StrEnum):
+    ALLOW = "ALLOW"
+    REQUIRE_APPROVAL = "REQUIRE_APPROVAL"
+    DENY = "DENY"
+
+
+class GateDecision(_GuardModel):
+    outcome: GateOutcome
+    policy_id: str | None
+    reason: str
+
+
+class OutputViolationKind(StrEnum):
+    CREDIT_AMOUNT_PROMISE = "CREDIT_AMOUNT_PROMISE"
+    MFA_RESET_CLAIM = "MFA_RESET_CLAIM"
+    VERDICT_OVERRIDE_CLAIM = "VERDICT_OVERRIDE_CLAIM"
+    SECRET_ECHO = "SECRET_ECHO"
+
+
+class OutputViolation(_GuardModel):
+    kind: OutputViolationKind
+    detail: str

@@ -1,11 +1,20 @@
 import pytest
 
 from guardrails import (
+    ActionType,
     CitationViolationKind,
     ClaimKind,
+    GateDecision,
+    GateOutcome,
     GroundingContext,
+    OutputViolationKind,
+    ProposedAction,
+    SessionGuardHistory,
+    check_action,
     check_citations,
     check_claims,
+    check_outgoing_message,
+    redact,
 )
 from services.models import CallerIdentity
 
@@ -272,3 +281,145 @@ def test_refusal_with_a_claim_is_one_breach_on_the_first_offender() -> None:
 def test_plain_refusal_is_grounded() -> None:
     message = "Roadmap dates are not in the knowledge base. I can route you to your account team."
     assert check_citations(message, _context(is_refusal=True)).is_grounded is True
+
+
+def _action(action_type: ActionType, target: str = "ACC-1007") -> ProposedAction:
+    return ProposedAction(action_type=action_type, target_account_id=target, payload={})
+
+
+_DENY, _APPROVE, _ALLOW = GateOutcome.DENY, GateOutcome.REQUIRE_APPROVAL, GateOutcome.ALLOW
+
+
+@pytest.mark.parametrize(
+    ("identity_name", "action", "outcome", "policy_id"),
+    [
+        ("identity_mark", _action(ActionType.CLOSE_TICKET), _DENY, "POL-IDV"),
+        ("identity_sam", _action(ActionType.CREDIT, "ACC-1005"), _DENY, "POL-IDV"),
+        ("identity_admin", _action(ActionType.VERDICT_OVERRIDE), _DENY, "POL-SEC"),
+        ("identity_admin", _action(ActionType.VERDICT_OVERRIDE, "ACC-1005"), _DENY, "POL-IDV"),
+        ("identity_sam", _action(ActionType.MFA_RESET), _DENY, "POL-IDV"),
+        ("identity_admin", _action(ActionType.MFA_RESET), _APPROVE, "POL-IDV"),
+        ("identity_unverified", _action(ActionType.CREDIT), _DENY, "POL-CREDIT"),
+        ("identity_sam", _action(ActionType.CREDIT), _APPROVE, "POL-CREDIT"),
+        ("identity_sam", _action(ActionType.CLOSE_TICKET), _ALLOW, None),
+    ],
+)
+def test_gate_decision_table(
+    request: pytest.FixtureRequest,
+    identity_name: str,
+    action: ProposedAction,
+    outcome: GateOutcome,
+    policy_id: str | None,
+) -> None:
+    decision = check_action(action, request.getfixturevalue(identity_name))
+    assert (decision.outcome, decision.policy_id) == (outcome, policy_id)
+
+
+def test_verdict_override_reason_points_to_security_ops(identity_admin: CallerIdentity) -> None:
+    decision = check_action(_action(ActionType.VERDICT_OVERRIDE), identity_admin)
+    assert "escalate to Security Ops with the event IDs" in decision.reason
+
+
+def test_every_action_type_has_a_decision(identity_admin: CallerIdentity) -> None:
+    for action_type in ActionType:
+        assert isinstance(check_action(_action(action_type), identity_admin), GateDecision)
+
+
+def _flags(message: str, approved: frozenset[ActionType] = frozenset()) -> list[OutputViolationKind]:
+    return [v.kind for v in check_outgoing_message(message, SessionGuardHistory(), approved)]
+
+
+_CREDIT, _MFA, _VERDICT = (
+    OutputViolationKind.CREDIT_AMOUNT_PROMISE,
+    OutputViolationKind.MFA_RESET_CLAIM,
+    OutputViolationKind.VERDICT_OVERRIDE_CLAIM,
+)
+
+
+@pytest.mark.parametrize(
+    "message",
+    ["We will issue a $3,600 service credit.", "A credit of USD 3,600 was requested.", "We refund 3600 EUR"],
+)
+def test_credit_amount_promise_is_flagged_until_approved(message: str) -> None:
+    assert _flags(message) == [_CREDIT]
+    assert _flags(message, frozenset({ActionType.CREDIT})) == []
+    assert _flags(message, frozenset({ActionType.MFA_RESET})) == [_CREDIT]
+
+
+@pytest.mark.parametrize(
+    "message", ["Your monthly fee is $18,000.", "POL-CREDIT requires confirmation within 2 business days."]
+)
+def test_credit_rule_ignores_unrelated_sentences(message: str) -> None:
+    assert _flags(message) == []
+
+
+def test_credit_violation_detail_is_the_offending_sentence_only() -> None:
+    violations = check_outgoing_message(
+        "Hello. We will issue a $3,600 service credit. Bye.", SessionGuardHistory(), frozenset()
+    )
+    assert [v.detail for v in violations] == ["We will issue a $3,600 service credit."]
+
+
+@pytest.mark.parametrize("message", ["I have reset your MFA.", "I've reset his MFA now"])
+def test_mfa_reset_claim_is_flagged_until_approved(message: str) -> None:
+    assert _flags(message) == [_MFA]
+    assert _flags(message, frozenset({ActionType.MFA_RESET})) == []
+    assert _flags(message, frozenset({ActionType.CREDIT})) == [_MFA]
+
+
+def test_mfa_refusal_is_not_a_claim() -> None:
+    assert _flags("We cannot reset your MFA.") == []
+
+
+@pytest.mark.parametrize("message", ["I whitelisted the domain.", "The C2 verdict was overridden."])
+def test_verdict_override_claim_is_flagged_even_with_everything_approved(message: str) -> None:
+    assert _flags(message) == [_VERDICT]
+    assert _flags(message, frozenset(ActionType)) == [_VERDICT]
+
+
+@pytest.fixture
+def psk_history(corpus: dict[str, str]) -> SessionGuardHistory:
+    return SessionGuardHistory().with_redaction(redact(corpus["SC-08-psk-pasted.opening"]))
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "Your PSK Fg7!qwe-DC-2026-tunnel looks right.",
+        "Your PSK is Fg7!qwe-DC-2026-tunnel.",
+        'You typed "Fg7!qwe-DC-2026-tunnel" earlier.',
+    ],
+)
+def test_echoing_a_previously_redacted_secret_is_flagged_without_leaking_it(
+    psk_history: SessionGuardHistory, message: str
+) -> None:
+    violations = check_outgoing_message(message, psk_history, frozenset())
+    assert [v.kind for v in violations] == [OutputViolationKind.SECRET_ECHO]
+    assert violations[0].detail == "message repeats a previously redacted secret"
+    assert all("Fg7" not in v.detail and "Fg7" not in str(v.model_dump()) for v in violations)
+
+
+def test_raw_pasted_secret_is_flagged_via_the_redactor_without_history() -> None:
+    violations = check_outgoing_message("Your password=hunter2 was accepted.", SessionGuardHistory(), frozenset())
+    assert [v.kind for v in violations] == [OutputViolationKind.SECRET_ECHO]
+    assert "hunter2" not in str(violations[0].model_dump())
+    assert violations[0].detail == "message contains an unredacted KEY_VALUE secret"
+
+
+def test_placeholders_and_plain_prose_are_clean(psk_history: SessionGuardHistory) -> None:
+    message = "Your key was replaced by [REDACTED:CONTEXTUAL] and PSK was re-entered 26 h ago."
+    assert check_outgoing_message(message, psk_history, frozenset()) == []
+
+
+def test_citation_markers_do_not_trip_the_entropy_layer() -> None:
+    message = "Rotate the key [kb:cato-ipsec-guide-ikev1-vs-ikev2#psk-length-1] and re-enter it on both peers."
+    assert _flags(message) == []
+
+
+def test_clean_sc08_reply_is_not_flagged(psk_history: SessionGuardHistory) -> None:
+    message = (
+        "I removed the key from our conversation; please rotate it, since it was shared in plain text "
+        "[policy:POL-CRED]. The tunnel is failing authentication [telemetry:get_ipsec_status]. "
+        "Re-enter the new key on both peers and I will re-check."
+    )
+    assert check_outgoing_message(message, psk_history, frozenset()) == []

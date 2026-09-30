@@ -1,24 +1,67 @@
-from datetime import datetime, timezone
 from typing import Any, Literal
 
-from pydantic import AwareDatetime, BaseModel, field_validator
+from pydantic import AwareDatetime, BaseModel
+
+AccountTier = Literal["Premium", "Standard", "Unknown"]
+TicketPriority = Literal["P1", "P2", "P3", "P4"]
+TicketStatus = Literal["open", "closed", "pending_customer", "pending_approval"]
 
 
 class CustomerAccount(BaseModel):
     account_id: str
-    tier: Literal["Enterprise", "Standard", "Unknown"]
-    domain: str
-    admin_email: str
+    company: str
+    tier: AccountTier
+    email_domain: str
+    registered_admin_contact: str
+    country: str | None = None
+
+
+class CallerIdentity(BaseModel):
+    account: CustomerAccount | None
+    caller_email: str | None
+    effective_tier: AccountTier
+    is_verified_account_member: bool
+    is_registered_admin: bool
+    claimed_tier_rejected: bool
+    needs_country_clarification: bool
+    scoping_question: str | None = None
+
+
+class SLADeadlines(BaseModel):
+    priority: TicketPriority
+    tier: AccountTier
+    timezone_name: str
+    product_area: str | None
+    started_at: AwareDatetime
+    first_response_due: AwareDatetime
+    resolution_due: AwareDatetime
+    update_cadence: str
+    is_24x7: bool
+    resolution_paused: bool
 
 
 class Ticket(BaseModel):
     ticket_id: str
-    account_id: str
-    site_id: str
-    priority: str
-    status: str
-    history: list[str]
-    requester: str | None = None
+    created_at: AwareDatetime
+    channel: str
+    customer_id: str
+    customer_name: str
+    requester_email: str
+    company: str
+    tier: AccountTier
+    site_id: str | None
+    product_area: str
+    priority: TicketPriority
+    subject: str
+    body: str
+    status: TicketStatus
+
+
+class RepeatContactResult(BaseModel):
+    is_repeat_contact: bool
+    matching_tickets: list[Ticket]
+    prior_closed_tickets: list[Ticket]
+    reason: str | None
 
 
 class TelemetryEvidence(BaseModel):
@@ -27,11 +70,6 @@ class TelemetryEvidence(BaseModel):
     raw_value: str
     timestamp: AwareDatetime
     is_anomaly: bool
-
-    @field_validator("timestamp")
-    @classmethod
-    def _normalize_utc(cls, value: datetime) -> datetime:
-        return value.astimezone(timezone.utc)
 
 
 class Citation(BaseModel):

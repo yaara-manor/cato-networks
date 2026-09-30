@@ -6,21 +6,21 @@ import sys
 import psycopg
 import pytest
 
+from db.init.startup import HashMismatch, StartupError, main, run_startup
 from kbindex.embed import embed_passages, load_embedder, probe_width
-from kbindex.startup import HashMismatch, StartupError, main, run_startup
 from kbindex.store import HashMismatch as StoreHashMismatch
 from kbindex.store import StartupError as StoreStartupError
 from kbindex.store import verify_hashes
 
 
-def test_exception_imports():
+def test_exception_imports() -> None:
     assert HashMismatch is StoreHashMismatch
     assert StartupError is StoreStartupError
     assert issubclass(HashMismatch, Exception)
     assert issubclass(StartupError, Exception)
 
 
-def test_startup_rejects_a_hash_or_width_mismatch():
+def test_startup_rejects_a_hash_or_width_mismatch() -> None:
     repo = Path(__file__).resolve().parents[2]
     policies_dir = repo / "data" / "policies"
 
@@ -29,7 +29,7 @@ def test_startup_rejects_a_hash_or_width_mismatch():
         run_startup(connection, embed_passages, policies_dir)
 
         # verify_hashes with a reader that changes one byte expects HashMismatch
-        def reader_with_changed_byte(path):
+        def reader_with_changed_byte(path: Path) -> bytes:
             return Path(path).read_bytes() + b"\x01"
 
         with pytest.raises(HashMismatch):
@@ -51,11 +51,12 @@ def test_startup_rejects_a_hash_or_width_mismatch():
         assert probe_width() == 384
 
 
-def test_startup_cli():
+def test_startup_cli() -> None:
     result = subprocess.run(
-        [sys.executable, "-m", "kbindex.startup"],
+        [sys.executable, "-m", "db.init.startup"],
         env=os.environ.copy(),
         capture_output=True,
         text=True,
     )
     assert result.returncode == 0
+

@@ -40,3 +40,32 @@ create table if not exists policies (
     file_path text,
     body text
 );
+
+create table if not exists accounts (
+    customer_id text primary key,
+    company text not null,
+    tier text not null,
+    email_domain text not null unique,
+    registered_admin_contact text not null unique,
+    country text null
+);
+
+create table if not exists tickets (
+    ticket_id text primary key,
+    created_at timestamptz not null,
+    channel text not null,
+    customer_id text not null references accounts(customer_id),
+    customer_name text not null,
+    requester_email text not null,
+    company text not null,
+    tier text not null,
+    site_id text null,
+    product_area text not null,
+    priority text not null,
+    subject text not null,
+    body text not null,
+    status text not null
+);
+
+create index if not exists tickets_customer_created_idx on tickets (customer_id, created_at);
+create index if not exists tickets_customer_site_idx on tickets (customer_id, site_id);

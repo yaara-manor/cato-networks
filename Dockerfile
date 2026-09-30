@@ -48,9 +48,9 @@ COPY . .
 RUN printf '%s\n' \
     '#!/bin/sh' \
     'set -e' \
-    'DUMP_FILE="${DUMP_FILE:-db/kb.dump}"' \
+    'DUMP_FILE="${DUMP_FILE:-db/seed.dump}"' \
     'if [ ! -f "$DUMP_FILE" ]; then' \
-    '    echo "Error: Database dump $DUMP_FILE is absent. Operator must run the build: python -m kbindex.build" >&2' \
+    '    echo "Error: Database dump $DUMP_FILE is absent. Operator must run the build: python -m db.init.build" >&2' \
     '    exit 1' \
     'fi' \
     'HOST="${PGHOST:-postgres}"' \
@@ -71,7 +71,7 @@ RUN printf '%s\n' \
     'echo "Restoring database from $DUMP_FILE..."' \
     'pg_restore --clean --if-exists --no-owner -h "$HOST" -p "$PORT" -U "$USER" -d "$DB" "$DUMP_FILE"' \
     'echo "Running startup checks..."' \
-    'python -m kbindex.startup' \
+    'python -m db.init.startup' \
     'echo "Startup finished successfully."' \
     'if [ $# -gt 0 ]; then' \
     '    exec "$@"' \

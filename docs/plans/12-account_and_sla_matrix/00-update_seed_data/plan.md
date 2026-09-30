@@ -129,9 +129,9 @@ flowchart LR
    - In `pyproject.toml`, rename project `name` from `"kbindex"` to `"cato-support-agent"`.
 
 **Steps:**
-- [ ] **Step 1**: Update [20260929_1500_kb-schema.sql](file:///home/yaara/Documents/Assignments/cato%20networks/db/migrations/20260929_1500_kb-schema.sql) with `accounts`, `tickets`, and the two composite indexes on `tickets`.
-- [ ] **Step 2**: Create `db/init/__init__.py`, `db/init/seed.py`, `db/init/startup.py`, and `db/init/build.py`, and slim down [kbindex/store.py](file:///home/yaara/Documents/Assignments/cato%20networks/kbindex/store.py).
-- [ ] **Step 3**: Delete [kbindex/policies.py](file:///home/yaara/Documents/Assignments/cato%20networks/kbindex/policies.py), [kbindex/startup.py](file:///home/yaara/Documents/Assignments/cato%20networks/kbindex/startup.py), and [kbindex/build.py](file:///home/yaara/Documents/Assignments/cato%20networks/kbindex/build.py), and update [Dockerfile](file:///home/yaara/Documents/Assignments/cato%20networks/Dockerfile) and [pyproject.toml](file:///home/yaara/Documents/Assignments/cato%20networks/pyproject.toml).
+- [x] **Step 1**: Update [20260929_1500_kb-schema.sql](file:///home/yaara/Documents/Assignments/cato%20networks/db/migrations/20260929_1500_kb-schema.sql) with `accounts`, `tickets`, and the two composite indexes on `tickets`.
+- [x] **Step 2**: Create `db/init/__init__.py`, `db/init/seed.py`, `db/init/startup.py`, and `db/init/build.py`, and slim down [kbindex/store.py](file:///home/yaara/Documents/Assignments/cato%20networks/kbindex/store.py).
+- [x] **Step 3**: Delete [kbindex/policies.py](file:///home/yaara/Documents/Assignments/cato%20networks/kbindex/policies.py), [kbindex/startup.py](file:///home/yaara/Documents/Assignments/cato%20networks/kbindex/startup.py), and [kbindex/build.py](file:///home/yaara/Documents/Assignments/cato%20networks/kbindex/build.py), and update [Dockerfile](file:///home/yaara/Documents/Assignments/cato%20networks/Dockerfile) and [pyproject.toml](file:///home/yaara/Documents/Assignments/cato%20networks/pyproject.toml).
 
 ---
 
@@ -149,10 +149,10 @@ flowchart LR
 - Update any existing test imports in `tests/kbindex/` that referenced `kbindex.policies`, `kbindex.startup`, `kbindex.build`, or `db/kb.dump` to point to `db.init` and `db/seed.dump`.
 
 **Steps:**
-- [ ] **Step 1**: Write functional tests in `tests/db/test_init.py` and update existing test imports in `tests/kbindex/`.
-- [ ] **Step 2 (Build & Verify Init Dump)**: Run the `db.init` build/seed flow against the running PostgreSQL instance, execute `write_dump()` from `db.init.build` to generate `db/seed.dump`, delete `db/kb.dump`, and test restoring `db/seed.dump` with `pg_restore --clean --if-exists` to confirm all 6 tables (`snapshots`, `kb_articles`, `passages`, `policies`, `accounts`, `tickets`) and their indexes (`tickets_customer_created_idx`, `tickets_customer_site_idx`) are generated and populated from the dump alone.
-- [ ] **Step 3**: Run `uv run pytest -v` across the test suite and verify all tests pass.
-- [ ] **Step 4**: Commit the schema, `db/init/` package, `db/seed.dump`, removal of `db/kb.dump`, and tests.
+- [x] **Step 1**: Write functional tests in `tests/db/test_init.py` and update existing test imports in `tests/kbindex/`.
+- [x] **Step 2 (Build & Verify Init Dump)**: Run the `db.init` build/seed flow against the running PostgreSQL instance, execute `write_dump()` from `db.init.build` to generate `db/seed.dump`, delete `db/kb.dump`, and test restoring `db/seed.dump` with `pg_restore --clean --if-exists` to confirm all 6 tables (`snapshots`, `kb_articles`, `passages`, `policies`, `accounts`, `tickets`) and their indexes (`tickets_customer_created_idx`, `tickets_customer_site_idx`) are generated and populated from the dump alone.
+- [x] **Step 3**: Run `uv run pytest -v` across the test suite and verify all tests pass.
+- [x] **Step 4**: Commit the schema, `db/init/` package, `db/seed.dump`, removal of `db/kb.dump`, and tests.
 
 ---
 
@@ -165,8 +165,8 @@ flowchart LR
 - Modify: [plan.md](file:///home/yaara/Documents/Assignments/cato%20networks/docs/plans/12-account_and_sla_matrix/00-update_seed_data/plan.md)
 
 **Steps:**
-- [ ] **Step 1**: Update [README.md](file:///home/yaara/Documents/Assignments/cato%20networks/README.md) to reference `db/seed.dump`, `python -m db.init.startup`, and `python -m db.init.build`.
-- [ ] **Step 2**: Update [system-architecture-design.md](file:///home/yaara/Documents/Assignments/cato%20networks/docs/architecture/system-architecture-design.md) (§6 ER diagram with `accounts` and `tickets`, §10 & §12 directory layout showing `db/seed.dump` and `db/init/`, and §13 cleanup notes).
-- [ ] **Step 3**: Record ADR-002 (PostgreSQL Ingestion of `accounts` and `tickets`, Unified `db/seed.dump`, and `db/init/` Package Separation) in [decisions.md](file:///home/yaara/Documents/Assignments/cato%20networks/docs/overview/decisions.md).
-- [ ] **Step 4 (Cleanup)**: Verify `db/kb.dump`, `kbindex/policies.py`, `kbindex/startup.py`, and `kbindex/build.py` are deleted, and check across the repository that no stale references to `kb.dump`, `kbindex.startup`, `kbindex.build`, `kbindex.policies`, inline imports, or untyped functions remain.
-- [ ] **Step 5**: Commit all documentation and cleanup changes.
+- [x] **Step 1**: Update [README.md](file:///home/yaara/Documents/Assignments/cato%20networks/README.md) to reference `db/seed.dump`, `python -m db.init.startup`, and `python -m db.init.build`.
+- [x] **Step 2**: Update [system-architecture-design.md](file:///home/yaara/Documents/Assignments/cato%20networks/docs/architecture/system-architecture-design.md) (§6 ER diagram with `accounts` and `tickets`, §10 & §12 directory layout showing `db/seed.dump` and `db/init/`, and §13 cleanup notes).
+- [x] **Step 3**: Record ADR-002 (PostgreSQL Ingestion of `accounts` and `tickets`, Unified `db/seed.dump`, and `db/init/` Package Separation) in [decisions.md](file:///home/yaara/Documents/Assignments/cato%20networks/docs/overview/decisions.md).
+- [x] **Step 4 (Cleanup)**: Verify `db/kb.dump`, `kbindex/policies.py`, `kbindex/startup.py`, and `kbindex/build.py` are deleted, and check across the repository that no stale references to `kb.dump`, `kbindex.startup`, `kbindex.build`, `kbindex.policies`, inline imports, or untyped functions remain.
+- [x] **Step 5**: Commit all documentation and cleanup changes.

@@ -178,6 +178,39 @@ wheels = [
 ]
 
 [[package]]
+name = "cato-support-agent"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "braintrust" },
+    { name = "httpx" },
+    { name = "pgvector" },
+    { name = "psycopg", extra = ["binary"] },
+    { name = "pydantic-ai" },
+    { name = "pydantic-settings" },
+    { name = "sentence-transformers" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "braintrust", specifier = ">=0.43.0" },
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "pgvector", specifier = ">=0.5.0" },
+    { name = "psycopg", extras = ["binary"], specifier = ">=3.3.6" },
+    { name = "pydantic-ai", specifier = ">=2.51.0" },
+    { name = "pydantic-settings", specifier = ">=2.0.0" },
+    { name = "sentence-transformers", specifier = ">=6.1.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=9.1.1" }]
+
+[[package]]
 name = "certifi"
 version = "2026.7.22"
 source = { registry = "https://pypi.org/simple" }
@@ -1081,39 +1114,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/19/74/a633ee74eb36c44aa
 wheels = [
     { url = "https://files.pythonhosted.org/packages/41/45/1a4ed80516f02155c51f51e8cedb3c1902296743db0bbc66608a0db2814f/jsonschema_specifications-2025.9.1-py3-none-any.whl", hash = "sha256:98802fee3a11ee76ecaca44429fda8a41bff98b00a0f2838151b113f210cc6fe", size = 18437, upload-time = "2025-09-08T01:34:57.871Z" },
 ]
-
-[[package]]
-name = "kbindex"
-version = "0.1.0"
-source = { virtual = "." }
-dependencies = [
-    { name = "braintrust" },
-    { name = "httpx" },
-    { name = "pgvector" },
-    { name = "psycopg", extra = ["binary"] },
-    { name = "pydantic-ai" },
-    { name = "pydantic-settings" },
-    { name = "sentence-transformers" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "braintrust", specifier = ">=0.43.0" },
-    { name = "httpx", specifier = ">=0.28.1" },
-    { name = "pgvector", specifier = ">=0.5.0" },
-    { name = "psycopg", extras = ["binary"], specifier = ">=3.3.6" },
-    { name = "pydantic-ai", specifier = ">=2.51.0" },
-    { name = "pydantic-settings", specifier = ">=2.0.0" },
-    { name = "sentence-transformers", specifier = ">=6.1.0" },
-]
-
-[package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=9.1.1" }]
 
 [[package]]
 name = "keyring"

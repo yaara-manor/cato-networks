@@ -45,3 +45,22 @@
   2. Resolve any ISO 3166-1 alpha-2 country code dynamically via Python's stdlib IANA timezone table (`/usr/share/zoneinfo/zone1970.tab`, cached once in memory via `@lru_cache(maxsize=1)`), and when `country` is missing or unrecognized, log an error, prompt the user for their country, and extract the ISO code from the user's free-text reply via a PydanticAI `Agent` (`settings.llm_model = "google-gla:gemini-3.8-flash"` with structured `CountryCodeOutput`) before persisting it to `accounts.country`.
 - **Chosen Approach**: Option 2 (`CustomerService` in `services/customer_service.py`).
 - **Reasoning**: Parsing `/usr/share/zoneinfo/zone1970.tab` once with primary-country precedence supports all ISO 3166-1 alpha-2 codes (`US -> America/New_York`, `DE -> Europe/Berlin`, `IL -> Asia/Jerusalem`, `NL -> Europe/Brussels`, etc.) with zero external dependencies or per-call disk I/O, while PydanticAI + Gemini Flash cleanly normalizes arbitrary natural-language country replies and persists the resolved code to PostgreSQL.
+
+---
+
+## ADR-005: File-Backed `TelemetryService`, Unified `TelemetryToolResult[T]` Envelope, and Single-Module Evidence Extraction (`tools/telemetry.py`)
+
+- **Context / Problem**: Phase 1.3 (Issue #3) requires 7 typed telemetry tools (`list_sites`, `get_site_status`, `get_link_quality`, `get_events`, `get_bgp_status`, `get_ipsec_status`, `get_client_diagnostics`) over `data/telemetry/`. In real production at Cato, telemetry lives in the external CMA GraphQL API and time-series backend rather than the agent's Postgres database. Furthermore:
+  1. Each `link_quality/<site_id>.csv` contains ~580 rows (24h of 5-minute intervals across WAN links), which would bloat LLM context if returned raw.
+  2. Conversely, each `events/<site_id>.jsonl` contains `<20` rows, and in scenario `SC-02-vague-slow` (`S-1008-03`), the critical `"Last-Mile Quality"` alert occurred at `2026-08-24T17:00:00Z` (4 days before the `2026-08-28T17:00:00Z` anchor), which would be dropped if an LLM passed `window="24h"` to a strict filter.
+  3. The system architecture initially listed a separate `tools/formatters.py` module alongside `tools/telemetry.py`.
+- **Options Evaluated**:
+  1. Ingest `data/telemetry/` into PostgreSQL tables alongside `accounts` and `tickets`.
+  2. Return raw `dict[str, Any]` payloads from `tools/telemetry.py` and format strings in a separate `tools/formatters.py` wrapper module.
+  3. Read `data/telemetry/` directly from disk in a single module (`tools/telemetry.py`) using stdlib (`pathlib`, `json`, `csv`) + `@lru_cache` keyed on `(resolved_path, mtime_ns)`, returning a generic `TelemetryToolResult[T]` envelope that pairs typed Pydantic domain models (`data: T | None`) with deterministically extracted `evidence: list[TelemetryEvidence]`, aggregating 580-row `link_quality` CSVs per link while preserving all `<20` rows in `get_events`.
+- **Chosen Approach**: Option 3 (`TelemetryService` in `tools/telemetry.py`).
+- **Reasoning**:
+  - **Production Alignment & YAGNI**: Unlike `tickets` (which are mutated during conversations and require persistence across restarts), telemetry is 100% read-only point-in-time CMA data. Reading directly from `data/telemetry/` accurately models querying an external read-only CMA API per `site_id` / `user_email` without unnecessary SQL tables, migrations, or seed steps, while making missing/corrupt file simulation (`status="unavailable"`) trivial in tests.
+  - **Code-Judo Layer Deletion**: Embedding deterministic `TelemetryEvidence` extraction directly into `TelemetryToolResult[T]` inside `tools/telemetry.py` eliminates `tools/formatters.py`, removes per-tool error branching in `DiagnosticsAgent`, and guarantees verbatim metric quoting (`routes_count 1024/1024`, `NO_PROPOSAL_CHOSEN`, `AUTHENTICATION_FAILED`, `TUNNEL_TIMEOUT (408)`).
+  - **Context-Aware Windowing**: Slicing and aggregating `link_quality/<site_id>.csv` by `window` reduces 580 CSV rows to compact per-link statistical summaries + anomaly evidence, whereas ignoring the time cutoff in `get_events` (while still validating `window` and filtering by `event_type`) ensures multi-day historical alerts in tiny `<20`-line JSONL logs (`S-1008-03`) are never lost.
+

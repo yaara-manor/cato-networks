@@ -3,38 +3,39 @@
 **Issue**: #4 (`[Phase 1] 1.4: KB Retrieval Client & Policy Lookup`)  
 **Branch**: `p-1-4_kb-retrieval-policy`  
 **Date**: 2026-09-30  
-**Status**: Draft for User Review  
+**Status**: Approved Design  
 
 ---
 
 ## 1. Objective & Scope
 
-Design the online Knowledge Base (KB) hybrid retrieval client and internal policy lookup service that connects the multi-agent runtime (`Knowledge Agent` and `SupportDeps`) and the evaluation harness (`eval/run_questions.py` and `eval/retrieval_metrics.py`) to PostgreSQL (`passages`, `kb_articles`, `snapshots`, and `policies`).
+Design the real-time Knowledge Base (KB) hybrid retrieval client and internal policy lookup service that connects the multi-agent runtime (`Knowledge Agent` and `SupportDeps`) and the evaluation harness (`eval/run_questions.py` and `eval/retrieval_metrics.py`) to PostgreSQL (`passages`, `kb_articles`, `snapshots`, and `policies`).
 
 The subsystem must:
 1. Execute first-stage hybrid retrieval combining top-20 lexical search (`tsvector` GIN index) and top-20 vector similarity search (`pgvector` 384-d cosine distance using `BAAI/bge-small-en-v1.5`).
-2. Fuse candidate rankings via Reciprocal Rank Fusion (RRF with $k = 60$).
+2. Fuse candidate rankings via Reciprocal Rank Fusion (RRF with $k = 60$) and cap the fused candidate pool (`rerank_top_n = 20`) for low-latency CPU inference.
 3. Rerank fused candidates locally with the pinned cross-encoder (`cross-encoder/ms-marco-MiniLM-L12-v2`).
 4. Enforce the confidence threshold (`settings.rerank_min_score`) to separate grounded passages from low-confidence refusals (such as unannounced roadmap features like IPv6-only sites) while preserving unfiltered top candidates and snapshot metadata for evaluation transcripts (`answers.md`) and execution traces.
 5. Retrieve and cite the 6 internal governance policies (`POL-CRED`, `POL-CREDIT`, `POL-IDV`, `POL-SEC`, `POL-SEV1`, `POL-SLA`) by normalized identifier.
-6. Degrade gracefully without unhandled exceptions when PostgreSQL is unreachable.
+6. Support both synchronous (`psycopg.Connection`) and non-blocking asynchronous (`psycopg.AsyncConnection` / `AsyncConnectionPool` + `asyncio.to_thread`) execution, degrading gracefully without unhandled exceptions when PostgreSQL is unreachable.
 
 ---
 
 ## 2. Structural Simplification ("Code Judo" Decisions)
 
-1. **Single-Module Consolidation (`retrieval/service.py`)**:
-   - Rather than splitting ~100 lines of retrieval and policy query logic across five thin modules (`retrieval/search.py`, `retrieval/threshold.py`, `retrieval/policies.py`, `services/retrieval_service.py`, and `services/policy_service.py`), all online KB search, RRF fusion, threshold gating, and policy lookup reside in a single cohesive class, `RetrievalService`, inside `retrieval/service.py` alongside the existing cross-encoder loader in `retrieval/rerank.py`.
-   - `RetrievalService` directly reuses `embed_query` from `kbindex/embed.py` and `rerank_pairs` from `retrieval/rerank.py`.
-   - In `SupportDeps`, the separate `policy_store` field is eliminated; `retrieval: RetrievalService` serves both KB passages and policy documents over the same PostgreSQL connection.
-2. **Native PostgreSQL Snowball Stemmer (`to_tsvector('english', ...)`) Across Both Retrieval and Ticket Services**:
-   - `passages.search_vector` is stored using PostgreSQL's `'simple'` configuration (unstemmed lowercase tokens) with a `GIN` index that natively supports prefix matching (`:*`).
-   - Instead of maintaining custom stopword lists or adding external NLP packages, stage-1 lexical search uses PostgreSQL's built-in `'english'` Snowball stemmer (`tsvector_to_array(to_tsvector('english', query))`) to automatically strip English stopwords and extract word stems, appending the `:*` prefix operator joined with `|` (`OR`). This allows natural-language questions to match morphological variants (such as `rekey:*` matching `rekey`, `rekeying`, `rekeys`, and `fail:*` matching `fail`, `fails`, `failed`) as well as exact technical identifiers (`no_proposal_chosen:*`, `1383:*`, `dtls:*`) in the existing `'simple'` GIN index.
-   - Using the same native PostgreSQL `'english'` stemmer in `services/ticket_service.py` allows us to delete the hand-rolled 30-word `_STOPWORDS` set and naive 5-character `tok[:5]` slicer (`_symptom_stems` and `_shares_keywords`).
-3. **Single-Roundtrip Hybrid SQL Query**:
-   - Lexical top-20 search, vector top-20 search, `FULL OUTER JOIN` RRF score computation, article metadata join (`kb_articles`), and snapshot timestamp lookup (`snapshots.crawled_at`) execute in a single PostgreSQL query with Common Table Expressions (CTEs), eliminating multiple sequential DB roundtrips and Python-side join dictionaries.
+1. **Dedicated `encoders/` Package & Clean `retrieval/` Layout**:
+   - Move `kbindex/embed.py` and `retrieval/rerank.py` into a shared **`encoders/`** package (`encoders/embed.py` and `encoders/rerank.py`). Both offline indexing (`kbindex/chunk.py`, `kbindex/store.py`), startup checks (`db/init/startup.py`), and online retrieval (`retrieval/service.py`) depend downward on `encoders/`, eliminating cross-imports between `kbindex/` and `retrieval/` while keeping `core/` free of PyTorch dependencies.
+   - Place all retrieval- and policy-specific Pydantic schemas in **`retrieval/models.py`**, keeping `core/models.py` strictly for shared cross-domain models.
+   - Consolidate all online KB search, RRF fusion, threshold gating, and policy lookup into **`RetrievalService`** inside **`retrieval/service.py`** rather than splitting across `retrieval/search.py`, `retrieval/threshold.py`, `retrieval/policies.py`, `services/retrieval_service.py`, and `services/policy_service.py`.
+   - In `SupportDeps`, eliminate the redundant `policy_store` field; `retrieval: RetrievalService` serves both KB passages and policy documents.
+2. **Query-Time PostgreSQL Snowball Stemming on the Lexical Branch Only (Zero Re-Vectorization)**:
+   - **Vector Branch Untouched**: `encoders.embed.embed_query` continues to pass the raw, unstemmed query string (with `QUERY_PREFIX`) to `BAAI/bge-small-en-v1.5`. Stored embeddings in `passages.embedding` (`db/seed.dump`) require zero re-vectorization or re-indexing.
+   - **Lexical Branch Only**: `passages.search_vector` is stored using PostgreSQL's `'simple'` configuration (unstemmed lowercase tokens) with a `GIN` index that natively supports prefix matching (`:*`). Inside the SQL `lexical` CTE, PostgreSQL's built-in `'english'` Snowball stemmer (`tsvector_to_array(to_tsvector('english', query))`) strips English stopwords and extracts word stems, appending `:*` joined with `|` (`OR`). This matches morphological variants (`rekey:*` matching `rekey`, `rekeying`, `rekeys`; `fail:*` matching `fail`, `fails`, `failed`) and exact technical identifiers (`no_proposal_chosen:*`, `1383:*`, `dtls:*`) against the existing `'simple'` GIN index with zero schema migrations.
+   - Using the same native PostgreSQL `'english'` stemmer in `services/ticket_service.py` allows deleting the hardcoded 30-word `_STOPWORDS` set, naive 5-character `tok[:5]` slicer (`_symptom_stems` and `_shares_keywords`), and unused `import re`.
+3. **Single-Roundtrip Hybrid SQL Query + Bounded Cross-Encoder Batch**:
+   - Lexical top-20 search, vector top-20 search, `FULL OUTER JOIN` RRF score computation, top-20 RRF candidate slicing (`rerank_top_n = 20`), article metadata join (`kb_articles`), and snapshot timestamp lookup (`snapshots.crawled_at`) execute in a single PostgreSQL query with a `MATERIALIZED` `tsquery` CTE. Bounding Cross-Encoder inputs to the top 20 RRF-fused candidates cuts CPU reranking latency in half (~45ms vs ~90ms) without sacrificing top-5 accuracy.
 4. **Unified Result Envelopes (`KBSearchResult` and `PolicyLookupResult`)**:
-   - Following the `TelemetryToolResult` pattern from ADR-005, both KB search and policy lookup catch `psycopg.Error` and return explicit status envelopes (`"confident"`, `"low_confidence_refusal"`, `"unavailable"`, `"ok"`, `"not_found"`) rather than forcing callers to coordinate exception handlers and secondary metadata queries.
+   - Following the `TelemetryToolResult` pattern from ADR-005, both KB search and policy lookup catch `psycopg.Error` and return explicit status envelopes (`"confident"`, `"low_confidence_refusal"`, `"unavailable"`, `"ok"`, `"not_found"`).
 
 ---
 
@@ -42,26 +43,26 @@ The subsystem must:
 
 ```mermaid
 flowchart LR
-    Query["Caller Query\n(Knowledge Agent / Eval)"] --> Guard{"Empty or\nWhitespace?"}
+    Query["Raw Caller Query\n(Knowledge Agent / Eval)"] --> Guard{"Empty or\nWhitespace?"}
     Guard -- Yes --> Refusal["KBSearchResult\n(status='low_confidence_refusal')"]
-    Guard -- No --> Embed["kbindex.embed.embed_query\n(bge-small-en-v1.5 + prefix -> 384d)"]
-    Embed --> HybridSQL["Single-Roundtrip Postgres CTE\n1. 'english' Snowball stemmer -> ':*' OR tsquery (Top 20)\n2. pgvector '<=>' cosine distance (Top 20)\n3. FULL OUTER JOIN RRF (k=60) + kb_articles + snapshots"]
+    Guard -- No --> Embed["encoders.embed.embed_query\n(Raw unstemmed query + prefix -> 384d)"]
+    Embed --> HybridSQL["Single-Roundtrip Postgres CTE\n1. Lexical CTE: 'english' Snowball stemmer -> ':*' OR tsquery (Top 20)\n2. Vector CTE: pgvector '<=>' on raw query vector (Top 20)\n3. Fused CTE: FULL OUTER JOIN RRF (k=60) LIMIT rerank_top_n (20)"]
     HybridSQL -- "psycopg.Error" --> Unavail["KBSearchResult\n(status='unavailable', error=...)"]
-    HybridSQL -- "Fused Candidates" --> Rerank["retrieval.rerank.rerank_pairs\n(ms-marco-MiniLM-L12-v2)"]
+    HybridSQL -- "Top 20 Fused Candidates" --> Rerank["encoders.rerank.rerank_pairs\n(ms-marco-MiniLM-L12-v2 batched CPU inference)"]
     Rerank --> Gate{"Any candidate >=\nrerank_min_score?"}
     Gate -- Yes --> Confident["KBSearchResult\n(status='confident',\npassages=filtered[:top_k],\ncandidates=all[:top_k])"]
     Gate -- No --> LowConf["KBSearchResult\n(status='low_confidence_refusal',\npassages=[],\ncandidates=all[:top_k])"]
 ```
 
-> **Proportional Effort Flag (80% of Engineering & Quality Surface)**: The single-roundtrip hybrid SQL CTE (bridging PostgreSQL `'english'` Snowball stems with `'simple'` prefix `tsquery` matching, `pgvector` cosine distance ordering, and RRF tie-breaking) together with cross-encoder threshold calibration represent 80% of the retrieval accuracy and edge-case surface.
+> **Proportional Effort Flag (80% of Engineering & Quality Surface)**: The single-roundtrip hybrid SQL CTE (materializing the PostgreSQL `'english'` Snowball stem `:*` OR `tsquery` against the `'simple'` GIN index, combining with `pgvector` cosine distance, and bounding RRF candidates) plus non-blocking async CPU model offloading represent 80% of the retrieval accuracy and real-time latency surface.
 
 ---
 
 ## 4. Component & Type Specifications
 
-### 4.1 Domain Models (`core/models.py`)
+### 4.1 Retrieval & Policy Models (`retrieval/models.py`)
 
-1. **`RetrievedPassage` (extends `Citation`)**:
+1. **`RetrievedPassage` (`BaseModel`)**:
    - **Purpose**: Represents a single scored KB chunk returned by hybrid search and cross-encoder reranking.
    - **Fields**:
      - `passage_id: str` — UUID string of the row in `passages`.
@@ -80,7 +81,7 @@ flowchart LR
      - `citation_tag() -> str`: Returns the canonical inline citation format `[kb:{slug}#{heading_anchor}]`.
 
 2. **`KBSearchResult` (`BaseModel`)**:
-   - **Purpose**: Self-contained return envelope for `RetrievalService.search_kb`.
+   - **Purpose**: Self-contained return envelope for `RetrievalService.search_kb` and `RetrievalService.asearch_kb`.
    - **Fields**:
      - `status: Literal["confident", "low_confidence_refusal", "unavailable"]`
      - `query: str` — The input search string.
@@ -100,7 +101,7 @@ flowchart LR
      - `citation_tag() -> str`: Returns the canonical inline policy citation format `[policy:{policy_id}]`.
 
 4. **`PolicyLookupResult` (`BaseModel`)**:
-   - **Purpose**: Self-contained return envelope for `RetrievalService.get_policy` and `RetrievalService.list_policies`.
+   - **Purpose**: Self-contained return envelope for `get_policy` / `aget_policy` and `list_policies` / `alist_policies`.
    - **Fields**:
      - `status: Literal["ok", "not_found", "unavailable"]`
      - `policy: PolicyDocument | None = None` — Populated for single-policy lookup when `status == "ok"`.
@@ -109,54 +110,58 @@ flowchart LR
 
 ---
 
-### 4.2 Online Retrieval & Policy Service (`retrieval/service.py`)
+### 4.2 Real-Time Hybrid Retrieval & Policy Service (`retrieval/service.py`)
 
 1. **`RetrievalService.__init__`**:
    - **Inputs**:
-     - `connection: psycopg.Connection[Any]` — Active PostgreSQL connection.
-     - `embed_fn: Callable[[str], list[float]] = embed_query` — Query embedding function defaulting to `kbindex.embed.embed_query`.
-     - `rerank_fn: Callable[[str, list[str]], list[float]] = rerank_pairs` — Cross-encoder scoring function defaulting to `retrieval.rerank.rerank_pairs`.
+     - `connection: psycopg.Connection[Any] | psycopg.AsyncConnection[Any]` — Active PostgreSQL sync or async connection.
+     - `embed_fn: Callable[[str], list[float]] = embed_query` — Query embedding function defaulting to `encoders.embed.embed_query`.
+     - `rerank_fn: Callable[[str, list[str]], list[float]] = rerank_pairs` — Cross-encoder scoring function defaulting to `encoders.rerank.rerank_pairs`.
      - `min_score: float = settings.rerank_min_score` — Minimum cross-encoder score required for `"confident"` status.
      - `rrf_k: int = 60` — RRF smoothing constant.
-   - **Behavior**: Stores dependencies on the instance without executing I/O at construction time.
+   - **Pure Helpers for Sync/Async Reuse**:
+     - `_validate_search_args(query: str, top_k: int, candidate_k: int) -> KBSearchResult | None`: Fast-path guard returning a refusal envelope when `query.strip()` is empty or limits are $\le 0$.
+     - `_normalize_policy_id(policy_id: str) -> str`: Strips whitespace, uppercases, and removes any trailing `.MD` suffix.
+     - `_score_and_gate_candidates(...) -> KBSearchResult`: Pure function that takes raw DB rows, invokes `rerank_fn`, sorts by `(-rerank_score, -rrf_score, passage_id)`, slices `candidates = ranked[:top_k]`, filters `passages` by `min_score`, and returns `KBSearchResult`.
 
-2. **`RetrievalService.search_kb`**:
-   - **Signature**: `search_kb(self, query: str, top_k: int = 5, candidate_k: int = 20) -> KBSearchResult`
-   - **Execution Steps**:
-     - **Step 1 (Guard Clause)**: If `not query.strip()` or `top_k <= 0` or `candidate_k <= 0`, return `KBSearchResult(status="low_confidence_refusal", query=query, passages=[], candidates=[])`.
-     - **Step 2 (Query Embedding)**: Call `self._embed_fn(query)` to compute the 384-float query vector prefixed with `QUERY_PREFIX`.
-     - **Step 3 (Single-Roundtrip Hybrid SQL CTE)**:
-       - `q_tsquery` CTE: Extracts Snowball stems via `unnest(tsvector_to_array(to_tsvector('english', %(query)s)))`, sanitizes each token to alphanumeric/underscore/hyphen characters, appends `:*`, joins with `' | '`, and casts to `tsquery` (falling back to `plainto_tsquery('simple', %(query)s)` when `to_tsvector('english', %(query)s)` is empty).
-       - `lexical` CTE: Selects `id` and `row_number() OVER (ORDER BY ts_rank_cd(search_vector, q_tsquery.tsq) DESC, id ASC) AS lex_rank` from `passages, q_tsquery` where `q_tsquery.tsq != ''::tsquery` and `search_vector @@ q_tsquery.tsq`, limited to `candidate_k`.
-       - `vector_search` CTE: Selects `id` and `row_number() OVER (ORDER BY embedding <=> %(embedding)s::vector ASC, id ASC) AS vec_rank` from `passages` where `embedding IS NOT NULL`, limited to `candidate_k`.
-       - `fused` CTE: Performs a `FULL OUTER JOIN` of `lexical` and `vector_search` on `id`, computing `coalesce(1.0 / (%(rrf_k)s + lex_rank), 0.0) + coalesce(1.0 / (%(rrf_k)s + vec_rank), 0.0) AS rrf_score`.
-       - Final `SELECT`: Joins `fused` with `passages p` on `p.id = fused.id`, `kb_articles a` on `a.slug = p.article_slug`, and `LEFT JOIN snapshots s` on `s.id = a.snapshot_id`, ordered by `fused.rrf_score DESC, p.id ASC`. If `fused` returns zero rows (e.g., empty `passages` table), queries `SELECT crawled_at FROM snapshots ORDER BY crawled_at DESC LIMIT 1` so `snapshot_date` is still populated.
-     - **Step 4 (Cross-Encoder Reranking & Threshold Gate)**:
-       - Calls `self._rerank_fn(query, [row_body for each fused row])` to score all fused candidates in a single batch.
-       - Builds `RetrievedPassage` objects sorted by `(-rerank_score, -rrf_score, passage_id)`.
-       - Slices `candidates = ranked[:top_k]` and filters `passages = [c for c in candidates if c.rerank_score >= self._min_score]`.
-       - Sets `status = "confident"` if `passages` is non-empty, else `"low_confidence_refusal"`.
-     - **Step 5 (Fault Handling)**: Catches `psycopg.Error`, logs the failure via `logger.error`, rolls back any aborted transaction state on the connection if needed, and returns `KBSearchResult(status="unavailable", query=query, passages=[], candidates=[], error=str(exc))`.
+2. **Synchronous & Asynchronous KB Search (`search_kb` and `asearch_kb`)**:
+   - **Signatures**:
+     - `search_kb(self, query: str, top_k: int = 5, candidate_k: int = 20, rerank_top_n: int = 20) -> KBSearchResult`
+     - `async asearch_kb(self, query: str, top_k: int = 5, candidate_k: int = 20, rerank_top_n: int = 20) -> KBSearchResult`
+   - **Real-Time Execution Steps**:
+     - **Step 1 (Fast Guard)**: Return immediately via `_validate_search_args` if invalid/empty.
+     - **Step 2 (Raw Query Vectorization)**: Compute 384-d vector for the unstemmed `query` via `embed_fn(query)` (offloaded via `await asyncio.to_thread(self._embed_fn, query)` in `asearch_kb`).
+     - **Step 3 (Single-Roundtrip Materialized Hybrid SQL CTE)**:
+       - `q_tsquery AS MATERIALIZED`: Extracts Snowball stems once via `unnest(tsvector_to_array(to_tsvector('english', %(query)s)))`, strips non-word punctuation, appends `:*`, joins with `' | '`, and casts to `tsquery` (falling back to `plainto_tsquery('simple', %(query)s)` if `to_tsvector('english', %(query)s)` is empty).
+       - `lexical`: Uses the `passages_search_vector` GIN index (`WHERE q_tsquery.tsq != ''::tsquery AND p.search_vector @@ q_tsquery.tsq`), ordering matching rows by `ts_rank_cd(p.search_vector, q_tsquery.tsq) DESC, p.id ASC` and limiting to `candidate_k` (20).
+       - `vector_search`: Orders by `p.embedding <=> %(embedding)s::vector ASC, p.id ASC` and limits to `candidate_k` (20).
+       - `fused`: `FULL OUTER JOIN` of `lexical` and `vector_search` on `id`, computing `rrf_score`, ordered by `rrf_score DESC, id ASC` and capped at `LIMIT %(rerank_top_n)s` (20) so Cross-Encoder CPU inference never scores more than 20 candidates.
+       - Final `SELECT`: Joins `fused` with `passages p`, `kb_articles a`, and `LEFT JOIN snapshots s`, returning all metadata and `s.crawled_at` in one roundtrip (with a fallback 1-row `snapshots` lookup if `passages` is empty).
+     - **Step 4 (Batched Cross-Encoder Reranking & Threshold Gate)**:
+       - Calls `rerank_fn(query, bodies)` (via `await asyncio.to_thread(...)` in `asearch_kb`) and builds `KBSearchResult` via `_score_and_gate_candidates`.
+     - **Step 5 (Fault Handling)**: Catches `psycopg.Error`, logs via `logger.error`, rolls back aborted transaction state if active, and returns `KBSearchResult(status="unavailable", query=query, passages=[], candidates=[], error=str(exc))`.
 
-3. **`RetrievalService.get_policy`**:
-   - **Signature**: `get_policy(self, policy_id: str) -> PolicyLookupResult`
+3. **Synchronous & Asynchronous Policy Lookup (`get_policy` / `aget_policy` and `list_policies` / `alist_policies`)**:
+   - **Signatures**:
+     - `get_policy(self, policy_id: str) -> PolicyLookupResult` and `async aget_policy(self, policy_id: str) -> PolicyLookupResult`
+     - `list_policies(self) -> PolicyLookupResult` and `async alist_policies(self) -> PolicyLookupResult`
    - **Execution Steps**:
-     - Normalizes `policy_id` by stripping whitespace, converting to uppercase, and stripping any trailing `.MD` suffix (so `"pol-credit"`, `"POL-CREDIT"`, and `"POL-CREDIT.md"` all resolve to `"POL-CREDIT"`). If empty, returns `PolicyLookupResult(status="not_found")`.
-     - Queries `SELECT id, title, file_path, body FROM policies WHERE upper(id) = %(policy_id)s LIMIT 1`.
-     - Returns `PolicyLookupResult(status="ok", policy=doc, policies=[doc])` if found, `PolicyLookupResult(status="not_found")` if absent, or `PolicyLookupResult(status="unavailable", error=str(exc))` on `psycopg.Error`.
-
-4. **`RetrievalService.list_policies`**:
-   - **Signature**: `list_policies(self) -> PolicyLookupResult`
-   - **Execution Steps**:
-     - Queries `SELECT id, title, file_path, body FROM policies ORDER BY id ASC`.
-     - Returns `PolicyLookupResult(status="ok", policies=docs)` (or `status="unavailable"` on `psycopg.Error`).
+     - Normalizes `policy_id` via `_normalize_policy_id`. Queries `policies` by `upper(id) = %(policy_id)s` (or `ORDER BY id ASC` for `list_policies`), returning `status="ok"`, `"not_found"`, or `"unavailable"` on `psycopg.Error`.
 
 ---
 
-### 4.3 Repeat-Contact Stemmer Cleanup (`services/ticket_service.py`)
+### 4.3 Codebase Cleanup & Refactoring Scope
 
-- **Removal**: Delete `_STOPWORDS`, `_symptom_stems`, and `_shares_keywords` from `services/ticket_service.py`.
-- **Replacement**: Replace Python keyword stem matching in `TicketService.detect_repeat_contact` (and helper `_matches_area_or_symptom`) with PostgreSQL's native `'english'` Snowball stemmer (`tsvector_to_array(to_tsvector('english', text))`), filtering for stemmed lexemes of length $\ge 4$ (excluding generic support nouns `issu`, `ticket`, `site`, `user`, `pleas`, `still`, `today` via SQL array subtraction) and checking whether two texts share $\ge 2$ stems. This keeps all text normalization inside PostgreSQL's native C dictionary while preserving 100% of the ADR-003 repeat-contact invariants (`SC-06` Chicago site flagged as repeat; `S-1003-01` and `S-1010-02` unrelated dual-open tickets not falsely flagged).
+1. **Step 0 — Post-Implementation Audit (Read Everything Written & Discover Unforeseen Cleanup)**:
+   - Before executing the targeted cleanup items below, read every file created or modified during this task (`encoders/`, `retrieval/`, `kbindex/`, `db/init/`, `services/`, `tests/`) end-to-end and audit against `/ponytail` and `/thermo-nuclear-code-quality-review` to identify and remove any newly introduced dead code, unused imports, redundant helpers, or unforeseen simplification opportunities not anticipated in advance.
+2. **Create `encoders/` (`encoders/embed.py` and `encoders/rerank.py`)**:
+   - Move `kbindex/embed.py` $\rightarrow$ `encoders/embed.py` and `retrieval/rerank.py` $\rightarrow$ `encoders/rerank.py`, updating imports in `kbindex/chunk.py`, `kbindex/store.py`, `db/init/startup.py`, `retrieval/service.py`, and tests.
+   - Delete the unused test constants (`BGP_PASSAGE`, `SLA_PASSAGE`, `SMOKE_QUESTION`) from `encoders/embed.py` (moving them into the test file that references them).
+   - Replace the per-string Python loop in `embed_passages` with a single batched call `model.encode(texts, prompt="", convert_to_numpy=True, show_progress_bar=False).tolist()`.
+   - Guard empty `passages` list in `encoders/rerank.py` (`rerank_pairs` returns `[]` immediately without invoking PyTorch) and pass `batch_size=32, convert_to_numpy=True, show_progress_bar=False` to `CrossEncoder.predict`.
+3. **Clean Up `services/ticket_service.py`**:
+   - Delete `_STOPWORDS` (lines 15–48), `_symptom_stems` (lines 76–78), `_shares_keywords` (lines 81–84), and the unused `import re` (line 1).
+   - Replace Python stem comparison in `TicketService.detect_repeat_contact` with PostgreSQL's native `'english'` Snowball stemmer (`tsvector_to_array(to_tsvector('english', text))`), excluding generic support words (`issu`, `ticket`, `site`, `user`, `pleas`, `still`, `today`) in SQL while preserving all ADR-003 repeat-contact test invariants.
 
 ---
 
@@ -165,18 +170,11 @@ flowchart LR
 All tests follow the **Functional over Unit Testing** rule against the real PostgreSQL database and local models:
 
 1. **Hybrid Retrieval & Reranking (`tests/services/test_retrieval.py`)**:
-   - **Technical KB Queries**: Run `search_kb` on representative questions from `data/eval/questions.jsonl` (e.g., `Q01` DTLS MTU, `Q05` BGP route limit, `Q10` `NO_PROPOSAL_CHOSEN`, `Q15` Azure rekey) and assert `status == "confident"`, non-empty `passages`, valid `snapshot_date`, positive `rrf_score`, `rerank_score >= settings.rerank_min_score`, and well-formed `citation_tag` (`[kb:<slug>#<anchor>]`).
-   - **Lexical + Vector Fusion Verification**: Verify that candidates matched by both lexical and vector search accumulate both rank contributions in `rrf_score` and populate `lex_rank` and `vec_rank`.
-   - **Low-Confidence Refusal Gate**: Verify that out-of-coverage queries (e.g., `SC-09` unreleased roadmap query or high threshold `min_score`) return `status == "low_confidence_refusal"`, `passages == []`, and non-empty `candidates` for trace/eval logging, plus empty/whitespace query handling.
-   - **Policy Lookup**: Verify `get_policy` across all 6 seeded policies (`POL-CRED`, `POL-CREDIT`, `POL-IDV`, `POL-SEC`, `POL-SEV1`, `POL-SLA`), case/extension normalization (`"pol-sla.md"`), unknown policy ID (`status == "not_found"`), and `list_policies()` returning all 6 records.
-   - **Database Outage Resilience**: Pass a closed `psycopg.Connection` to `search_kb`, `get_policy`, and `list_policies` and assert each returns `status == "unavailable"` with `error` populated and raises zero unhandled exceptions.
-2. **Ticket Service Regression (`tests/services/test_ticket_service.py`)**:
-   - Verify all existing repeat-contact scenarios (`SC-06` Chicago site, `S-1003-01`, `S-1010-02`, free-text `symptom_text` matching) pass with `_STOPWORDS` removed and PostgreSQL `'english'` stemming active.
-
----
-
-## 6. Cleanup & Documentation Maintenance
-
-1. Ensure no unused files (`retrieval/search.py`, `retrieval/threshold.py`, `retrieval/policies.py`, `services/retrieval_service.py`, `services/policy_service.py`) or dead imports remain.
-2. Delete `_STOPWORDS`, `_symptom_stems`, and `_shares_keywords` from `services/ticket_service.py`.
-3. Update `docs/architecture/system-architecture-design.md` (§4.1, §4.2, §7, §12, §13) and `docs/overview/decisions.md` (ADR-006) so documentation reflects the single-module `retrieval/service.py` layout, native PostgreSQL Snowball stemmer query construction, and `KBSearchResult` / `PolicyLookupResult` contracts.
+   - **Technical KB Queries (Sync & Async)**: Run `search_kb` and `asearch_kb` on representative questions from `data/eval/questions.jsonl` (`Q01` DTLS MTU, `Q05` BGP route limit, `Q10` `NO_PROPOSAL_CHOSEN`, `Q15` Azure rekey) and assert `status == "confident"`, non-empty `passages`, valid `snapshot_date`, positive `rrf_score`, `rerank_score >= settings.rerank_min_score`, and well-formed `citation_tag` (`[kb:<slug>#<anchor>]`).
+   - **Stemmed Lexical + Vector RRF Fusion**: Verify that morphological variants in natural-language questions match `'simple'` indexed passages via the Snowball `:*` `tsquery` and accumulate both `lex_rank` and `vec_rank` in `rrf_score`.
+   - **Low-Confidence Refusal Gate**: Verify that out-of-coverage roadmap queries (`SC-09` IPv6-only / SRv6 or elevated `min_score`) return `status == "low_confidence_refusal"`, `passages == []`, and non-empty `candidates` for trace/eval logging, plus empty/whitespace query fast-path refusal.
+   - **Policy Lookup (Sync & Async)**: Verify `get_policy` / `aget_policy` across all 6 seeded policies (`POL-CRED`, `POL-CREDIT`, `POL-IDV`, `POL-SEC`, `POL-SEV1`, `POL-SLA`), case/extension normalization (`"pol-sla.md"`), unknown policy ID (`status == "not_found"`), and `list_policies()` / `alist_policies()` returning all 6 records.
+   - **Database Outage Resilience**: Pass a closed connection to `search_kb`, `asearch_kb`, `get_policy`, and `list_policies` and assert each returns `status == "unavailable"` with `error` populated and raises zero unhandled exceptions.
+2. **Ticket Service & Encoders Cleanup Regressions**:
+   - Verify all repeat-contact scenarios (`SC-06` Chicago site, `S-1003-01`, `S-1010-02`, free-text `symptom_text` matching) pass with `_STOPWORDS` removed and PostgreSQL `'english'` stemming active.
+   - Verify `encoders.embed` and `encoders.rerank` imports pass across `kbindex`, `db.init.startup`, `retrieval`, and tests.

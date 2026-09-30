@@ -164,8 +164,8 @@ Every agent receives a typed context container via PydanticAI dependency injecti
 - **Typed Output (`KnowledgeBundle`)**:
   - `retrieved_passages: list[RetrievedPassage]` (`passage_id`, `slug`, `title`, `heading`, `heading_anchor`, `public_url`, `body`, `site_updated_at`, `lex_rank`, `vec_rank`, `rrf_score`, `rerank_score`, `citation_tag`)
   - `referenced_policies: list[PolicyDocument]` (`policy_id`, `title`, `file_path`, `body`, `citation_tag`)
-  - `confidence_status: Literal["confident", "low_confidence_refusal", "unavailable"]`
-- **Failure Mode**: If top rerank score < `RERANK_MIN_SCORE`, `KBSearchResult` returns `status="low_confidence_refusal"` with `passages=[]` and unfiltered `candidates` preserved for eval/trace logging. If the database is down, `search_kb` catches `psycopg.Error` and returns a `KBSearchResult` with `status="unavailable"`; policy lookup is unaffected (served from memory).
+  - `confidence_status: KBSearchStatus` (`StrEnum`: `CONFIDENT`, `LOW_CONFIDENCE_REFUSAL`, `UNAVAILABLE`)
+- **Failure Mode**: If top rerank score < `RERANK_MIN_SCORE`, `KBSearchResult` returns `status=KBSearchStatus.LOW_CONFIDENCE_REFUSAL` with `passages=[]` and unfiltered `candidates` preserved for eval/trace logging. If the database is down, `search_kb` catches `psycopg.Error` and returns a `KBSearchResult` with `status=KBSearchStatus.UNAVAILABLE`; policy lookup is unaffected (served from memory).
 
 #### 4. Resolution & Action Agent
 - **Purpose**: Synthesizes customer context, telemetry evidence, and KB passages into a conversational, empathetic, and grounded response. Proposes support actions and marks high-impact operations for approval.
@@ -208,7 +208,7 @@ stateDiagram-v2
 | Failure Event | System Behavior | Customer Experience |
 |---|---|---|
 | **Telemetry source unreachable / file missing** | `Diagnostics Agent` catches error, logs warning, returns partial evidence. | Agent states: *"CMA telemetry for site [X] is temporarily unavailable. Based on your description..."* Guides manual verification without guessing. |
-| **Postgres RAG service down** | `Knowledge Agent` catches DB connection error, sets status to `RetrievalUnavailable`. | Agent states: *"Our documentation service is currently unavailable. To ensure you receive accurate technical guidance, I am escalating this to our engineering team."* Refuses to answer from ungrounded LLM memory. |
+| **Postgres RAG service down** | `Knowledge Agent` catches DB connection error, `search_kb` returns `status=KBSearchStatus.UNAVAILABLE`. | Agent states: *"Our documentation service is currently unavailable. To ensure you receive accurate technical guidance, I am escalating this to our engineering team."* Refuses to answer from ungrounded LLM memory. |
 | **Rerank score < `RERANK_MIN_SCORE`** | Top score below threshold indicates no KB coverage (e.g. roadmap query). | Agent states: *"Cato's knowledge base does not currently document support for [feature]. Let me connect you with product support."* Hallucination prevented. |
 | **Model API rate limit or error** | State machine retries with exponential backoff (up to 2 retries), then falls back to secondary model. | System remains resilient; if unrecoverable, preserves conversation state and returns a courteous system pause message. |
 
@@ -377,8 +377,8 @@ The retrieval pipeline (`RetrievalService` in `retrieval/service.py`) implements
 3. **Second-Stage Cross-Encoder Reranking**:
    - The RRF top 20 fused candidates are scored locally using `cross-encoder/ms-marco-MiniLM-L-12-v2` (`encoders.rerank.rerank_pairs`).
 4. **Confidence Filter & `KBSearchResult` Envelope**:
-   - Candidates with $\text{Rerank Score} \ge \text{RERANK\_MIN\_SCORE}$ populate `KBSearchResult.passages` (top $k$, `status="confident"`).
-   - If no candidate meets threshold, `status="low_confidence_refusal"` is returned with `passages=[]` while `candidates` preserves the top $k$ unfiltered chunks and `snapshot_date` for `answers.md` and `traces`.
+   - Candidates with $\text{Rerank Score} \ge \text{RERANK\_MIN\_SCORE}$ populate `KBSearchResult.passages` (top $k$, `status=KBSearchStatus.CONFIDENT`).
+   - If no candidate meets threshold, `status=KBSearchStatus.LOW_CONFIDENCE_REFUSAL` is returned with `passages=[]` while `candidates` preserves the top $k$ unfiltered chunks and `snapshot_date` for `answers.md` and `traces`.
 
 ---
 

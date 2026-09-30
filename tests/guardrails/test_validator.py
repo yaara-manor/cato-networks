@@ -436,6 +436,17 @@ def test_echoing_a_multiword_secret_is_flagged_without_leaking_it(
     assert violations[0].detail == "message repeats a previously redacted secret"
 
 
+def test_a_multiword_secret_cannot_span_a_citation_marker(phrase_history: SessionGuardHistory) -> None:
+    assert check_outgoing_message("We saw red [policy:POL-CRED] blue today.", phrase_history, frozenset()) == []
+
+
+def test_a_multiword_secret_next_to_a_citation_marker_is_still_flagged(phrase_history: SessionGuardHistory) -> None:
+    message = "Your password red blue [policy:POL-CRED] works."
+    assert [v.kind for v in check_outgoing_message(message, phrase_history, frozenset())] == [
+        OutputViolationKind.SECRET_ECHO
+    ]
+
+
 def test_words_that_only_overlap_a_multiword_secret_are_clean(phrase_history: SessionGuardHistory) -> None:
     assert check_outgoing_message("The red team saw a blue sky.", phrase_history, frozenset()) == []
 

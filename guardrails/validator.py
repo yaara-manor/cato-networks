@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 import re
 from re import Pattern
 from typing import NamedTuple
@@ -189,6 +190,13 @@ _EDGE_PUNCTUATION = ".,;:()\"'"
 _MAX_SECRET_WORDS: int = 8
 
 
+def _phrases(segment: str) -> Iterator[str]:
+    words = normalize(segment).text.split()
+    for start in range(len(words)):
+        for end in range(start + 1, min(start + _MAX_SECRET_WORDS, len(words)) + 1):
+            yield " ".join(words[start:end])
+
+
 def check_outgoing_message(
     message: str, history: SessionGuardHistory, approved: frozenset[ActionType]
 ) -> list[OutputViolation]:
@@ -201,12 +209,7 @@ def check_outgoing_message(
     ]
     # details are fixed descriptions: a SECRET_ECHO must never carry the secret it reports
     findings = redact(body).findings
-    words = normalize(body).text.split()
-    phrases = (
-        " ".join(words[start:end])
-        for start in range(len(words))
-        for end in range(start + 1, min(start + _MAX_SECRET_WORDS, len(words)) + 1)
-    )
+    phrases = (phrase for segment in _ANY_MARKER.split(message) for phrase in _phrases(segment))
     repeats_secret = any(finding.sha256 in history.secret_hashes for finding in findings) or (
         bool(history.secret_hashes)
         and any(

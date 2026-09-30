@@ -177,7 +177,7 @@ Deliberately not tested (simple guard): `top_k <= 0` raising `ValueError`. The g
 ### Task 3: Docs, review, cleanup (plan branch)
 
 **Files:**
-- Modify: `docs/overview/decisions.md`. Rewrite the stale parts of ADR-007 (retrieval): it still describes the `'simple'` column with `:*` prefixes, `PolicyLookupResult` and the `snapshots` join. Make it state:
+- Modify: `docs/overview/decisions.md`. Rewrite the stale parts of ADR-007 (retrieval), keeping its "Threshold Calibration Stop Rule" bullet as-is: it still describes the `'simple'` column with `:*` prefixes, `PolicyLookupResult` and the `snapshots` join. Make it state:
   - the `'english'` column plus plain `::tsquery` cast, with the `polici`/`prioriti`/`proxi` evidence
   - rerank depth 20 at batch 8, with the measured numbers from design §2.8
   - the `KBSearchStatus` `StrEnum`

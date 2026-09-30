@@ -361,6 +361,9 @@ class TelemetryService:
         assert window_hours is not None
         filtered_rows: list[tuple[datetime, str, float, float, float, float, float]] = []
         for r in loaded:
+            if math.isinf(window_hours):
+                filtered_rows.append(r)
+                continue
             try:
                 in_window = self.clock.is_within(r[0], window_hours)
             except OverflowError:

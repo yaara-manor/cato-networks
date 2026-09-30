@@ -623,6 +623,19 @@ def test_link_quality_overflow_during_filtering_returns_unavailable() -> None:
     assert res.error is not None and "overflowed" in res.error
 
 
+def test_link_quality_all_window_skips_clock_near_max() -> None:
+    ticks = iter([0.0, 1e9])
+    overflowing_clock = SimulationClock(
+        anchor=datetime.max.replace(tzinfo=timezone.utc),
+        clock_fn=lambda: next(ticks),
+    )
+    res = TelemetryService(clock=overflowing_clock).get_link_quality("S-1008-02", window="all")
+    baseline = TelemetryService().get_link_quality("S-1008-02", window="all")
+    assert res.status == TelemetryStatus.OK
+    assert res.data is not None and baseline.data is not None
+    assert [s.sample_count for s in res.data.links] == [s.sample_count for s in baseline.data.links]
+
+
 def test_bgp_hold_time_evidence_emitted_with_partial_peer_timers(tmp_path: Path) -> None:
     (tmp_path / "bgp_status").mkdir()
     bgp_data = {

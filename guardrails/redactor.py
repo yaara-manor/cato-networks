@@ -62,6 +62,29 @@ _PATTERN_RULES: tuple[_Rule, ...] = (
         SecretKind.KEY_VALUE,
         re.compile(r"(?i)\bcurl\b[^\n]*?\s(?:-u|--user)\s+[\"']?[^\s:\"']+:(?P<secret>[^\s\"']+)"),
     ),
+    _Rule(
+        SecretKind.VENDOR_CONFIG,
+        re.compile(r"(?i)\bset\s+(?:psksecret|passwd|password|secret)\s+(?:ENC\s+)?\"?(?P<secret>[^\s\"]+)"),
+    ),
+    # ponytail: untyped Cisco keys (`crypto isakmp key <plain> address ...`) are left to the contextual and entropy layers; upgrade path: add an untyped rule when a scenario needs it.
+    _Rule(
+        SecretKind.VENDOR_CONFIG,
+        re.compile(
+            r"(?i)\b(?:pre-shared-key(?:\s+(?:local|remote))?|key|password|secret)\s+[05-9]\s+(?P<secret>\S+)"
+        ),
+    ),
+    _Rule(SecretKind.VENDOR_CONFIG, re.compile(r'(?im)^\s*:\s*PSK\s+"(?P<secret>[^"]+)"')),
+    _Rule(
+        SecretKind.VENDOR_CONFIG,
+        re.compile(r"(?m)^\s*(?:export\s+)?[A-Z][A-Z0-9_]*_KEY\s*=\s*[\"']?(?P<secret>[^\s\"']+)"),
+    ),
+)
+
+_CONTEXTUAL: Pattern[str] = re.compile(
+    r"(?i)\b(?:psk|pre-shared key|password|passphrase|secret|token|api key|shared key)\b"
+    r"(?:\s+[^\s:=]+){0,5}?"
+    r"\s*(?:\b(?:is|was)\b\s*[:=]?|[:=])\s*"
+    r"[\"'(]?(?P<secret>[^\s\"'()]\S*?)(?=[.,;:)\"']*(?:\s|$))"
 )
 
 
@@ -73,6 +96,21 @@ def _pattern_hits(text: str) -> Iterator[_Hit]:
     for rule in _PATTERN_RULES:
         for m in rule.pattern.finditer(text):
             yield _Hit(*m.span("secret"), rule.kind)
+
+
+def _character_classes(value: str) -> int:
+    has = (any(c.islower() for c in value), any(c.isupper() for c in value), any(c.isdigit() for c in value))
+    return sum(has) + (not value.isalnum())
+
+
+def _looks_like_secret(value: str) -> bool:
+    return any(c.isdigit() for c in value) or _character_classes(value) >= 3
+
+
+def _contextual_hits(text: str) -> Iterator[_Hit]:
+    for m in _CONTEXTUAL.finditer(text):
+        if _looks_like_secret(m.group("secret")):
+            yield _Hit(*m.span("secret"), SecretKind.CONTEXTUAL)
 
 
 def _merge(hits: list[_Hit]) -> list[_Hit]:
@@ -92,7 +130,7 @@ def redact(text: str) -> RedactionResult:
     placeholders = [m.span() for m in _PLACEHOLDER.finditer(norm.text)]
     hits = [
         hit
-        for hit in _pattern_hits(norm.text)
+        for hit in (*_pattern_hits(norm.text), *_contextual_hits(norm.text))
         if not any(hit.start < end and start < hit.end for start, end in placeholders)
     ]
     findings: list[RedactionFinding] = []

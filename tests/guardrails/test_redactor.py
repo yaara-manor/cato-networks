@@ -39,13 +39,28 @@ _STRUCTURAL_CASES: list[tuple[str, str, str, str]] = [
     ("curl_user", "curl -u admin:P4ss https://x", "P4ss", "KEY_VALUE"),
 ]
 
+_VENDOR_CASES: list[tuple[str, str, str, str]] = [
+    ("forti_enc", "set psksecret ENC abcdEFG==", "abcdEFG==", "VENDOR_CONFIG"),
+    ("forti_quoted", 'set psksecret "abcd1234"', "abcd1234", "VENDOR_CONFIG"),
+    ("cisco_key7", "crypto isakmp key 7 0822455D0A16 address 1.2.3.4", "0822455D0A16", "VENDOR_CONFIG"),
+    ("cisco_password0", "username a password 0 hunter2", "hunter2", "VENDOR_CONFIG"),
+    ("cisco_secret5", "enable secret 5 $1$abc$xyz", "$1$abc$xyz", "VENDOR_CONFIG"),
+    ("cisco_psk_local", "pre-shared-key local 0 MyKey123", "MyKey123", "VENDOR_CONFIG"),
+    ("strongswan", ': PSK "abc def"', "abc def", "VENDOR_CONFIG"),
+    ("env_key", "STRIPE_SECRET_KEY=abc", "abc", "VENDOR_CONFIG"),
+    ("env_export_key", 'export DEPLOY_KEY="k3y-value"', "k3y-value", "VENDOR_CONFIG"),
+]
+
+_SC08_PSK = "Fg7!qwe-DC-2026-tunnel"
+_SC08_TAIL = "Can you confirm what you have on your side?"
+
 
 @pytest.mark.parametrize(
     "case_id,text,secret,kind",
-    _STRUCTURAL_CASES,
-    ids=[case[0] for case in _STRUCTURAL_CASES],
+    _STRUCTURAL_CASES + _VENDOR_CASES,
+    ids=[case[0] for case in _STRUCTURAL_CASES + _VENDOR_CASES],
 )
-def test_structural_secret_is_redacted(case_id: str, text: str, secret: str, kind: str) -> None:
+def test_secret_is_redacted(case_id: str, text: str, secret: str, kind: str) -> None:
     result = redact(text)
     assert secret not in result.text
     assert len(result.findings) == 1
@@ -72,3 +87,39 @@ def test_clean_text_is_returned_unchanged() -> None:
     assert result.text == text
     assert result.findings == ()
     assert result.was_redacted is False
+
+
+@pytest.mark.parametrize("separator", [":", ""], ids=["colon", "bare_is"])
+def test_contextual_catches_sc08_psk_in_both_spellings(separator: str) -> None:
+    text = f"PSK on our side is{separator} {_SC08_PSK}. {_SC08_TAIL}"
+    result = redact(text)
+    assert _SC08_PSK not in result.text
+    assert _SC08_TAIL in result.text
+    assert len(result.findings) == 1
+    finding = result.findings[0]
+    assert finding.kind == "CONTEXTUAL"
+    assert text[finding.start : finding.end] == _SC08_PSK
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "The password reset is pending.",
+        "the token was expired",
+        "PSK was re-entered 26 h ago",
+        "The PSK on the Cato side was re-entered yesterday",
+        "the secret is unknown",
+    ],
+)
+def test_contextual_value_shape_guard(text: str) -> None:
+    assert redact(text).findings == ()
+
+
+def test_contextual_is_bounded_to_five_words() -> None:
+    assert redact("password one two three four five six is Zz9!aaaa").findings == ()
+
+
+def test_key_value_and_contextual_overlap_merge_to_key_value() -> None:
+    result = redact("password=hunter2")
+    assert len(result.findings) == 1
+    assert result.findings[0].kind == "KEY_VALUE"

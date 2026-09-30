@@ -3,7 +3,7 @@
 **Issue**: #4 (`[Phase 1] 1.4: KB Retrieval Client & Policy Lookup`)  
 **Branch**: `p-1-4_kb-retrieval-policy`  
 **Date**: 2026-09-30  
-**Status**: Revised Design (review round 2) — pending approval
+**Status**: Approved — split into plans `01`–`04` in this folder
 
 ---
 
@@ -14,7 +14,7 @@ Build the real-time KB hybrid retrieval client and internal policy lookup used b
 The subsystem must:
 1. Run first-stage hybrid retrieval: top-20 lexical (`tsvector` GIN, English Snowball stemming) + top-20 vector (`pgvector` 384-d cosine, `BAAI/bge-small-en-v1.5`).
 2. Fuse both rankings with Reciprocal Rank Fusion ($k = 60$).
-3. Rerank every fused candidate (at most 40) with the pinned cross-encoder `cross-encoder/ms-marco-MiniLM-L12-v2`.
+3. Rerank the top 20 fused candidates by RRF score with the pinned cross-encoder `cross-encoder/ms-marco-MiniLM-L12-v2` (see §2.8).
 4. Gate on a **calibrated** confidence threshold (`settings.rerank_min_score`) to refuse out-of-coverage questions (e.g. SC-09 IPv6-only roadmap), while keeping ungated top candidates and snapshot date for `answers.md` and traces.
 5. Serve and cite the 6 internal policies (`POL-CRED`, `POL-CREDIT`, `POL-IDV`, `POL-SEC`, `POL-SEV1`, `POL-SLA`) by normalized id.
 6. Degrade gracefully mid-conversation: KB search returns an `unavailable` envelope on `psycopg.Error`; policy lookup keeps working (in memory).
@@ -29,13 +29,14 @@ Out of scope: async API (callers wrap at the tool boundary), metadata filtering 
 1. **`encoders/` package**: move `kbindex/embed.py` → `encoders/embed.py` and `retrieval/rerank.py` → `encoders/rerank.py`. `kbindex/`, `db/init/` and `retrieval/` all depend downward on `encoders/`; no `kbindex` ↔ `retrieval` cross-imports; `core/` stays free of PyTorch.
 2. **One service, one models module**: all KB search, RRF, gating and policy lookup live in `RetrievalService` (`retrieval/service.py`); its Pydantic models live in `retrieval/models.py`. `core/models.py` keeps only cross-domain models. When `SupportDeps` is introduced, it holds one `retrieval: RetrievalService` field (no separate `policy_store`).
 3. **Sync-only API**: the codebase has no async code; every service takes `psycopg.Connection[Any]`. One sync method per operation. An async agent runtime wraps calls at the tool boundary with `asyncio.to_thread`. Halves method count and test surface vs. a sync+async pair.
-4. **English stemming on the stored lexical column**: change the `passages.search_vector` generated column from `to_tsvector('simple', body)` to `to_tsvector('english', body)` and build the query `tsquery` from the same `'english'` config.
+4. **English stemming on the stored lexical column**: a new migration changes the `passages.search_vector` generated column from `to_tsvector('simple', body)` to `to_tsvector('english', body)`; the query `tsquery` is built from the same `'english'` config.
    - **Why not keep `'simple'` + stem-prefix (`stem:*`)**: verified on the live DB that Snowball stems are not always prefixes of the surface word — `policy`→`polici`, `priority`→`prioriti`, `proxy`→`proxi` each fail to match themselves against the `'simple'` index. Stemming both sides with one config removes that failure class.
    - **Zero re-embedding**: only a generated column changes; `passages.embedding` is untouched.
    - **Identifier tokenization**: the default parser splits on `_`, so `NO_PROPOSAL_CHOSEN` becomes `propos | chosen` (`no` is a stopword). Numbers such as `1383` survive as lexemes. Vector search covers the exact-string intent.
 5. **Single-roundtrip hybrid SQL**: lexical top-20, vector top-20, `FULL OUTER JOIN` RRF, and the `kb_articles` metadata join run in one query.
 6. **Pinned data read once**: the 6 policies and the snapshot `crawled_at` are immutable for a given `seed.dump`, so `RetrievalService.__init__` loads them once. No per-call policy DB roundtrip, no per-row `snapshots` join, no empty-result snapshot fallback.
 7. **Result envelope for KB search only**: `KBSearchResult` follows the `TelemetryToolResult` pattern (ADR-005) with explicit status. Policy lookup cannot fail at runtime, so it returns plain values.
+8. **Rerank depth 20, batch size 8 (realtime budget)**: measured on this machine (CPU, under load, median of 5): cross-encoder over 40 pairs ≈ 2.0 s, over the RRF top-20 ≈ 0.9 s; `batch_size=8` beats 32 (less padding: 40 pairs 2.0 s vs 3.4 s). Vector scan over 14,109 rows ≈ 25 ms, query embedding ≈ 30 ms. The reranker is the whole latency budget, so `search_kb` reranks only the RRF top `_RERANK_K = 20`. Calibration (§4.3) reports p50/p95 to confirm.
 
 ---
 
@@ -48,7 +49,7 @@ flowchart LR
     Guard -- No --> Embed["encoders.embed.embed_query\n(query + bge prefix -> 384d)"]
     Embed --> HybridSQL["Single-roundtrip SQL\n1. lexical: 'english' OR tsquery vs search_vector (top 20)\n2. vector: pgvector '<=>' (top 20)\n3. fused: FULL OUTER JOIN, RRF k=60"]
     HybridSQL -- "psycopg.Error" --> Unavail["KBSearchResult\n(status='unavailable', error=...)"]
-    HybridSQL -- "<= 40 fused candidates" --> Rerank["encoders.rerank.rerank_pairs\n(MiniLM-L12 batched CPU)"]
+    HybridSQL -- "RRF top 20 of <= 40 fused" --> Rerank["encoders.rerank.rerank_pairs\n(MiniLM-L12, CPU, batch 8)"]
     Rerank --> Gate{"top-1 rerank_score >=\nrerank_min_score?"}
     Gate -- Yes --> Confident["KBSearchResult\n(status='confident',\npassages=filtered[:top_k],\ncandidates=ranked[:top_k])"]
     Gate -- No --> LowConf["KBSearchResult\n(status='low_confidence_refusal',\npassages=[],\ncandidates=ranked[:top_k])"]
@@ -71,7 +72,7 @@ flowchart LR
    - `rerank_score: float` — raw cross-encoder logit.
    - `citation_tag() -> str` — returns `[kb:{slug}#{heading_anchor}]`.
 2. **`KBSearchResult` (`BaseModel`, frozen)** — return envelope of `search_kb`.
-   - `status: Literal["confident", "low_confidence_refusal", "unavailable"]` (matches the `Literal` status convention in `core/models.py`).
+   - `status: KBSearchStatus` — `StrEnum` with `CONFIDENT`, `LOW_CONFIDENCE_REFUSAL`, `UNAVAILABLE`; mirrors `TelemetryStatus` on the sibling tools envelope.
    - `query: str`.
    - `passages: list[RetrievedPassage]` — up to `top_k` with `rerank_score >= min_score`; empty unless `confident`.
    - `candidates: list[RetrievedPassage]` — up to `top_k` reranked candidates before gating, for `answers.md` and `traces.retrieval_scores`.
@@ -83,22 +84,23 @@ flowchart LR
 
 ### 4.2 `RetrievalService` (`retrieval/service.py`)
 
-1. **`__init__(connection: psycopg.Connection[Any], embed_fn: Callable[[str], list[float]] = embed_query, rerank_fn: Callable[[str, list[str]], list[float]] = rerank_pairs, min_score: float = settings.rerank_min_score, rrf_k: int = 60, candidate_k: int = 20) -> None`**
+1. **`__init__(connection: psycopg.Connection[Any], min_score: float = settings.rerank_min_score) -> None`**
    - Loads all rows of `policies` into an immutable mapping keyed by canonical id, and the single `snapshots.crawled_at`.
+   - RRF $k = 60$ and branch depth 20 are module constants `_RRF_K`, `_CANDIDATE_K` (fixed by spec, never tuned per call). `search_kb` calls `encoders.embed.embed_query` and `encoders.rerank.rerank_pairs` directly; no injected model callables (every test runs the real models).
    - A `psycopg.Error` here propagates: startup already requires the DB (`db.init.startup`), so failing fast at construction is correct.
 2. **Private helpers**
    - `_normalize_policy_id(policy_id: str) -> str` — strip, uppercase, drop trailing `.MD`.
    - `_rank_and_gate(query: str, rows: list[_FusedRow], scores: list[float], top_k: int) -> KBSearchResult` — pure: attach scores, sort by `(-rerank_score, -rrf_score, passage_id)`, slice `candidates`, filter `passages` by `min_score`, choose status. `_FusedRow` is a frozen internal model for one SQL row.
 3. **`search_kb(query: str, top_k: int = 5) -> KBSearchResult`**
    - **Guard**: `top_k <= 0` raises `ValueError` (caller bug). Empty/whitespace query returns `low_confidence_refusal` with no DB/model work.
-   - **Embed**: `embed_fn(query)` on the raw query (bge prefix added inside `embed_query`).
+   - **Embed**: `embed_query(query)` on the raw query (bge prefix added inside `embed_query`).
    - **Hybrid SQL (one roundtrip)**:
-     - `q` CTE (`MATERIALIZED`): `tsquery` built by OR-joining the query's `'english'` lexemes (`tsvector_to_array(to_tsvector('english', query))`, each lexeme quoted). Empty lexeme set → lexical branch returns no rows; vector branch still runs.
-     - `lexical`: `search_vector @@ q.tsq`, order `ts_rank_cd(search_vector, q.tsq) DESC, id ASC`, limit `candidate_k`, with `row_number()` as `lex_rank`.
-     - `vector_search`: order `embedding <=> query_vector ASC, id ASC`, limit `candidate_k`, with `row_number()` as `vec_rank`.
-     - `fused`: `FULL OUTER JOIN` on `id`, `rrf_score = coalesce(1/(rrf_k+lex_rank),0) + coalesce(1/(rrf_k+vec_rank),0)`.
-     - Final select joins `passages` and `kb_articles` for metadata.
-   - **Rerank**: `rerank_fn(query, [row.body for row in rows])` over all fused rows, then `_rank_and_gate`.
+     - `q` CTE (`MATERIALIZED`): `tsquery` built by `string_agg(quote_literal(lexeme), ' | ')::tsquery` over `unnest(tsvector_to_array(to_tsvector('english', query)))`. The plain `::tsquery` cast keeps the already-stemmed lexemes as-is (`to_tsquery('english', …)` would stem them a second time). Empty lexeme set → `NULL` tsquery → lexical branch returns no rows; vector branch still runs. Verified on the live DB.
+     - `lexical`: `search_vector @@ q.tsq`, order `ts_rank_cd(search_vector, q.tsq) DESC, id ASC`, limit `_CANDIDATE_K`, with `row_number()` as `lex_rank`.
+     - `vector_search`: order `embedding <=> query_vector ASC, id ASC`, limit `_CANDIDATE_K`, with `row_number()` as `vec_rank`.
+     - `fused`: `FULL OUTER JOIN` on `id`, `rrf_score = coalesce(1/(_RRF_K+lex_rank),0) + coalesce(1/(_RRF_K+vec_rank),0)`.
+     - Final select joins `passages` and `kb_articles` for metadata, orders by `rrf_score DESC, id ASC`, limit `_RERANK_K` (20).
+   - **Rerank**: `rerank_pairs(query, [row.body for row in rows])` over the (at most 20) returned rows, then `_rank_and_gate`.
    - **Fault handling**: catch `psycopg.Error`, `logger.error`, `connection.rollback()` (the connection is shared with `TicketService`, so an aborted transaction must not leak), return `unavailable` with `error=str(exc)`.
 4. **`get_policy(policy_id: str) -> PolicyDocument | None`** — dict lookup after `_normalize_policy_id`.
 5. **`list_policies() -> list[PolicyDocument]`** — all policies ordered by id.
@@ -108,53 +110,55 @@ flowchart LR
 Retrieval-only; no agent required. Runs as soon as `search_kb` exists.
 1. **Inputs**
    - Answerable set: the 35 questions in `data/eval/questions.jsonl` (assumed in-coverage; the report lists each top-1 slug so any that are not can be spotted by eye).
-   - Out-of-coverage set: new fixture `data/eval/out_of_coverage.jsonl` — SC-09's opening message plus ~10 hand-written questions (roadmap dates, pricing, competitor comparison, unrelated IT products, off-topic).
+   - Out-of-coverage set: new fixture `data/eval/out_of_coverage.jsonl` — SC-09's opening message plus 10 hand-written questions (roadmap dates, pricing, competitor comparison, unrelated IT products, off-topic).
 2. **Process**: build `RetrievalService` with `min_score = -inf` so nothing is gated; record per query the top-1 `rerank_score`, top-1 slug, and `search_kb` wall-clock latency.
 3. **Output**: `docs/eval/threshold_calibration.md` — per-query table, both score distributions, chosen threshold, overlap count, p50/p95 latency.
 4. **Decision rule**: if the sets separate, threshold = midpoint of the gap. If they overlap, pick the lowest threshold that refuses every out-of-coverage query and report how many answerable questions it refuses.
-5. **Apply**: set the `rerank_min_score` default in `core/config.py` to the chosen value and record the rationale as a new ADR in `docs/overview/decisions.md`.
+5. **Apply**: set the `rerank_min_score` default in `core/config.py` to the chosen value and record the rationale in the retrieval ADR (ADR-005) in `docs/overview/decisions.md`.
 
 ### 4.4 Schema & Seed Change
 
-1. In `db/migrations/20260929_1500_kb-schema.sql`, change the `passages.search_vector` generated expression from `'simple'` to `'english'`; the GIN index `passages_search_vector` is unchanged.
-2. Regenerate `db/seed.dump` without re-crawling or re-embedding: restore the current dump, drop and re-add `search_vector` as the `'english'` generated column, recreate `passages_search_vector`, then `db.init.build.write_dump`.
+1. **Migration runner**: `db.init.seed.apply_schema` runs every `db/migrations/*.sql` in filename order (today it hardcodes the one file). Every migration stays idempotent because startup re-applies all of them after each `pg_restore`.
+2. **New migration** `db/migrations/20260930_1200-english-search-vector.sql`: a `DO` block that runs `ALTER TABLE passages ALTER COLUMN search_vector SET EXPRESSION AS (to_tsvector('english', body))` only while the stored expression (`pg_get_expr` on `pg_attrdef`) still contains `'simple'`. PG 18 (compose image `pgvector/pgvector:0.8.6-pg18`, live server 18.6) supports `SET EXPRESSION`; the table rewrite rebuilds `passages_search_vector` itself. 14,109 passages rewrite in well under a second, once. `20260929_1500_kb-schema.sql` is untouched.
+3. **Regenerate `db/seed.dump`** without re-crawling or re-embedding: restore the current dump, run `apply_schema`, then `db.init.build.write_dump`.
 
 ### 4.5 `TicketService` Text Normalization (`core/stopwords.py`, `services/ticket_service.py`)
 
 Replace the hand-rolled tokenizer with the same standard pipeline as KB search.
 1. **Exclusion stems**, three layers:
    - PostgreSQL `'english'` stopwords (applied by `to_tsvector` itself).
-   - scikit-learn `ENGLISH_STOP_WORDS` (318 general English words: `since`, `would`, `every`, `please`, `still`, …).
+   - `ENGLISH_STOP_WORDS`: the 318-word general English list from scikit-learn (Glasgow IR group list), **copied as data** — no scikit-learn dependency, no import cost. Source cited in a module comment.
    - `SUPPORT_NOISE_WORDS`: `ticket`, `issue`, `user`, `site`, `cato`, `today`, `week`, `minutes`, `fine`, `say` — support-process words found high in `ts_stat` over the 54 seeded tickets, documented as domain-specific. No published support-ticket stopword list exists; corpus-derived lists are the standard method, and 54 tickets are too few to derive one automatically.
-   - **Location**: new `core/stopwords.py` — pure data, no DB. Holds `SUPPORT_NOISE_WORDS` and `EXCLUDED_WORDS: frozenset[str]` (= `ENGLISH_STOP_WORDS | SUPPORT_NOISE_WORDS`). Cross-domain vocabulary, not ticket logic, so it sits beside `core/config.py`. Not re-exported from `core/__init__.py`: the scikit-learn import costs ~0.6 s, paid only by modules that import `core.stopwords`.
+   - **Location**: new `core/stopwords.py` — pure data, no DB, no imports. Holds `ENGLISH_STOP_WORDS`, `SUPPORT_NOISE_WORDS` and `EXCLUDED_WORDS: frozenset[str]` (their union). Cross-domain vocabulary, not ticket logic, so it sits beside `core/config.py`.
    - `TicketService.__init__` passes `EXCLUDED_WORDS` once through the same `'english'` stemmer (one query) and stores a `frozenset[str]` of excluded stems, so exclusion always matches the stemmer's output.
-2. **`_stem_texts(texts: list[str]) -> list[frozenset[str]]`** — one SQL roundtrip (`unnest ... with ordinality` + `tsvector_to_array(to_tsvector('english', text))`), returns stems per input text in order, minus excluded stems.
-3. **`detect_repeat_contact`**: after `get_ticket_history`, one `_stem_texts` call over every candidate's `subject + body` plus `symptom_text`; `_matches_area_or_symptom` receives precomputed stem sets. The rule is unchanged: two or more shared stems means a keyword match.
+2. **`_stem_texts(texts: list[str]) -> list[frozenset[str]]`** — one SQL roundtrip (`unnest(%(texts)s::text[]) with ordinality` + `tsvector_to_array(to_tsvector('english', text))`, ordered by ordinality), returns stems per input text in order, minus excluded stems. Verified on the live DB (empty text → empty array).
+3. **`detect_repeat_contact`**: after `get_ticket_history`, one `_stem_texts` call over every candidate's `subject + body` plus `symptom_text`; `_matches_area_or_symptom` receives precomputed stem sets. The rule is unchanged: two or more shared stems means a keyword match, via `_shares_stems(a: frozenset[str], b: frozenset[str]) -> bool`.
 4. **Delete**: `import re`, `_STOPWORDS`, `_symptom_stems`, `_shares_keywords`.
-5. **Dependency**: add `scikit-learn` to `pyproject.toml` `dependencies` (currently only transitive via `sentence-transformers`).
-6. **Behavior note**: the old code ignored tokens under 5 characters; short technical stems (`vpn`, `bgp`, `dns`) now count. The ADR-003 repeat-contact tests are the acceptance gate.
+5. **Behavior note**: the old code ignored tokens under 5 characters; short technical stems (`vpn`, `bgp`, `dns`) now count. The ADR-003 repeat-contact tests are the acceptance gate.
 
 ### 4.6 `encoders/` Changes
 
-1. Move files (§2.1); update imports in `kbindex/chunk.py`, `kbindex/store.py`, `db/init/startup.py`, `retrieval/service.py`, and tests.
+1. Move files (§2.1); update imports in `kbindex/chunk.py`, `kbindex/store.py`, `db/init/startup.py`, and tests.
 2. Move test constants `BGP_PASSAGE`, `SLA_PASSAGE`, `SMOKE_QUESTION` from `encoders/embed.py` into `tests/kbindex/test_embed_and_rerank_prefer_the_relevant_passage.py`.
 3. `embed_passages`: replace the per-string loop with one batched `model.encode(texts, ...)` call. Risk: batch padding can shift floats slightly; the exact-equality assertions in the embed test are the check.
-4. `rerank_pairs`: return `[]` for empty `passages` without calling the model; pass `batch_size=32`, `convert_to_numpy=True`, `show_progress_bar=False`.
+4. `rerank_pairs`: return `[]` for empty `passages` without calling the model; pass `batch_size=8` (§2.8), `convert_to_numpy=True`, `show_progress_bar=False`.
+5. `probe_width`: typed as `probe_width(embed: Callable[[list[str]], list[list[float]]] = embed_passages) -> int`, returning the length of the first vector. Drops the `Any` + `hasattr` duck-typing; the only runtime caller (`db/init/startup.py`) already passes that callable type. The test line passing a raw `SentenceTransformer` goes.
 
 ---
 
 ## 5. Testing & Verification
 
-Functional tests against the real seeded PostgreSQL and local models.
+Functional tests against the real seeded PostgreSQL and local models. New retrieval tests live in `tests/retrieval/`.
 
-1. **KB search (`tests/retrieval/test_retrieval_service.py`)**
+1. **KB search (`tests/retrieval/test_search_kb.py`)**
    - Q01 (DTLS MTU), Q05 (BGP route limit), Q10 (`NO_PROPOSAL_CHOSEN`), Q15 (Azure rekey): `confident`, non-empty `passages`, `snapshot_date` set, `rrf_score > 0`, `rerank_score >= min_score`, `citation_tag` matches `[kb:<slug>#<anchor>]`.
    - Stemming: a question using a -y word (`policy` / `priority`) and an inflected form (`rekeying`, `failed`) gets `lex_rank` hits — locks in the §2.4 fix.
    - Refusal: SC-09 opening message returns `low_confidence_refusal`, `passages == []`, non-empty `candidates`, using the calibrated threshold. Empty/whitespace query refuses; `top_k=0` raises `ValueError`.
-   - Outage: after `connection.close()`, `search_kb` returns `unavailable` with `error` set and raises nothing.
-2. **Policy lookup (same file)**: all 6 ids resolve; `"pol-sla.md"` normalizes to `POL-SLA`; unknown id returns `None`; `list_policies()` returns 6; lookups still succeed after `connection.close()`.
+   - Outage: after `connection.close()`, `search_kb` returns `unavailable` with `error` set and raises nothing. A query cancelled by `statement_timeout` returns `unavailable` and leaves the shared connection usable.
+2. **Policy lookup (`tests/retrieval/test_policy_lookup.py`)**: all 6 ids resolve; `"pol-sla.md"` normalizes to `POL-SLA`; unknown id returns `None`; `list_policies()` returns 6; lookups still succeed after `connection.close()`.
 3. **Ticket regressions (`tests/services/`)**: all ADR-003 repeat-contact scenarios (SC-06 Chicago site, `S-1003-01`, `S-1010-02`, free-text `symptom_text`) pass. New case: two tickets sharing only noise words (`please`, `issue`, `today`, `site`) are not a repeat.
-4. **Encoders**: existing `tests/kbindex/` embed/rerank/startup tests pass on the new `encoders.*` imports.
+4. **Schema (`tests/db/test_init.py`)**: after restoring `seed.dump` the `search_vector` expression uses `'english'`; `apply_schema` run twice is a no-op.
+5. **Encoders**: existing `tests/kbindex/` embed/rerank/startup tests pass on the new `encoders.*` imports.
 
 ---
 
@@ -162,7 +166,7 @@ Functional tests against the real seeded PostgreSQL and local models.
 
 1. Read every file created or modified (`encoders/`, `retrieval/`, `kbindex/`, `db/`, `core/`, `services/`, `eval/`, `tests/`) end-to-end; audit with `/ponytail` and `/thermo-nuclear-code-quality-review`.
 2. Confirm deleted: `kbindex/embed.py`, `retrieval/rerank.py`, `_STOPWORDS`, `_symptom_stems`, `_shares_keywords`, `import re` in `ticket_service.py`.
-3. Grep: no remaining `'simple'` tsvector references, no `kbindex.embed` / `retrieval.rerank` imports.
+3. Grep: no `'simple'` tsvector reference outside `20260929_1500_kb-schema.sql` and the guard in the new migration; no `kbindex.embed` / `retrieval.rerank` imports.
 4. Pyright `standard` and ruff clean; every function fully typed; no unused imports or helpers.
 5. Update `README.md` / architecture docs where they name the moved modules or the `'simple'` lexical config.
 
@@ -170,6 +174,5 @@ Functional tests against the real seeded PostgreSQL and local models.
 
 ## 7. Unresolved Questions
 
-1. Edit migration `20260929_1500` in place, or add a new migration file? (In place is safe: runtime always restores from `seed.dump`.)
-2. Out-of-coverage fixture — ~10 hand-written questions OK, or do you have real ones?
-3. Test location `tests/retrieval/` OK? (Existing retrieval-adjacent tests live in `tests/kbindex/`.)
+1. `core/models.Citation` duplicates most `RetrievedPassage` fields and has no caller. Left untouched here; decide when traces/`AgentTrace` consume retrieval output.
+2. ADR numbering: this branch's ADR-005 (retrieval) collides with `p-1-3`'s ADR-005/006 (telemetry). Renumber at merge.

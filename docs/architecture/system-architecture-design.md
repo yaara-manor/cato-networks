@@ -129,15 +129,15 @@ Every agent receives a typed context container via PydanticAI dependency injecti
 
 #### 1. Triage Agent
 - **Purpose**: Authenticates caller, establishes account tier and SLA target clock, checks for repeat contact churn, detects prompt injection/social engineering, and extracts technical scope.
-- **Allowed Tools**: `lookup_account(email_or_account_id)`, `get_ticket_history(account_id, site_id)`.
+- **Allowed Tools**: `lookup_account(email_or_account_id)`, `authenticate_caller(caller_email, claimed_account_id, claimed_tier)`, `calculate_sla_deadlines(...)`, `get_ticket_history(account_id, site_id)`, `detect_repeat_contact(...)`.
 - **Typed Input**: Raw customer message, active session metadata.
 - **Typed Output (`TriageDecision`)**:
   - `account_id: str | None`
-  - `customer_tier: str` (e.g. "Enterprise", "Standard", "Unknown")
+  - `customer_tier: Literal["Premium", "Standard", "Unknown"]`
   - `sla_first_response_due: datetime`
-  - `is_repeat_contact: bool` (true if site had a ticket in the last 7 days)
+  - `is_repeat_contact: bool` (true when unbounded ticket history shows `>= 1` prior closed ticket on the same site/symptom or `>= 2` tickets sharing site and product area/symptom stem)
   - `intent: Literal["telemetry_diagnosis", "kb_inquiry", "policy_request", "adversarial"]`
-  - `scoping_question: str | None` (populated if customer request is vague)
+  - `scoping_question: str | None` (populated if customer request is vague or account country is missing/unrecognized)
 - **Failure Mode**: Unrecognized caller defaults to unverified tier; requests caller provide registered account email; refuses private telemetry display without verification.
 
 #### 2. Diagnostics Agent

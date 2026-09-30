@@ -23,3 +23,25 @@
   - Storing `accounts` and `tickets` in PostgreSQL allows indexed SQL queries (`tickets_customer_created_idx`, `tickets_customer_site_idx`) for repeat-contact detection and persistent ticket status updates across sessions.
   - Using `on conflict (ticket_id) do nothing` (`preserve_existing=True`) during `db.init.startup` ensures live ticket updates are preserved across container restarts while `db.init.build` (`preserve_existing=False`) resets the canonical `db/seed.dump`.
   - Moving `seed.py`, `startup.py`, and `build.py` into `db/init/` keeps `kbindex/` strictly focused on KB crawling, chunking, and embedding.
+
+---
+
+## ADR-003: Unbounded Repeat-Contact Detection Window (The Chicago Site Rule)
+
+- **Context / Problem**: An early draft of §4.2 in `system-architecture-design.md` described `is_repeat_contact` as checking whether a site had a ticket in the last 7 days. However, in the synthetic ticket dataset (`data/tickets/tickets.jsonl`) anchored at `2026-08-28T17:00:00Z`, the canonical repeat-contact scenario (`SC-06` — Solstice Media Chicago site `S-1008-01`) consists of three tickets on the same site: `TCK-20264200` (`2026-08-11`, closed), `TCK-20264201` (`2026-08-19`, closed), and `TCK-20264216` (`2026-08-25`, open). A strict 7-day cutoff from `2026-08-28` (`>= 2026-08-21`) would exclude both prior closed tickets (`Aug 11` and `Aug 19`), leaving only the single open ticket (`Aug 25`) and failing to detect the repeat contact. Conversely, sites with two unrelated open tickets on the same site (`S-1003-01` firmware vs IPS; `S-1010-02` cloud/IPsec vs routing/BGP) must not be falsely flagged as repeat contacts.
+- **Options Evaluated**:
+  1. Enforce a strict 7-day lookback window (`created_at >= clock.now() - 7 days`).
+  2. Use an unbounded historical lookback on `tickets` for the account/site, flagging `is_repeat_contact = True` when there is `>= 1` prior `closed` ticket on the same site/symptom or `>= 2` tickets sharing both `site_id` and (`product_area` or recurring symptom stems).
+- **Chosen Approach**: Option 2 (`TicketService.detect_repeat_contact` in `services/ticket_service.py`).
+- **Reasoning**: Captures multi-week recurring site churn (`SC-06` Chicago site across Aug 11, Aug 19, and Aug 25) while avoiding false positives on single-incident open sites (`SC-01`, `SC-11`, `SC-12`) and on sites with two unrelated open tickets (`S-1003-01`, `S-1010-02`).
+
+---
+
+## ADR-004: Dynamic `zoneinfo` Resolution from Account `country` Code & PydanticAI Gemini Fallback Agent
+
+- **Context / Problem**: `POL-SLA.md` specifies that `P2`–`P4` SLA clocks run in business hours (`Mon–Fri 08:00–18:00` in the customer's primary region), while `P1` runs `24x7`. Account records store a 2-letter ISO country code (`country`), which may occasionally be `NULL` or require interactive clarification from a free-text customer reply (e.g., `"I'm in Israel"`).
+- **Options Evaluated**:
+  1. Hardcode a static Python dictionary of country codes and regex rules for free-text country extraction.
+  2. Resolve any ISO 3166-1 alpha-2 country code dynamically via Python's stdlib IANA timezone table (`/usr/share/zoneinfo/zone1970.tab`, cached once in memory via `@lru_cache(maxsize=1)`), and when `country` is missing or unrecognized, log an error, prompt the user for their country, and extract the ISO code from the user's free-text reply via a PydanticAI `Agent` (`settings.llm_model = "google-gla:gemini-3.8-flash"` with structured `CountryCodeOutput`) before persisting it to `accounts.country`.
+- **Chosen Approach**: Option 2 (`CustomerService` in `services/customer_service.py`).
+- **Reasoning**: Parsing `/usr/share/zoneinfo/zone1970.tab` once with primary-country precedence supports all ISO 3166-1 alpha-2 codes (`US -> America/New_York`, `DE -> Europe/Berlin`, `IL -> Asia/Jerusalem`, `NL -> Europe/Brussels`, etc.) with zero external dependencies or per-call disk I/O, while PydanticAI + Gemini Flash cleanly normalizes arbitrary natural-language country replies and persists the resolved code to PostgreSQL.

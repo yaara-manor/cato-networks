@@ -13,10 +13,10 @@ _EXPECTED_POLICY_IDS: list[str] = [
     "POL-SLA",
 ]
 
-# Review Focus 1: id spelling variants that must all resolve to POL-SLA.
+# id spellings callers and the LLM produce; all resolve to POL-SLA
 _SLA_VARIANTS: list[str] = [" pol-sla ", "POL-SLA.md", "pol-sla.MD"]
 
-# Review Focus 2: ids that must not resolve and never raise.
+# ids that must miss without raising
 _UNKNOWN_IDS: list[str] = ["", "POL-SLA-EXTRA", "../POL-SLA"]
 
 

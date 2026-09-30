@@ -20,7 +20,7 @@ _ACCOUNT_ID: Pattern[str] = re.compile(r"(?i)\bACC-\d+\b")
 
 
 def check_claims(text: str, identity: CallerIdentity) -> EntitlementVerdict:
-    body = normalize(text).text
+    body = " ".join(normalize(text).text.split())
     claims: list[FalseClaim] = []
     if _TIER_CLAIM.search(body) and identity.effective_tier != "Premium":
         claims.append(FalseClaim(kind=ClaimKind.TIER, claimed="Premium", actual=identity.effective_tier))

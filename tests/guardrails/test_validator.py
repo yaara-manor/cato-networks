@@ -134,6 +134,7 @@ def test_repeated_claims_are_deduplicated_in_first_seen_order(identity_mark: Cal
     "text",
     [
         "we are a pre\u200bmium customer",
+        "WE\n\nARE   A  PREMIUM customer",
         "\uff57\uff45 \uff41\uff52\uff45 \uff41 \uff30\uff52\uff45\uff4d\uff49\uff55\uff4d customer",
     ],
 )

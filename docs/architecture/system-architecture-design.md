@@ -120,7 +120,7 @@ Every agent receives a typed context container via PydanticAI dependency injecti
 - `clock: SimulationClock` — Provides frozen time `2026-08-28T17:00:00Z` and elapsed time calculations.
 - `db_pool: AsyncConnectionPool` — Connection pool to Postgres.
 - `telemetry: TelemetryService` — Interface to read synthetic CMA telemetry files directly from `data/telemetry/` with `(resolved_path, mtime_ns)` caching, returning typed `TelemetryToolResult[T]` envelopes with pre-extracted `TelemetryEvidence`.
-- `retrieval: RetrievalService` — Unified interface in `retrieval/service.py` for hybrid KB search (`search_kb` returning `KBSearchResult`) and authoritative internal policy lookup (`get_policy` / `list_policies` returning `PolicyLookupResult`).
+- `retrieval: RetrievalService` — Unified interface in `retrieval/service.py` for hybrid KB search (`search_kb` returning `KBSearchResult`) and authoritative internal policy lookup (`get_policy(policy_id) -> PolicyDocument | None`, `list_policies() -> list[PolicyDocument]`). Policies are loaded once at construction and served from memory, so lookup cannot fail at runtime (it keeps working during a DB outage); an unknown id returns `None`.
 - `customer_store: CustomerService` — Account tier and ticket history query engine.
 
 ---
@@ -159,13 +159,13 @@ Every agent receives a typed context container via PydanticAI dependency injecti
 
 #### 3. Knowledge Agent
 - **Purpose**: Formulates search queries against Cato documentation, queries Postgres hybrid index via `RetrievalService`, executes cross-encoder reranking, and checks policy rules.
-- **Allowed Tools**: `search_knowledge_base(query: str) -> KBSearchResult`, `get_policy_by_id(policy_id: str) -> PolicyLookupResult`.
+- **Allowed Tools**: `search_knowledge_base(query: str) -> KBSearchResult`, `get_policy(policy_id: str) -> PolicyDocument | None` (unknown id → `None`; in-memory, unaffected by DB outages).
 - **Typed Input**: Diagnosis findings or customer technical question.
 - **Typed Output (`KnowledgeBundle`)**:
   - `retrieved_passages: list[RetrievedPassage]` (`passage_id`, `slug`, `title`, `heading`, `heading_anchor`, `public_url`, `body`, `site_updated_at`, `lex_rank`, `vec_rank`, `rrf_score`, `rerank_score`, `citation_tag`)
   - `referenced_policies: list[PolicyDocument]` (`policy_id`, `title`, `file_path`, `body`, `citation_tag`)
   - `confidence_status: Literal["confident", "low_confidence_refusal", "unavailable"]`
-- **Failure Mode**: If top rerank score < `RERANK_MIN_SCORE`, `KBSearchResult` returns `status="low_confidence_refusal"` with `passages=[]` and unfiltered `candidates` preserved for eval/trace logging. If database is down, `KBSearchResult` / `PolicyLookupResult` catches `psycopg.Error` and returns `status="unavailable"`.
+- **Failure Mode**: If top rerank score < `RERANK_MIN_SCORE`, `KBSearchResult` returns `status="low_confidence_refusal"` with `passages=[]` and unfiltered `candidates` preserved for eval/trace logging. If the database is down, `search_kb` catches `psycopg.Error` and returns a `KBSearchResult` with `status="unavailable"`; policy lookup is unaffected (served from memory).
 
 #### 4. Resolution & Action Agent
 - **Purpose**: Synthesizes customer context, telemetry evidence, and KB passages into a conversational, empathetic, and grounded response. Proposes support actions and marks high-impact operations for approval.

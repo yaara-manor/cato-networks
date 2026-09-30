@@ -42,5 +42,6 @@ def embed_query(text: str) -> list[float]:
 
 
 def probe_width(embed: Callable[[list[str]], list[list[float]]] = embed_passages) -> int:
-    # Embed the fixed string width-check and return the vector length.
-    return len(embed(["width-check"])[0])
+    # Embed the fixed string width-check and return the vector length (0 when no vector comes back).
+    vectors = embed(["width-check"])
+    return len(vectors[0]) if vectors else 0

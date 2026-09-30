@@ -66,5 +66,15 @@
   - **Production Alignment & YAGNI**: Reading directly from `data/telemetry/` accurately models querying an external read-only CMA API per `site_id` / `user_email` without unnecessary SQL tables, migrations, or `tools/formatters.py` indirection.
   - **Context-Aware Windowing**: Slicing and aggregating `link_quality/<site_id>.csv` by `window` reduces 580 CSV rows to compact per-link statistical summaries + anomaly evidence, whereas ignoring the time cutoff in `get_events` ensures multi-day historical alerts in tiny `<20`-line JSONL logs (`S-1008-03`) are never lost.
 
+## ADR-006: Telemetry Hardening: Identity Validation, Granular Reachability, Asynchronous Timeouts, and Shared State Enums
 
-
+- **Context / Problem**: Initial telemetry loading allowed potential foreign payload returns if embedded identities (`site_id`, `user_email`) did not match the query, collapsed UDP and TCP 443 reachability into a single text-formatted evidence item, lacked positive deadline enforcement during synchronous read/parsing operations, used unconstrained `str` for finite-state fields (`SiteRecord.status`, `CmaEvent.action`, `BgpNeighbor.state`, `IpsecTunnelEndpoint.status`), permitted `SimulationClock` to raise unhandled `OverflowError` on massive finite windows (e.g. `1000000000d`), evaluated IPsec note anomalies using only the primary tunnel, and defaulted missing BGP timer fields to `0` (emitting misleading `0s` evidence on idle sessions).
+- **Options Evaluated**:
+  1. Rely on filename validation alone, ignore positive timeout enforcement, and parse reachability strings downstream.
+  2. Implement strict identity validation on all loaded objects and JSONL lines (returning `TelemetryStatus.UNAVAILABLE` on mismatch), emit discrete `udp_443_reachable` and `tcp_443_reachable` evidence entries with raw booleans alongside optional `ssid` evidence, enforce positive timeouts via non-blocking worker pool cancellation (`_load_with_timeout`), constrain finite states with `Literal` types and preprocessing normalization (`@field_validator(mode="before")`), normalize oversized finite windows (`>= MAX_WINDOW_HOURS`) to `float("inf")`, link IPsec note anomalies to aggregate tunnel health (`primary_unhealthy or secondary_unhealthy`), and define BGP negotiated timers as `int | None = None` while suppressing timer evidence for inactive sessions.
+- **Chosen Approach**: Option 2.
+- **Reasoning**:
+  - **Zero Trust File Parsing**: Path resolution protects directory boundaries, but validating embedded IDs prevents foreign data leakage if files are misplaced or corrupted.
+  - **Granular Evidence Citations**: Consumers and evaluation metrics require structured evaluation of UDP vs TCP port 443 connectivity without regex parsing of composite reachability strings.
+  - **Bounded Execution**: Bounding both I/O and deserialization under `_load_with_timeout` guarantees the TAC agent will not freeze if disk or parser operations hang, returning `TelemetryStatus.UNAVAILABLE` consistently.
+  - **Explicit Modeling of BGP & Tunnel States**: An idle BGP session has no negotiated timers; reporting `0s` without an anomaly was factually misleading. Making timers optional accurately reflects protocol reality and cleanly suppresses timer evidence until a session reaches `Established`.

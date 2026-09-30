@@ -1,5 +1,8 @@
 from datetime import datetime, timezone
+import json
 from pathlib import Path
+import re
+import time
 
 from core.clock import SimulationClock
 from tools import TelemetryEvidence, TelemetryService, TelemetryStatus
@@ -202,10 +205,11 @@ def test_client_diagnostics_hotel_wifi_captive_portal() -> None:
         for ev in diag_res.evidence
     )
     assert any(
-        ev.metric_key == "reachability"
-        and "udp_443=False" in ev.raw_value
-        and "tcp_443=False" in ev.raw_value
-        and ev.is_anomaly
+        ev.metric_key == "udp_443_reachable" and ev.raw_value == "false" and ev.is_anomaly
+        for ev in diag_res.evidence
+    )
+    assert any(
+        ev.metric_key == "tcp_443_reachable" and ev.raw_value == "false" and ev.is_anomaly
         for ev in diag_res.evidence
     )
 
@@ -352,3 +356,256 @@ def test_telemetry_evidence_format_citation() -> None:
         is_anomaly=True,
     )
     assert ev.format_citation() == "routes_count 1024/1024 [telemetry:get_bgp_status]"
+
+
+def test_embedded_identity_mismatch_returns_unavailable(tmp_path: Path) -> None:
+    # 1. BGP file with mismatched embedded site_id
+    (tmp_path / "bgp_status").mkdir()
+    bgp_mismatch = {
+        "site_id": "S-9999-99",
+        "queried_at": "2026-08-28T17:00:00Z",
+        "neighbors": [
+            {
+                "peer_ip": "10.0.0.1",
+                "peer_asn": 65001,
+                "cato_asn": 65002,
+                "state": "Established",
+                "hold_time_configured": 60,
+                "keepalive_configured": 20,
+                "routes_count": 10,
+                "routes_limit": 100,
+            }
+        ],
+    }
+    (tmp_path / "bgp_status" / "S-1007-01.json").write_text(json.dumps(bgp_mismatch), encoding="utf-8")
+
+    # 2. IPsec file with mismatched embedded site_id
+    (tmp_path / "ipsec_status").mkdir()
+    ipsec_mismatch = {
+        "site_id": "S-8888-88",
+        "peer": "Azure",
+        "ike_version": "ikev2",
+        "initiator": "cato",
+        "primary": {"status": "up"},
+        "queried_at": "2026-08-28T17:00:00Z",
+    }
+    (tmp_path / "ipsec_status" / "S-1002-03.json").write_text(json.dumps(ipsec_mismatch), encoding="utf-8")
+
+    # 3. Client diagnostics file with mismatched embedded user_email
+    (tmp_path / "clients").mkdir()
+    client_mismatch = {
+        "user_email": "other.user@example.com",
+        "customer_id": "ACC-1008",
+        "os": "macOS",
+        "client_version": "5.4.1",
+        "last_connect_attempt": "2026-08-28T17:00:00Z",
+        "network": {
+            "captive_portal_detected": False,
+            "udp_443_reachable": True,
+            "tcp_443_reachable": True,
+        },
+        "queried_at": "2026-08-28T17:00:00Z",
+    }
+    (tmp_path / "clients" / "sam.dubois@atlas-eng.com.json").write_text(json.dumps(client_mismatch), encoding="utf-8")
+
+    # 4. Events file with an event that has mismatched site_id
+    (tmp_path / "events").mkdir()
+    event_valid = {
+        "ts": "2026-08-28T16:00:00Z",
+        "site_id": "S-1008-02",
+        "event_type": "Connectivity",
+        "sub_type": "Keepalive",
+        "action": "Connected",
+        "message": "Connected",
+    }
+    event_invalid = {
+        "ts": "2026-08-28T16:01:00Z",
+        "site_id": "S-9999-99",
+        "event_type": "Connectivity",
+        "sub_type": "Keepalive",
+        "action": "Connected",
+        "message": "Foreign event",
+    }
+    events_text = f"{json.dumps(event_valid)}\n{json.dumps(event_invalid)}\n"
+    (tmp_path / "events" / "S-1008-02.jsonl").write_text(events_text, encoding="utf-8")
+
+    service = TelemetryService(telemetry_dir=tmp_path)
+    assert service.get_bgp_status("S-1007-01").status == TelemetryStatus.UNAVAILABLE
+    assert service.get_ipsec_status("S-1002-03").status == TelemetryStatus.UNAVAILABLE
+    assert service.get_client_diagnostics("sam.dubois@atlas-eng.com").status == TelemetryStatus.UNAVAILABLE
+    assert service.get_events("S-1008-02").status == TelemetryStatus.UNAVAILABLE
+
+
+def test_client_diagnostics_reachability_and_ssid_evidence() -> None:
+    service = TelemetryService()
+    res = service.get_client_diagnostics("sam.dubois@atlas-eng.com")
+    assert res.status == TelemetryStatus.OK
+    assert res.data is not None
+
+    udp_ev = next((ev for ev in res.evidence if ev.metric_key == "udp_443_reachable"), None)
+    assert udp_ev is not None
+    assert udp_ev.raw_value == "false"
+    assert udp_ev.is_anomaly is True
+
+    tcp_ev = next((ev for ev in res.evidence if ev.metric_key == "tcp_443_reachable"), None)
+    assert tcp_ev is not None
+    assert tcp_ev.raw_value == "false"
+    assert tcp_ev.is_anomaly is True
+
+    ssid_ev = next((ev for ev in res.evidence if ev.metric_key == "ssid"), None)
+    assert ssid_ev is not None
+    assert ssid_ev.raw_value == "HotelWifi"
+    assert ssid_ev.is_anomaly is False
+
+
+def test_positive_timeout_enforcement_returns_unavailable() -> None:
+    def slow_parse(text: str) -> str:
+        time.sleep(0.05)
+        return text
+
+    service = TelemetryService(timeout_seconds=0.005)
+    res = service._load_validated(
+        "test_tool",
+        "ACC-1008",
+        re.compile(r"^ACC-\d{4}$"),
+        "account_id",
+        "sites.json",
+        slow_parse,
+    )
+    assert isinstance(res, TelemetryEvidence) is False
+    assert res.status == TelemetryStatus.UNAVAILABLE
+
+
+def test_finite_state_normalization_and_classification(tmp_path: Path) -> None:
+    # 1. Lowercase "alert" action normalized and classified as anomaly
+    (tmp_path / "events").mkdir()
+    event_alert = {
+        "ts": "2026-08-28T16:00:00Z",
+        "site_id": "S-1008-02",
+        "event_type": "Security",
+        "sub_type": "Threat",
+        "action": "alert",
+        "message": "Potential threat detected",
+    }
+    (tmp_path / "events" / "S-1008-02.jsonl").write_text(json.dumps(event_alert) + "\n", encoding="utf-8")
+
+    service = TelemetryService(telemetry_dir=tmp_path)
+    res = service.get_events("S-1008-02")
+    assert res.status == TelemetryStatus.OK
+    assert res.data is not None
+    assert res.data.events[0].action == "Alert"
+    assert any(ev.metric_key == "Security/Threat (Alert)" and ev.is_anomaly for ev in res.evidence)
+
+    # 2. Unsupported action variant rejected
+    (tmp_path / "events" / "S-1008-02.jsonl").write_text(
+        json.dumps({**event_alert, "action": "NonExistentAction"}) + "\n",
+        encoding="utf-8",
+    )
+    assert service.get_events("S-1008-02").status == TelemetryStatus.UNAVAILABLE
+
+    # 3. BGP neighbor state evidence classification
+    (tmp_path / "bgp_status").mkdir()
+    bgp_data = {
+        "site_id": "S-1007-01",
+        "queried_at": "2026-08-28T17:00:00Z",
+        "neighbors": [
+            {
+                "peer_ip": "10.0.0.1",
+                "peer_asn": 65001,
+                "cato_asn": 65002,
+                "state": "established",
+                "hold_time_configured": 60,
+                "keepalive_configured": 20,
+                "routes_count": 10,
+                "routes_limit": 100,
+            }
+        ],
+    }
+    (tmp_path / "bgp_status" / "S-1007-01.json").write_text(json.dumps(bgp_data), encoding="utf-8")
+    bgp_res = service.get_bgp_status("S-1007-01")
+    assert bgp_res.status == TelemetryStatus.OK
+    assert bgp_res.data is not None
+    assert bgp_res.data.neighbors[0].state == "Established"
+    assert any(ev.metric_key == "state" and ev.raw_value == "Established" and not ev.is_anomaly for ev in bgp_res.evidence)
+
+
+def test_oversized_window_regression_1000000000d() -> None:
+    service = TelemetryService()
+    res_days = service.get_link_quality("S-1008-02", window="1000000000d")
+    assert res_days.status == TelemetryStatus.OK
+    assert res_days.data is not None
+
+    res_hours = service.get_link_quality("S-1008-02", window="1000000000h")
+    assert res_hours.status == TelemetryStatus.OK
+    assert res_hours.data is not None
+
+
+def test_ipsec_note_anomaly_reflects_secondary_tunnel_health(tmp_path: Path) -> None:
+    (tmp_path / "ipsec_status").mkdir()
+    # Primary is UP, secondary is DOWN
+    ipsec_secondary_down = {
+        "site_id": "S-1002-03",
+        "peer": "Azure",
+        "ike_version": "ikev2",
+        "initiator": "cato",
+        "primary": {"status": "up"},
+        "secondary": {"status": "down", "last_error": "PEER_NOT_RESPONDING"},
+        "note": "Secondary tunnel configuration requires review",
+        "queried_at": "2026-08-28T17:00:00Z",
+    }
+    (tmp_path / "ipsec_status" / "S-1002-03.json").write_text(json.dumps(ipsec_secondary_down), encoding="utf-8")
+    service = TelemetryService(telemetry_dir=tmp_path)
+    res = service.get_ipsec_status("S-1002-03")
+    assert res.status == TelemetryStatus.OK
+    assert res.data is not None
+    note_ev = next((ev for ev in res.evidence if ev.metric_key == "note"), None)
+    assert note_ev is not None
+    assert note_ev.is_anomaly is True
+
+    # Both tunnels UP with no errors -> note is not anomalous
+    ipsec_both_up = {
+        "site_id": "S-1002-03",
+        "peer": "Azure",
+        "ike_version": "ikev2",
+        "initiator": "cato",
+        "primary": {"status": "up"},
+        "secondary": {"status": "up"},
+        "note": "Standard maintenance note",
+        "queried_at": "2026-08-28T17:00:00Z",
+    }
+    (tmp_path / "ipsec_status" / "S-1002-03.json").write_text(json.dumps(ipsec_both_up), encoding="utf-8")
+    res_up = service.get_ipsec_status("S-1002-03")
+    assert res_up.status == TelemetryStatus.OK
+    note_ev_up = next((ev for ev in res_up.evidence if ev.metric_key == "note"), None)
+    assert note_ev_up is not None
+    assert note_ev_up.is_anomaly is False
+
+
+def test_bgp_neighbor_timer_fields_optional_and_suppressed_when_absent() -> None:
+    service = TelemetryService()
+
+    # S-1010-02 has an Idle neighbor without negotiated timers
+    idle_res = service.get_bgp_status("S-1010-02")
+    assert idle_res.status == TelemetryStatus.OK
+    assert idle_res.data is not None
+    neighbor = idle_res.data.neighbors[0]
+    assert neighbor.state == "Idle"
+    assert neighbor.hold_time_negotiated is None
+    assert neighbor.peer_hold_time is None
+    assert neighbor.peer_keepalive is None
+
+    # Hold time evidence must be suppressed when absent (no misleading "negotiated 0s")
+    assert not any(ev.metric_key == "hold_time" for ev in idle_res.evidence)
+
+    # State evidence must be emitted and flagged as anomaly for Idle
+    assert any(ev.metric_key == "state" and ev.raw_value == "Idle" and ev.is_anomaly for ev in idle_res.evidence)
+
+    # S-1007-01 has an Established neighbor with all timers present
+    est_res = service.get_bgp_status("S-1007-01")
+    assert est_res.status == TelemetryStatus.OK
+    assert est_res.data is not None
+    est_neighbor = est_res.data.neighbors[0]
+    assert est_neighbor.state == "Established"
+    assert est_neighbor.hold_time_negotiated == 30
+    assert any(ev.metric_key == "hold_time" and "negotiated 30s" in ev.raw_value and ev.is_anomaly for ev in est_res.evidence)
+

@@ -1,7 +1,35 @@
 from enum import StrEnum
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import AwareDatetime, BaseModel, Field
+from pydantic import AwareDatetime, BaseModel, Field, field_validator
+
+SiteStatus = Literal["connected", "disconnected", "degraded"]
+
+CmaEventAction = Literal[
+    "Alert",
+    "Block",
+    "Changed",
+    "Connected",
+    "Disconnected",
+    "Established",
+    "Failed",
+    "Info",
+    "Reconnected",
+    "Skipped",
+    "Started",
+    "Warning",
+]
+
+BgpState = Literal[
+    "Idle",
+    "Connect",
+    "Active",
+    "OpenSent",
+    "OpenConfirm",
+    "Established",
+]
+
+IpsecTunnelStatus = Literal["up", "down", "degraded"]
 
 
 class TelemetryStatus(StrEnum):
@@ -33,9 +61,16 @@ class SiteRecord(BaseModel):
     ha: bool
     wan_links: list[str]
     connected_pop: str
-    status: str
+    status: SiteStatus
     last_seen: AwareDatetime
     native_range: str
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def _normalize_status(cls, v: Any) -> str:
+        if isinstance(v, str):
+            return v.strip().lower()
+        return v
 
 
 class SiteListPayload(BaseModel):
@@ -72,7 +107,7 @@ class CmaEvent(BaseModel):
     site_id: str
     event_type: str
     sub_type: str
-    action: str
+    action: CmaEventAction
     message: str
     link: str | None = None
     src: str | None = None
@@ -83,6 +118,13 @@ class CmaEvent(BaseModel):
     direction: str | None = None
     bgp_disconnect_error_code: str | None = None
     peer: str | None = None
+
+    @field_validator("action", mode="before")
+    @classmethod
+    def _normalize_action(cls, v: Any) -> str:
+        if isinstance(v, str):
+            return v.strip().capitalize()
+        return v
 
 
 class EventsPayload(BaseModel):
@@ -96,13 +138,13 @@ class BgpNeighbor(BaseModel):
     peer_ip: str
     peer_asn: int
     cato_asn: int
-    state: str
+    state: BgpState
     uptime_seconds: int = 0
     hold_time_configured: int
     keepalive_configured: int
-    hold_time_negotiated: int = 0
-    peer_hold_time: int = 0
-    peer_keepalive: int = 0
+    hold_time_negotiated: int | None = None
+    peer_hold_time: int | None = None
+    peer_keepalive: int | None = None
     routes_count: int
     routes_limit: int
     last_error: str | None = None
@@ -112,6 +154,18 @@ class BgpNeighbor(BaseModel):
     static_ranges_overriding: list[str] | None = None
     learned_prefixes_sample: list[str] | None = None
 
+    @field_validator("state", mode="before")
+    @classmethod
+    def _normalize_state(cls, v: Any) -> str:
+        if isinstance(v, str):
+            normalized = v.strip().title()
+            if normalized == "Openconfirm":
+                return "OpenConfirm"
+            if normalized == "Opensent":
+                return "OpenSent"
+            return normalized
+        return v
+
 
 class BgpStatusPayload(BaseModel):
     site_id: str
@@ -120,11 +174,18 @@ class BgpStatusPayload(BaseModel):
 
 
 class IpsecTunnelEndpoint(BaseModel):
-    status: str
+    status: IpsecTunnelStatus
     last_error: str | None = None
     cato_egress_ip: str | None = None
     site_ip: str | None = None
     since: AwareDatetime | None = None
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def _normalize_status(cls, v: Any) -> str:
+        if isinstance(v, str):
+            return v.strip().lower()
+        return v
 
 
 class IkeParameters(BaseModel):

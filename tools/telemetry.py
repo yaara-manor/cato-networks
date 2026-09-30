@@ -1,8 +1,10 @@
 from collections.abc import Callable
+import concurrent.futures
 import csv
 from datetime import datetime
 from functools import lru_cache
 import io
+import math
 from pathlib import Path
 import re
 from re import Pattern
@@ -31,6 +33,7 @@ ACCOUNT_ID_PATTERN: Pattern[str] = re.compile(r"^ACC-\d{4}$")
 SITE_ID_PATTERN: Pattern[str] = re.compile(r"^S-\d{4}-\d{2}$")
 USER_EMAIL_PATTERN: Pattern[str] = re.compile(r"^[^/\\@\s]+@[^/\\@\s]+\.[^/\\@\s]+$")
 WINDOW_PATTERN: Pattern[str] = re.compile(r"^(\d+(?:\.\d+)?)\s*([hd])$", re.IGNORECASE)
+MAX_WINDOW_HOURS: float = 999_999_998.0 * 24.0
 
 
 class _SitesFileSchema(BaseModel):
@@ -70,11 +73,20 @@ def _parse_window_hours(window: str) -> float | None:
     match = WINDOW_PATTERN.match(cleaned)
     if not match:
         return None
-    amount = float(match.group(1))
+    try:
+        amount = float(match.group(1))
+    except (ValueError, OverflowError):
+        return float("inf")
     if amount <= 0:
         return None
     unit = match.group(2).lower()
-    return amount if unit == "h" else amount * 24.0
+    try:
+        hours = amount if unit == "h" else amount * 24.0
+    except OverflowError:
+        return float("inf")
+    if hours >= MAX_WINDOW_HOURS or math.isinf(hours):
+        return float("inf")
+    return hours
 
 
 @lru_cache(maxsize=256)
@@ -116,6 +128,31 @@ class TelemetryService:
         stat = path.stat()
         return _read_text_cached(str(path), stat.st_mtime_ns)
 
+    def _load_with_timeout[R](
+        self,
+        path: Path,
+        parse_fn: Callable[[str], R],
+    ) -> R:
+        if self.timeout_seconds <= 0:
+            raise TimeoutError(f"Telemetry read timed out (timeout_seconds={self.timeout_seconds})")
+
+        def _execute() -> R:
+            text = self._read_file_text(path)
+            return parse_fn(text)
+
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        try:
+            future = executor.submit(_execute)
+            return future.result(timeout=self.timeout_seconds)
+        except concurrent.futures.TimeoutError as exc:
+            future.cancel()
+            executor.shutdown(wait=False, cancel_futures=True)
+            raise TimeoutError(
+                f"Telemetry operation timed out after {self.timeout_seconds}s"
+            ) from exc
+        finally:
+            executor.shutdown(wait=False)
+
     def _load_validated[P: TelemetryPayload, R](
         self,
         tool_name: str,
@@ -149,8 +186,26 @@ class TelemetryService:
                 error=f"Telemetry file '{relative_path}' not found for '{identifier}'.",
             )
         try:
-            raw_text = self._read_file_text(resolved)
-            return parse_fn(raw_text)
+            parsed = self._load_with_timeout(resolved, parse_fn)
+            if hasattr(parsed, "site_id") and getattr(parsed, "site_id") != identifier:
+                return TelemetryToolResult(
+                    tool_name=tool_name,
+                    status=TelemetryStatus.UNAVAILABLE,
+                    error=(
+                        f"Embedded site_id '{getattr(parsed, 'site_id')}' "
+                        f"does not match requested '{identifier}'."
+                    ),
+                )
+            if hasattr(parsed, "user_email") and getattr(parsed, "user_email") != identifier:
+                return TelemetryToolResult(
+                    tool_name=tool_name,
+                    status=TelemetryStatus.UNAVAILABLE,
+                    error=(
+                        f"Embedded user_email '{getattr(parsed, 'user_email')}' "
+                        f"does not match requested '{identifier}'."
+                    ),
+                )
+            return parsed
         except Exception as exc:
             return TelemetryToolResult(
                 tool_name=tool_name,
@@ -304,7 +359,10 @@ class TelemetryService:
             return loaded
 
         assert window_hours is not None
-        filtered_rows = [r for r in loaded if self.clock.is_within(r[0], window_hours)]
+        try:
+            filtered_rows = [r for r in loaded if self.clock.is_within(r[0], window_hours)]
+        except OverflowError:
+            filtered_rows = loaded
 
         grouped: dict[str, list[tuple[datetime, str, float, float, float, float, float]]] = {}
         for r in filtered_rows:
@@ -394,11 +452,18 @@ class TelemetryService:
         )
 
         def _parse_jsonl(raw_text: str) -> list[CmaEvent]:
-            return [
-                CmaEvent.model_validate_json(line.strip())
-                for line in raw_text.splitlines()
-                if line.strip()
-            ]
+            events: list[CmaEvent] = []
+            for line in raw_text.splitlines():
+                stripped = line.strip()
+                if not stripped:
+                    continue
+                ev = CmaEvent.model_validate_json(stripped)
+                if ev.site_id != site_id:
+                    raise ValueError(
+                        f"Embedded site_id '{ev.site_id}' does not match requested '{site_id}'."
+                    )
+                events.append(ev)
+            return events
 
         loaded = self._load_validated(
             tool_name,
@@ -413,6 +478,13 @@ class TelemetryService:
             return loaded
 
         events = loaded
+        if any(ev.site_id != site_id for ev in events):
+            return TelemetryToolResult(
+                tool_name=tool_name,
+                status=TelemetryStatus.UNAVAILABLE,
+                error=f"Event site_id mismatch for '{site_id}'.",
+            )
+
         # ponytail: each events/<site_id>.jsonl has <20 rows; return all matching events so 4-day-old alerts like S-1008-03 are never dropped by an LLM passing window="24h"
         if event_type is not None and event_type.strip().lower() not in {"", "all"}:
             needle = event_type.strip().lower()
@@ -430,7 +502,7 @@ class TelemetryService:
             if ev.link is not None:
                 raw_val += f" [link={ev.link}]"
             is_anom = (
-                ev.action in {"Alert", "Disconnected", "Failed", "Block"}
+                ev.action.lower() in {"alert", "disconnected", "failed", "block"}
                 or "not ready" in ev.sub_type.lower()
             )
             evidence.append(
@@ -470,8 +542,24 @@ class TelemetryService:
             return loaded
 
         payload = loaded
+        if payload.site_id != site_id:
+            return TelemetryToolResult(
+                tool_name=tool_name,
+                status=TelemetryStatus.UNAVAILABLE,
+                error=f"Mismatched site_id in payload: expected '{site_id}', got '{payload.site_id}'.",
+            )
+
         evidence: list[TelemetryEvidence] = []
         for n in payload.neighbors:
+            evidence.append(
+                _ev(
+                    tool_name,
+                    payload.queried_at,
+                    "state",
+                    n.state,
+                    n.state != "Established",
+                )
+            )
             evidence.append(
                 _ev(
                     tool_name,
@@ -489,20 +577,38 @@ class TelemetryService:
                 evidence.append(
                     _ev(tool_name, payload.queried_at, "flaps_24h", str(n.flaps_24h), True)
                 )
-            evidence.append(
-                _ev(
-                    tool_name,
-                    payload.queried_at,
-                    "hold_time",
-                    (
-                        f"negotiated {n.hold_time_negotiated}s "
-                        f"(configured {n.hold_time_configured}s, "
-                        f"keepalive {n.keepalive_configured}s, "
-                        f"peer {n.peer_hold_time}s/{n.peer_keepalive}s)"
-                    ),
-                    n.hold_time_negotiated > 0 and n.hold_time_negotiated != n.hold_time_configured,
+            if (
+                n.hold_time_negotiated is not None
+                and n.peer_hold_time is not None
+                and n.peer_keepalive is not None
+            ):
+                evidence.append(
+                    _ev(
+                        tool_name,
+                        payload.queried_at,
+                        "hold_time",
+                        (
+                            f"negotiated {n.hold_time_negotiated}s "
+                            f"(configured {n.hold_time_configured}s, "
+                            f"keepalive {n.keepalive_configured}s, "
+                            f"peer {n.peer_hold_time}s/{n.peer_keepalive}s)"
+                        ),
+                        n.hold_time_negotiated != n.hold_time_configured,
+                    )
                 )
-            )
+            elif n.state == "Established":
+                evidence.append(
+                    _ev(
+                        tool_name,
+                        payload.queried_at,
+                        "hold_time",
+                        (
+                            f"missing timer negotiation (configured {n.hold_time_configured}s, "
+                            f"keepalive {n.keepalive_configured}s)"
+                        ),
+                        True,
+                    )
+                )
             if n.static_ranges_overriding:
                 evidence.append(
                     _ev(
@@ -535,6 +641,22 @@ class TelemetryService:
             return loaded
 
         payload = loaded
+        if payload.site_id != site_id:
+            return TelemetryToolResult(
+                tool_name=tool_name,
+                status=TelemetryStatus.UNAVAILABLE,
+                error=f"Mismatched site_id in payload: expected '{site_id}', got '{payload.site_id}'.",
+            )
+
+        primary_unhealthy = (
+            payload.primary.status != "up" or payload.primary.last_error is not None
+        )
+        secondary_unhealthy = (
+            payload.secondary is not None
+            and (payload.secondary.status != "up" or payload.secondary.last_error is not None)
+        )
+        tunnel_unhealthy = primary_unhealthy or secondary_unhealthy
+
         evidence: list[TelemetryEvidence] = [
             _ev(
                 tool_name,
@@ -542,7 +664,7 @@ class TelemetryService:
                 "primary.status",
                 f"{payload.primary.status}"
                 + (f" ({payload.primary.last_error})" if payload.primary.last_error else ""),
-                payload.primary.status != "up" or payload.primary.last_error is not None,
+                primary_unhealthy,
             )
         ]
         if payload.secondary:
@@ -557,7 +679,7 @@ class TelemetryService:
                         if payload.secondary.last_error
                         else ""
                     ),
-                    payload.secondary.status != "up" or payload.secondary.last_error is not None,
+                    secondary_unhealthy,
                 )
             )
         if payload.init_message_parameters and payload.peer_reported_parameters_from_pcap:
@@ -589,7 +711,7 @@ class TelemetryService:
                     payload.queried_at,
                     "note",
                     payload.note,
-                    payload.primary.status != "up",
+                    tunnel_unhealthy,
                 )
             )
 
@@ -616,6 +738,13 @@ class TelemetryService:
             return loaded
 
         payload = loaded
+        if payload.user_email != user_email:
+            return TelemetryToolResult(
+                tool_name=tool_name,
+                status=TelemetryStatus.UNAVAILABLE,
+                error=f"Mismatched user_email in payload: expected '{user_email}', got '{payload.user_email}'.",
+            )
+
         evidence: list[TelemetryEvidence] = []
         if payload.last_error:
             evidence.append(
@@ -634,15 +763,29 @@ class TelemetryService:
             _ev(
                 tool_name,
                 payload.queried_at,
-                "reachability",
-                (
-                    f"udp_443={payload.network.udp_443_reachable}, "
-                    f"tcp_443={payload.network.tcp_443_reachable}"
-                    + (f", ssid={payload.network.ssid}" if payload.network.ssid else "")
-                ),
-                not payload.network.udp_443_reachable or not payload.network.tcp_443_reachable,
+                "udp_443_reachable",
+                str(payload.network.udp_443_reachable).lower(),
+                not payload.network.udp_443_reachable,
             )
         )
+        evidence.append(
+            _ev(
+                tool_name,
+                payload.queried_at,
+                "tcp_443_reachable",
+                str(payload.network.tcp_443_reachable).lower(),
+                not payload.network.tcp_443_reachable,
+            )
+        )
+        if payload.network.ssid:
+            evidence.append(
+                _ev(
+                    tool_name,
+                    payload.queried_at,
+                    "ssid",
+                    payload.network.ssid,
+                )
+            )
 
         return TelemetryToolResult(
             tool_name=tool_name,

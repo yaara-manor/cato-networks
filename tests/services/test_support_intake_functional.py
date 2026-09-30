@@ -130,8 +130,7 @@ def test_repeat_contact_and_regional_sla_flow(db_conn: psycopg.Connection) -> No
             tier="Standard",
             priority="P2",
             country_code="US",
-            # naive on purpose: exercises the timezone-aware rejection above
-            created_at=datetime(2026, 8, 28, 17, 0, 0, tzinfo=UTC).replace(tzinfo=None),
+            created_at=datetime(2026, 8, 28, 17, 0, 0),  # noqa: DTZ001 -- naive on purpose: exercises the reject-naive-created_at guard
         )
 
     approval_sla = cust_svc.calculate_sla_deadlines(

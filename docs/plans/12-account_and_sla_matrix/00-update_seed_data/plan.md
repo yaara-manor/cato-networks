@@ -49,7 +49,7 @@ flowchart LR
 
 **Tech Stack:** Python 3.12, `psycopg` 3, `pgvector`, PostgreSQL 18 (`pg_dump` / `pg_restore`), `pytest`.
 
-**Spec:** [00-update_seed_data_design.md](file:///home/yaara/Documents/Assignments/cato%20networks/docs/plans/12-account_and_sla_matrix/00-update_seed_data_design.md)
+**Spec:** [plan.md](file:///home/yaara/Documents/Assignments/cato%20networks/docs/plans/12-account_and_sla_matrix/00-update_seed_data/plan.md)
 
 ## Global Constraints
 
@@ -89,7 +89,7 @@ flowchart LR
 - Create: `db/init/build.py`
 - Modify: [kbindex/store.py](file:///home/yaara/Documents/Assignments/cato%20networks/kbindex/store.py)
 - Modify: [Dockerfile](file:///home/yaara/Documents/Assignments/cato%20networks/Dockerfile)
--Modify: [pyproject.toml](file:///home/yaara/Documents/Assignments/cato%20networks/pyproject.toml)
+- Modify: [pyproject.toml](file:///home/yaara/Documents/Assignments/cato%20networks/pyproject.toml)
 - Delete: [kbindex/policies.py](file:///home/yaara/Documents/Assignments/cato%20networks/kbindex/policies.py), [kbindex/startup.py](file:///home/yaara/Documents/Assignments/cato%20networks/kbindex/startup.py), [kbindex/build.py](file:///home/yaara/Documents/Assignments/cato%20networks/kbindex/build.py)
 
 **Interfaces & Specifications:**
@@ -145,11 +145,12 @@ flowchart LR
 **Interfaces & Specifications:**
 - Functional test in `tests/db/test_init.py`:
   - `test_seed_accounts_and_tickets_and_startup_preserves_live_status`: Verifies that `seed_all` populates all 12 accounts (with `ACC-1001` having `country == "NL"` from `S-1001-01` in `sites.json` and non-null countries across all 12 accounts) and all 54 tickets from `tickets.jsonl`; mutates one ticket's `status` to `"closed"` in Postgres, runs `run_startup`, and asserts that the mutated ticket status is preserved (`preserve_existing=True`) while all 12 accounts, 54 tickets, and 6 policies remain intact.
+  - `test_seed_dump_contains_all_six_tables_and_restores_cleanly`: Verifies that `db/seed.dump` exists, is non-empty, and when restored via `pg_restore --clean --if-exists` (or inspected via `pg_restore --list`), generates all 6 tables (`snapshots`, `kb_articles`, `passages`, `policies`, `accounts`, `tickets`) with populated rows (`12` accounts, `54` tickets, `6` policies, and all KB articles/passages).
 - Update any existing test imports in `tests/kbindex/` that referenced `kbindex.policies`, `kbindex.startup`, `kbindex.build`, or `db/kb.dump` to point to `db.init` and `db/seed.dump`.
 
 **Steps:**
 - [ ] **Step 1**: Write functional tests in `tests/db/test_init.py` and update existing test imports in `tests/kbindex/`.
-- [ ] **Step 2**: Run `db.init.seed` / `db.init.startup` against the running PostgreSQL instance, execute `write_dump()` from `db.init.build` to generate `db/seed.dump`, and delete `db/kb.dump`.
+- [ ] **Step 2 (Build & Verify Init Dump)**: Run the `db.init` build/seed flow against the running PostgreSQL instance, execute `write_dump()` from `db.init.build` to generate `db/seed.dump`, delete `db/kb.dump`, and test restoring `db/seed.dump` with `pg_restore --clean --if-exists` to confirm all 6 tables (`snapshots`, `kb_articles`, `passages`, `policies`, `accounts`, `tickets`) and their indexes (`tickets_customer_created_idx`, `tickets_customer_site_idx`) are generated and populated from the dump alone.
 - [ ] **Step 3**: Run `uv run pytest -v` across the test suite and verify all tests pass.
 - [ ] **Step 4**: Commit the schema, `db/init/` package, `db/seed.dump`, removal of `db/kb.dump`, and tests.
 
@@ -161,7 +162,7 @@ flowchart LR
 - Modify: [README.md](file:///home/yaara/Documents/Assignments/cato%20networks/README.md)
 - Modify: [system-architecture-design.md](file:///home/yaara/Documents/Assignments/cato%20networks/docs/architecture/system-architecture-design.md)
 - Modify: [decisions.md](file:///home/yaara/Documents/Assignments/cato%20networks/docs/overview/decisions.md)
-- Modify: [00-update_seed_data_design.md](file:///home/yaara/Documents/Assignments/cato%20networks/docs/plans/12-account_and_sla_matrix/00-update_seed_data_design.md)
+- Modify: [plan.md](file:///home/yaara/Documents/Assignments/cato%20networks/docs/plans/12-account_and_sla_matrix/00-update_seed_data/plan.md)
 
 **Steps:**
 - [ ] **Step 1**: Update [README.md](file:///home/yaara/Documents/Assignments/cato%20networks/README.md) to reference `db/seed.dump`, `python -m db.init.startup`, and `python -m db.init.build`.

@@ -110,7 +110,6 @@
   - One header comment explains the guard: startup re-applies every migration after each `pg_restore`, so an unguarded `SET EXPRESSION` would rewrite 14k rows on every start.
 - [ ] **Step 4: Change `apply_schema`.** Iterate `sorted((REPO_ROOT / "db" / "migrations").glob("*.sql"))`, executing each file's text in one cursor, then commit once.
   - Keep the existing `LiteralString` cast.
-  - Guard against a missing or empty migrations directory by raising `FileNotFoundError`. Silently applying zero migrations would be a broken deploy.
 - [ ] **Step 5: Regenerate `db/seed.dump`.** Do not use the live DB state: tests may have left rows in it.
   - Restore the committed dump with the exact `pg_restore --clean --if-exists --no-owner …` command from `Dockerfile:72`.
   - Run `uv run python -m db.init.startup` (it calls `seed_all` → `apply_schema`).
@@ -125,7 +124,7 @@
 
 **Files:**
 - Create: `core/stopwords.py`
-- Modify: `services/ticket_service.py` (lines 1–106 helpers, `TicketService.__init__`, `detect_repeat_contact`)
+- Modify: `services/ticket_service.py` (lines 1–106 helpers, `detect_repeat_contact`; `__init__` unchanged)
 - Test: `tests/services/test_support_intake_functional.py`
 
 **Interfaces:**
@@ -134,7 +133,7 @@
   - `core.stopwords.ENGLISH_STOP_WORDS: frozenset[str]` — 318 words.
   - `core.stopwords.SUPPORT_NOISE_WORDS: frozenset[str]` — 10 words.
   - `core.stopwords.EXCLUDED_WORDS: frozenset[str]` — the union of the two.
-  - `TicketService.detect_repeat_contact`: signature and `RepeatContactResult` shape unchanged.
+  - `TicketService.detect_repeat_contact`: signature and `RepeatContactResult` shape unchanged. `TicketService.__init__` unchanged (no constructor I/O).
 
 - [ ] **Step 1: Write the failing tests.** Add them to `tests/services/test_support_intake_functional.py`. Each uses the existing `db_conn` fixture, which deletes created tickets. Each creates two open tickets with `create_ticket` on a site with no seeded tickets, `S-1001-99` under `ACC-1001`, with different `product_area` values and `body=""`, so only the subjects carry words. Each calls `detect_repeat_contact(account_id="ACC-1001", site_id="S-1001-99")`.
   - `test_short_technical_terms_and_inflections_mark_repeat_contact`:
@@ -157,13 +156,14 @@
   - Change `_matches_area_or_symptom` to `(candidate: Ticket, product_area: str | None, symptom_stems: frozenset[str] | None, stems_by_ticket: Mapping[str, frozenset[str]], peer_tickets: list[Ticket]) -> bool`.
     - Same branch structure as today. Every text comparison becomes `_shares_stems` over precomputed sets.
     - `symptom_stems is None` keeps the old "symptom_text not given" meaning. An empty set can never match.
-- [ ] **Step 5: Add the stemming to `TicketService`.**
-  - `__init__` stores `self._excluded_stems: frozenset[str]`, from one `_stem_texts`-shaped query over `sorted(EXCLUDED_WORDS)`, flattened. Build it through a private method `_query_stems(texts: list[str]) -> list[frozenset[str]]` that runs the SQL without exclusion. Then the query exists once and both callers reuse it.
-  - `_stem_texts(texts: list[str]) -> list[frozenset[str]]` returns `_query_stems(texts)` with `self._excluded_stems` subtracted from each set.
-  - The `_query_stems` SQL:
-    - selects `tsvector_to_array(to_tsvector('english', t))` from `unnest(%(texts)s::text[]) with ordinality as x(t, ord)`, ordered by `ord`
-    - binds `{"texts": texts}`
-    - returns `[]` immediately for empty input, with no roundtrip.
+- [ ] **Step 5: Add `TicketService._stem_texts(self, texts: list[str]) -> list[frozenset[str]]`.** Exclusion happens inside PostgreSQL, so there is no constructor query, no cached-stems state and no second helper.
+  - Add a module constant `_EXCLUDED_TEXT: str`, the space-joined `sorted(EXCLUDED_WORDS)`. It's built once at import.
+  - The SQL:
+    - selects `tsvector_to_array(ts_delete(to_tsvector('english', t), tsvector_to_array(to_tsvector('english', %(excluded)s))))` from `unnest(%(texts)s::text[]) with ordinality as x(t, ord)`, ordered by `ord`
+    - binds `{"texts": texts, "excluded": _EXCLUDED_TEXT}`
+    - maps each row to a `frozenset[str]`.
+  - Return `[]` immediately for empty input, with no roundtrip.
+  - The `ts_delete` form was verified on the live DB at about 2 ms per call. It stems the exclusion list with the same stemmer every call, so exclusion can never drift from the stemmer's output.
 - [ ] **Step 6: Wire `detect_repeat_contact`.**
   - After `candidates` is built, run one `_stem_texts` call over `[f"{t.subject} {t.body}" for t in candidates]`, plus `symptom_text` appended when it is not `None`.
   - Zip the results into `stems_by_ticket: dict[str, frozenset[str]]` keyed by `ticket_id`, plus `symptom_stems`.

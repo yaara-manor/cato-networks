@@ -15,7 +15,7 @@ The subsystem must:
 1. Run first-stage hybrid retrieval: top-20 lexical (`tsvector` GIN, English Snowball stemming) + top-20 vector (`pgvector` 384-d cosine, `BAAI/bge-small-en-v1.5`).
 2. Fuse both rankings with Reciprocal Rank Fusion ($k = 60$).
 3. Rerank the top 20 fused candidates by RRF score with the pinned cross-encoder `cross-encoder/ms-marco-MiniLM-L12-v2` (see §2.8).
-4. Gate on a **calibrated** confidence threshold (`settings.rerank_min_score`) to refuse out-of-coverage questions (e.g. SC-09 IPv6-only roadmap), while keeping ungated top candidates and snapshot date for `answers.md` and traces.
+4. Gate on a **calibrated** confidence threshold (`settings.rerank_min_score`) to refuse off-domain questions, while keeping ungated top candidates and snapshot date for `answers.md` and traces. Partially covered questions (SC-09 IPv6 roadmap) pass the gate; refusing their uncovered part is the agent's grounding duty (§4.3).
 5. Serve and cite the 6 internal policies (`POL-CRED`, `POL-CREDIT`, `POL-IDV`, `POL-SEC`, `POL-SEV1`, `POL-SLA`) by normalized id.
 6. Degrade gracefully mid-conversation: KB search returns an `unavailable` envelope on `psycopg.Error`; policy lookup keeps working (in memory).
 7. Standardize text normalization: KB lexical search and ticket repeat-contact matching both use PostgreSQL's `'english'` Snowball stemmer + stopwords instead of hand-rolled lists.
@@ -108,13 +108,17 @@ flowchart LR
 ### 4.3 Threshold Calibration (`eval/calibrate_threshold.py`)
 
 Retrieval-only; no agent required. Runs as soon as `search_kb` exists.
+
+**Scope of the gate (revised after measurement)**: the rerank gate refuses **off-domain** queries — nothing in the KB is relevant. It cannot refuse **partially covered** queries such as SC-09: a pre-implementation probe (vector top-20 + rerank on the current DB) scored SC-09's opening message at top-1 **4.24** (`cato-clients`, IPv6 content exists) and "Cato roadmap for AI features" at **5.0** (`using-the-roadmap-tracker`), while 7 of the 35 answerable questions scored below 4.24. A threshold refusing SC-09 would refuse ~8/35 answerable questions. SC-09's own expectation allows citing what the KB says about IPv6 today; declining roadmap *dates* is a grounding duty of the Knowledge Agent (no retrieved passage states a date), tested with the agent, not here. Off-domain queries separate cleanly (e.g. a sports question scored −4.1).
+
 1. **Inputs**
-   - Answerable set: the 35 questions in `data/eval/questions.jsonl` (assumed in-coverage; the report lists each top-1 slug so any that are not can be spotted by eye).
-   - Out-of-coverage set: new fixture `data/eval/out_of_coverage.jsonl` — SC-09's opening message plus 10 hand-written questions (roadmap dates, pricing, competitor comparison, unrelated IT products, off-topic).
+   - Answerable set: the 35 questions in `data/eval/questions.jsonl` (the report lists each top-1 slug so any off-target retrieval is visible).
+   - Off-domain set: new fixture `data/eval/out_of_coverage.jsonl` — 10 hand-written questions with no KB coverage (unrelated vendors' products, consumer IT, off-topic general knowledge, commercial pricing/discount questions).
+   - Partial-coverage probes (reported, **not** used to pick the threshold): SC-09's opening message read from `data/eval/scenarios.jsonl`, plus the roadmap question.
 2. **Process**: build `RetrievalService` with `min_score = -inf` so nothing is gated; record per query the top-1 `rerank_score`, top-1 slug, and `search_kb` wall-clock latency.
-3. **Output**: `docs/eval/threshold_calibration.md` — per-query table, both score distributions, chosen threshold, overlap count, p50/p95 latency.
-4. **Decision rule**: if the sets separate, threshold = midpoint of the gap. If they overlap, pick the lowest threshold that refuses every out-of-coverage query and report how many answerable questions it refuses.
-5. **Apply**: set the `rerank_min_score` default in `core/config.py` to the chosen value and record the rationale in the retrieval ADR (ADR-005) in `docs/overview/decisions.md`.
+3. **Output**: `docs/eval/threshold_calibration.md` — per-query table for all three sets, score ranges, chosen threshold, count of answerable questions it refuses, p50/p95 latency.
+4. **Decision rule** (answerable vs off-domain only): if the sets separate, threshold = midpoint of the gap. If they overlap, pick the lowest threshold that refuses every off-domain query and report how many answerable questions it refuses.
+5. **Apply**: set the `rerank_min_score` default in `core/config.py` to the chosen value and record the rationale (including the SC-09 finding) in the retrieval ADR (ADR-005) in `docs/overview/decisions.md`.
 
 ### 4.4 Schema & Seed Change
 
@@ -130,8 +134,8 @@ Replace the hand-rolled tokenizer with the same standard pipeline as KB search.
    - `ENGLISH_STOP_WORDS`: the 318-word general English list from scikit-learn (Glasgow IR group list), **copied as data** — no scikit-learn dependency, no import cost. Source cited in a module comment.
    - `SUPPORT_NOISE_WORDS`: `ticket`, `issue`, `user`, `site`, `cato`, `today`, `week`, `minutes`, `fine`, `say` — support-process words found high in `ts_stat` over the 54 seeded tickets, documented as domain-specific. No published support-ticket stopword list exists; corpus-derived lists are the standard method, and 54 tickets are too few to derive one automatically.
    - **Location**: new `core/stopwords.py` — pure data, no DB, no imports. Holds `ENGLISH_STOP_WORDS`, `SUPPORT_NOISE_WORDS` and `EXCLUDED_WORDS: frozenset[str]` (their union). Cross-domain vocabulary, not ticket logic, so it sits beside `core/config.py`.
-   - `TicketService.__init__` passes `EXCLUDED_WORDS` once through the same `'english'` stemmer (one query) and stores a `frozenset[str]` of excluded stems, so exclusion always matches the stemmer's output.
-2. **`_stem_texts(texts: list[str]) -> list[frozenset[str]]`** — one SQL roundtrip (`unnest(%(texts)s::text[]) with ordinality` + `tsvector_to_array(to_tsvector('english', text))`, ordered by ordinality), returns stems per input text in order, minus excluded stems. Verified on the live DB (empty text → empty array).
+   - Exclusion runs inside PostgreSQL with `ts_delete`, using the same `'english'` stemmer on every call, so it always matches the stemmer's output. No constructor query, no cached stems.
+2. **`_stem_texts(texts: list[str]) -> list[frozenset[str]]`** — one SQL roundtrip: `tsvector_to_array(ts_delete(to_tsvector('english', t), tsvector_to_array(to_tsvector('english', %(excluded)s))))` over `unnest(%(texts)s::text[]) with ordinality`, ordered by ordinality; `excluded` is the space-joined `EXCLUDED_WORDS`. Verified on the live DB (~2 ms; empty text → empty array).
 3. **`detect_repeat_contact`**: after `get_ticket_history`, one `_stem_texts` call over every candidate's `subject + body` plus `symptom_text`; `_matches_area_or_symptom` receives precomputed stem sets. The rule is unchanged: two or more shared stems means a keyword match, via `_shares_stems(a: frozenset[str], b: frozenset[str]) -> bool`.
 4. **Delete**: `import re`, `_STOPWORDS`, `_symptom_stems`, `_shares_keywords`.
 5. **Behavior note**: the old code ignored tokens under 5 characters; short technical stems (`vpn`, `bgp`, `dns`) now count. The ADR-003 repeat-contact tests are the acceptance gate.
@@ -153,7 +157,7 @@ Functional tests against the real seeded PostgreSQL and local models. New retrie
 1. **KB search (`tests/retrieval/test_search_kb.py`)**
    - Q01 (DTLS MTU), Q05 (BGP route limit), Q10 (`NO_PROPOSAL_CHOSEN`), Q15 (Azure rekey): `confident`, non-empty `passages`, `snapshot_date` set, `rrf_score > 0`, `rerank_score >= min_score`, `citation_tag` matches `[kb:<slug>#<anchor>]`.
    - Stemming: a question using a -y word (`policy` / `priority`) and an inflected form (`rekeying`, `failed`) gets `lex_rank` hits — locks in the §2.4 fix.
-   - Refusal: SC-09 opening message returns `low_confidence_refusal`, `passages == []`, non-empty `candidates`, using the calibrated threshold. Empty/whitespace query refuses; `top_k=0` raises `ValueError`.
+   - Refusal: every off-domain fixture question returns `low_confidence_refusal`, `passages == []`, non-empty `candidates`, using the calibrated threshold; the four answerable questions above stay `confident`. Empty/whitespace query refuses; `top_k=0` raises `ValueError`.
    - Outage: after `connection.close()`, `search_kb` returns `unavailable` with `error` set and raises nothing. A query cancelled by `statement_timeout` returns `unavailable` and leaves the shared connection usable.
 2. **Policy lookup (`tests/retrieval/test_policy_lookup.py`)**: all 6 ids resolve; `"pol-sla.md"` normalizes to `POL-SLA`; unknown id returns `None`; `list_policies()` returns 6; lookups still succeed after `connection.close()`.
 3. **Ticket regressions (`tests/services/`)**: all ADR-003 repeat-contact scenarios (SC-06 Chicago site, `S-1003-01`, `S-1010-02`, free-text `symptom_text`) pass. New case: two tickets sharing only noise words (`please`, `issue`, `today`, `site`) are not a repeat.

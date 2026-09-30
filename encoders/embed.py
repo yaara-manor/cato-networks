@@ -23,10 +23,12 @@ def load_embedder() -> SentenceTransformer:
 
 
 def embed_passages(texts: list[str]) -> list[list[float]]:
-    # Embed passage text with no query prefix, batched in one model call.
+    # Embed passage text with no query prefix.
     model = load_embedder()
-    vectors = model.encode(texts, prompt="", show_progress_bar=False)
-    return [[float(value) for value in vector] for vector in vectors]
+    return [
+        [float(value) for value in model.encode(text, prompt="", show_progress_bar=False)]
+        for text in texts
+    ]
 
 
 def embedding_prefix(question: str) -> str:

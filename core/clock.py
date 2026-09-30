@@ -1,5 +1,6 @@
 from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
+import math
 import time
 
 DEFAULT_ANCHOR: datetime = datetime(2026, 8, 28, 17, 0, 0, tzinfo=timezone.utc)
@@ -29,5 +30,10 @@ class SimulationClock:
     def elapsed(self, since: datetime) -> timedelta:
         return self.now() - since
 
-    def is_within(self, ts: datetime, window_hours: int) -> bool:
-        return timedelta(0) <= self.elapsed(ts) <= timedelta(hours=window_hours)
+    def is_within(self, ts: datetime, window_hours: float) -> bool:
+        el = self.elapsed(ts)
+        if el < timedelta(0):
+            return False
+        if math.isinf(window_hours):
+            return True
+        return el <= timedelta(hours=window_hours)

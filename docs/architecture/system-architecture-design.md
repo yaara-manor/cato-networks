@@ -76,8 +76,9 @@ flowchart TD
         ApprovalService["Approval & Action Dispatcher"]
     end
 
-    subgraph Storage_Layer["PostgreSQL & Observability"]
-        PG_DB[("PostgreSQL 16 + pgvector\n(KB Passages, Policies, State, Traces)")]
+    subgraph Storage_Layer["Storage, External API Mocks & Observability"]
+        PG_DB[("PostgreSQL 16 + pgvector\n(KB Passages, Policies, State, Traces,\nSimulated CRM/Tickets Store)")]
+        TelemetryFiles[("data/telemetry/\n(Simulated Read-Only CMA API Files)")]
         Braintrust["Braintrust Cloud Tracing & Evals"]
     end
 
@@ -96,7 +97,7 @@ flowchart TD
     ResolAgent --> ApprovalService
 
     CustService --> PG_DB
-    TelemetryService --> PG_DB
+    TelemetryService --> TelemetryFiles
     RAGService --> PG_DB
     ApprovalService --> PG_DB
     StateMachine --> PG_DB
@@ -118,7 +119,7 @@ The agent layer uses **PydanticAI** to provide compile-time type validation, dep
 Every agent receives a typed context container via PydanticAI dependency injection:
 - `clock: SimulationClock` — Provides frozen time `2026-08-28T17:00:00Z` and elapsed time calculations.
 - `db_pool: AsyncConnectionPool` — Connection pool to Postgres.
-- `telemetry: TelemetryService` — Interface to read synthetic CMA telemetry files.
+- `telemetry: TelemetryService` — Interface to read synthetic CMA telemetry files directly from `data/telemetry/` with `(resolved_path, mtime_ns)` caching, returning typed `TelemetryToolResult[T]` envelopes with pre-extracted `TelemetryEvidence`.
 - `retrieval: RetrievalService` — Unified interface in `retrieval/service.py` for hybrid KB search (`search_kb` returning `KBSearchResult`) and authoritative internal policy lookup (`get_policy` / `list_policies` returning `PolicyLookupResult`).
 - `customer_store: CustomerService` — Account tier and ticket history query engine.
 
@@ -141,20 +142,20 @@ Every agent receives a typed context container via PydanticAI dependency injecti
 
 #### 2. Diagnostics Agent
 - **Purpose**: Acts as TAC engineer opening CMA. Formulates an inspection plan based on reported symptoms, executes telemetry tools, and extracts verbatim evidence.
-- **Allowed Tools**:
-  - `get_site_status(site_id: str)`
-  - `list_sites(account_id: str)`
-  - `get_link_quality(site_id: str, window: str)`
-  - `get_events(site_id: str, event_type: str, window: str)`
-  - `get_bgp_status(site_id: str)`
-  - `get_ipsec_status(site_id: str)`
-  - `get_client_diagnostics(user_email: str)`
+- **Allowed Tools** (all returning `TelemetryToolResult[T]` from `tools/models.py` with `status: TelemetryStatus` (`"OK"`, `"NOT_FOUND"`, `"UNAVAILABLE"`, `"INVALID_ARGUMENT"`), typed `data: T | None`, and deterministic `evidence: list[TelemetryEvidence]`):
+  - `list_sites(account_id: str) -> TelemetryToolResult[SiteListPayload]`
+  - `get_site_status(site_id: str) -> TelemetryToolResult[SiteRecord]`
+  - `get_link_quality(site_id: str, window: str = "24h") -> TelemetryToolResult[LinkQualityPayload]`
+  - `get_events(site_id: str, event_type: str | None = None, window: str = "24h") -> TelemetryToolResult[EventsPayload]`
+  - `get_bgp_status(site_id: str) -> TelemetryToolResult[BgpStatusPayload]`
+  - `get_ipsec_status(site_id: str) -> TelemetryToolResult[IpsecStatusPayload]`
+  - `get_client_diagnostics(user_email: str) -> TelemetryToolResult[ClientDiagnosticsPayload]`
 - **Typed Input**: Customer account, target site ID, symptom description.
 - **Typed Output (`DiagnosticEvidence`)**:
   - `inspected_tools: list[str]`
-  - `evidence_items: list[EvidenceItem]` (each item includes tool name, metric key, raw quoted value, and anomaly status)
+  - `evidence_items: list[TelemetryEvidence]` (each item includes `tool_name`, `metric_key`, `raw_value`, `timestamp`, and `is_anomaly`)
   - `root_cause_hypothesis: str`
-- **Failure Mode**: If a telemetry file is missing or corrupt, outputs `TelemetryUnavailable(tool_name, site_id)` and continues without inventing numbers.
+- **Failure Mode**: If a telemetry file is missing or corrupt, the tool returns `status=TelemetryStatus.NOT_FOUND` or `status=TelemetryStatus.UNAVAILABLE` with an explicit `error` description, allowing the agent to continue without inventing numbers.
 
 #### 3. Knowledge Agent
 - **Purpose**: Formulates search queries against Cato documentation, queries Postgres hybrid index via `RetrievalService`, executes cross-encoder reranking, and checks policy rules.
@@ -502,16 +503,17 @@ The codebase is organized into clean, single-responsibility packages separating 
 │   ├── service.py                     # RetrievalService: single-roundtrip hybrid SQL + RRF + threshold gate + policy lookup
 │   └── rerank.py                      # Cross-encoder MiniLM reranker (query-time)
 │
-├── core/                              # Central primitives & domain models
+├── core/                              # Central primitives & shared domain models
 │   ├── clock.py                       # SimulationClock frozen at 2026-08-28T17:00:00Z
 │   ├── config.py                      # Centralized Pydantic settings
-│   └── models.py                      # Pydantic schemas (Accounts, Tickets, Evidence, Citations)
+│   └── models.py                      # Shared Pydantic schemas (Accounts, Tickets, Citations)
 │
 ├── tools/                             # Typed CMA Telemetry inspection tools
-│   ├── telemetry.py                   # get_site_status, get_link_quality, get_bgp_status, etc.
-│   └── formatters.py                  # Raw metric quoting contract [telemetry]
+│   ├── models.py                      # TelemetryStatus, TelemetryEvidence, TelemetryToolResult[T], payload schemas
+│   └── telemetry.py                   # TelemetryService and verbatim [telemetry] evidence extraction
 │
 ├── services/                          # Business domain logic
+│   ├── models.py                      # Service-domain Pydantic schemas (CallerIdentity, SLADeadlines, RepeatContactResult, ApprovalRecord, CountryCodeOutput)
 │   ├── customer_service.py            # Account identification & SLA calculations
 │   ├── ticket_service.py              # Historical tickets & repeat contact analysis
 │   ├── approval_service.py            # Non-blocking HITL approvals lifecycle
@@ -523,6 +525,7 @@ The codebase is organized into clean, single-responsibility packages separating 
 │   └── validator.py                   # Citation verification & entitlement checks
 │
 ├── agents/                            # PydanticAI specialized role agents
+│   ├── models.py                      # Agent-domain Pydantic schemas (AgentTrace, role outputs)
 │   ├── base.py                        # Common agent contracts & SupportDeps
 │   ├── triage.py                      # Caller identification, SLA binding, scoping
 │   ├── diagnostics.py                 # Telemetry inspection & evidence extraction

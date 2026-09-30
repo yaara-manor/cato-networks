@@ -6,11 +6,11 @@ import psycopg
 from core.clock import SimulationClock
 from core.models import (
     AccountTier,
-    RepeatContactResult,
     Ticket,
     TicketPriority,
     TicketStatus,
 )
+from services.models import RepeatContactResult
 
 _STOPWORDS: frozenset[str] = frozenset(
     {

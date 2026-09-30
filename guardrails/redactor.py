@@ -1,11 +1,17 @@
+from collections import Counter
 from collections.abc import Iterator
 import hashlib
+import math
 import re
 from re import Pattern
 from typing import NamedTuple
 
 from guardrails.models import RedactionFinding, RedactionResult, SecretKind
 from guardrails.normalize import normalize
+
+_ENTROPY_MIN_LENGTH: int = 24
+_ENTROPY_MIN_CLASSES: int = 3
+_ENTROPY_MIN_BITS: float = 3.5
 
 
 class _Hit(NamedTuple):
@@ -87,6 +93,18 @@ _CONTEXTUAL: Pattern[str] = re.compile(
     r"[\"'(]?(?P<secret>[^\s\"'()]\S*?)(?=[.,;:)\"']*(?:\s|$))"
 )
 
+_TOKEN: Pattern[str] = re.compile(r"[^\s\"'`,;()<>\[\]{}]+")
+
+# ponytail: lowercase-only segments on purpose so mixed-case base64url tokens stay detectable; upgrade path: per-source allowlists if an FP corpus grows.
+_ENTROPY_ALLOWLIST: tuple[Pattern[str], ...] = (
+    re.compile(r"[a-z0-9]+(?:[-_.][a-z0-9]+)+"),
+    re.compile(r"(?i)[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}"),
+    re.compile(r"(?i)[a-z][a-z0-9+.-]*://[^/@\s]*(?:/\S*)?"),
+    re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+"),
+    re.compile(r"(?i)(?:[0-9a-f]{0,4}:){2,7}[0-9a-f]{0,4}(?:/\d+)?"),
+    re.compile(r"/?(?:[a-z0-9._-]+/)+[a-z0-9._-]*"),
+)
+
 
 def secret_hash(value: str) -> str:
     return hashlib.sha256(normalize(value).text.encode()).hexdigest()
@@ -113,6 +131,22 @@ def _contextual_hits(text: str) -> Iterator[_Hit]:
             yield _Hit(*m.span("secret"), SecretKind.CONTEXTUAL)
 
 
+def _shannon_entropy(token: str) -> float:
+    return -sum(n / len(token) * math.log2(n / len(token)) for n in Counter(token).values())
+
+
+def _entropy_hits(text: str) -> Iterator[_Hit]:
+    for m in _TOKEN.finditer(text):
+        token = m.group().rstrip(".:")
+        if (
+            len(token) >= _ENTROPY_MIN_LENGTH
+            and _character_classes(token) >= _ENTROPY_MIN_CLASSES
+            and _shannon_entropy(token) >= _ENTROPY_MIN_BITS
+            and not any(pattern.fullmatch(token) for pattern in _ENTROPY_ALLOWLIST)
+        ):
+            yield _Hit(m.start(), m.start() + len(token), SecretKind.HIGH_ENTROPY)
+
+
 def _merge(hits: list[_Hit]) -> list[_Hit]:
     merged: list[_Hit] = []
     for hit in sorted(hits):
@@ -130,7 +164,7 @@ def redact(text: str) -> RedactionResult:
     placeholders = [m.span() for m in _PLACEHOLDER.finditer(norm.text)]
     hits = [
         hit
-        for hit in (*_pattern_hits(norm.text), *_contextual_hits(norm.text))
+        for hit in (*_pattern_hits(norm.text), *_contextual_hits(norm.text), *_entropy_hits(norm.text))
         if not any(hit.start < end and start < hit.end for start, end in placeholders)
     ]
     findings: list[RedactionFinding] = []

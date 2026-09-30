@@ -51,14 +51,44 @@ _VENDOR_CASES: list[tuple[str, str, str, str]] = [
     ("env_export_key", 'export DEPLOY_KEY="k3y-value"', "k3y-value", "VENDOR_CONFIG"),
 ]
 
+_ENTROPY_CASES: list[tuple[str, str, str, str]] = [
+    (
+        "bare_token",
+        "here q3Zx9LkP0mNb7VcR2tYwH5jA8sDf end",
+        "q3Zx9LkP0mNb7VcR2tYwH5jA8sDf",
+        "HIGH_ENTROPY",
+    ),
+    ("base64", "tok dGhpcyBpcyBhIHZlcnkgbG9uZyBzZWNyZXQ= end", "dGhpcyBpcyBhIHZlcnkgbG9uZyBzZWNyZXQ=", "HIGH_ENTROPY"),
+    (
+        "mixed_case_with_separators",
+        "value aB3-x_9KqLmN2-pQ7r_ZzYw1vv here",
+        "aB3-x_9KqLmN2-pQ7r_ZzYw1vv",
+        "HIGH_ENTROPY",
+    ),
+]
+
+_ALLOWLIST_CASES: list[tuple[str, str]] = [
+    ("fqdn", "core-switch-01.prod.internal.company.com"),
+    ("slug", "cato-ipsec-guide-ikev1-vs-ikev2-2026"),
+    ("snake", "get_link_quality_24h_window_x"),
+    ("uuid_upper", "123E4567-E89B-12D3-A456-426614174000"),
+    ("url", "https://knowledge.catonetworks.com/docs/cato-ipsec-guide-ikev1-vs-ikev2"),
+    ("email", "hana.kowalski.longname1@solsticemedia.com"),
+    ("ipv6", "fe80::a1b2:c3d4:e5f6:1234:5678"),
+    ("cidr6", "2001:db8:abcd:ef01:2345:6789:abcd:ef01/64"),
+    ("path", "/var/log/cato-socket/ipsec-2026-08.log"),
+]
+
+_REDACTION_CASES: list[tuple[str, str, str, str]] = _STRUCTURAL_CASES + _VENDOR_CASES + _ENTROPY_CASES
+
 _SC08_PSK = "Fg7!qwe-DC-2026-tunnel"
 _SC08_TAIL = "Can you confirm what you have on your side?"
 
 
 @pytest.mark.parametrize(
     "case_id,text,secret,kind",
-    _STRUCTURAL_CASES + _VENDOR_CASES,
-    ids=[case[0] for case in _STRUCTURAL_CASES + _VENDOR_CASES],
+    _REDACTION_CASES,
+    ids=[case[0] for case in _REDACTION_CASES],
 )
 def test_secret_is_redacted(case_id: str, text: str, secret: str, kind: str) -> None:
     result = redact(text)
@@ -123,3 +153,25 @@ def test_key_value_and_contextual_overlap_merge_to_key_value() -> None:
     result = redact("password=hunter2")
     assert len(result.findings) == 1
     assert result.findings[0].kind == "KEY_VALUE"
+
+
+@pytest.mark.parametrize("case_id,token", _ALLOWLIST_CASES, ids=[case[0] for case in _ALLOWLIST_CASES])
+def test_allowlisted_token_is_not_flagged(case_id: str, token: str) -> None:
+    assert redact(f"see {token} for details").findings == ()
+
+
+def test_url_with_userinfo_is_not_allowlisted() -> None:
+    text = "https://admin:P4ss@host.example.com/a/b"
+    result = redact(text)
+    assert "P4ss" not in result.text
+    assert len(result.findings) == 1
+    assert result.findings[0].kind == "KEY_VALUE"
+
+
+@pytest.mark.parametrize(
+    "token",
+    ["q3Zx9LkP0mNb7VcR2tYwH5j", "ab" * 12, "abcdefghijklmnopqrstuvwxyzabcd"],
+    ids=["too_short", "one_class_low_entropy", "one_class_long"],
+)
+def test_below_thresholds_is_not_flagged(token: str) -> None:
+    assert redact(f"value {token} here").findings == ()

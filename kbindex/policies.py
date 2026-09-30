@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from kbindex.config import REPO_ROOT
+from core.config import REPO_ROOT
 from kbindex.hashing import sha256_file
 
 

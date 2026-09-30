@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from kbindex.config import EMBEDDING_DIMENSIONS, QUERY_PREFIX
+from core.config import EMBEDDING_DIMENSIONS, QUERY_PREFIX
 from kbindex.embed import BGP_PASSAGE, SLA_PASSAGE, SMOKE_QUESTION, embed_passages, embed_query, embedding_prefix
 from retrieval.rerank import rerank_pairs
 

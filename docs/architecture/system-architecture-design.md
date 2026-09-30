@@ -452,6 +452,7 @@ The codebase is organized into clean, single-responsibility packages separating 
 │       ├── runbook.md                 # Operational runbook
 │       ├── eval_report.md             # Evaluation report & metric analysis
 │       ├── demo_playbook.md           # Live interview demo rehearsal guide
+│       ├── decisions.md               # Decisions I took with reasoning
 │   ├── architecture/                  # Deliverable D diagrams (logical & deployment views)
 │       ├── system-architecture-design.md      # Master architecture & technical design specification
 │   └── plans/                         # Implementation plans and execution task guides

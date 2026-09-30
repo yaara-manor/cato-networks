@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 
 import psycopg
 
-from kbindex.config import REPO_ROOT
+from core.config import REPO_ROOT
 from kbindex.store import load_index
 
 ROOT = REPO_ROOT / "data" / "kb_ingestion"

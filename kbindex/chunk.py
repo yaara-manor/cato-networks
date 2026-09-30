@@ -5,7 +5,7 @@ import warnings
 from pathlib import Path
 from typing import TypedDict
 
-from kbindex.config import PASSAGE_TOKEN_CAP, SLICE_NEW_TOKENS, SLICE_OVERLAP_TOKENS
+from core.config import PASSAGE_TOKEN_CAP, SLICE_NEW_TOKENS, SLICE_OVERLAP_TOKENS
 from kbindex.embed import load_embedder
 
 

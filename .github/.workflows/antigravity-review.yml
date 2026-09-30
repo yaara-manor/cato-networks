@@ -1,0 +1,26 @@
+name: '🔎 Antigravity PR Review'
+
+on:
+  pull_request:
+    types: [opened, reopened]
+
+jobs:
+  antigravity-review:
+    runs-on: 'ubuntu-latest'
+    permissions:
+      contents: 'read'
+      pull-requests: 'write'
+      issues: 'write'
+    steps:
+      - name: 'Checkout Repository'
+        uses: 'actions/checkout@v6'
+        with:
+          persist-credentials: false
+
+      - name: 'Run Antigravity PR Review'
+        uses: 'rsamborski/run-agy-sdk@main' # Or another vetted community action
+        with:
+          api-key: '${{ secrets.ANTIGRAVITY_API_KEY }}'
+          github-token: '${{ secrets.PERSONAL_GITHUB_TOKEN }}'
+          mode: 'review'
+          prompt: './.github/prompts/review-code.prompt.md'

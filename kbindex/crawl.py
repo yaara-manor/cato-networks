@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 
 import httpx
 
-from kbindex.config import RATE_LIMIT_SECONDS, USER_AGENT
+from core.config import RATE_LIMIT_SECONDS, USER_AGENT
 from kbindex.discover import classify_url, parse_llms_links, robots_allows
 
 ROBOTS_URL = "https://knowledge.catonetworks.com/robots.txt"

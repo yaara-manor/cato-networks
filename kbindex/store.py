@@ -9,7 +9,7 @@ import psycopg
 import psycopg.sql
 from pgvector.psycopg import register_vector
 
-from kbindex.config import (
+from core.config import (
     EMBEDDING_DIMENSIONS,
     EMBEDDING_MODEL,
     REPO_ROOT,

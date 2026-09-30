@@ -2,7 +2,7 @@ import re
 from pathlib import Path
 
 from kbindex.chunk import chunk_article, heading_anchor, strip_doc_banner
-from kbindex.config import PASSAGE_TOKEN_CAP, SLICE_NEW_TOKENS
+from core.config import PASSAGE_TOKEN_CAP, SLICE_NEW_TOKENS
 from kbindex.embed import load_embedder
 
 REPO = Path(__file__).resolve().parents[2]

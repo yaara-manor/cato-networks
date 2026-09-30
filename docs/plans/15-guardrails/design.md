@@ -3,7 +3,7 @@
 **Issue**: `#5` ([Phase 1] 1.5: Deterministic Guardrails Engine)
 **Date**: 2026-09-30
 **Status**: Ready for Review
-**Target Files**: `guardrails/__init__.py`, `guardrails/models.py`, `guardrails/redactor.py`, `guardrails/injection.py`, `guardrails/validator.py`, `db/init/seed.py`, `db/seed.dump`, `tests/guardrails/*`
+**Target Files**: `guardrails/__init__.py`, `guardrails/models.py`, `guardrails/redactor.py`, `guardrails/injection.py`, `guardrails/validator.py`, `tests/guardrails/*`
 
 ---
 
@@ -42,8 +42,6 @@ flowchart LR
 | `guardrails/injection.py` | `detect(text) -> InjectionVerdict` (prompt injection / jailbreak / exfil / fake authority / delimiter injection) and `quarantine(text) -> str` for untrusted tool output (§4.6). |
 | `guardrails/validator.py` | Post-checks against ground truth: `check_claims(text, identity) -> EntitlementVerdict` (§4.3), `check_citations(message, context) -> CitationReport` (§4.4), `check_action(action, identity) -> GateDecision` and `check_outgoing_message(message, history, approved) -> list[OutputViolation]` (§4.5). |
 | `guardrails/__init__.py` | Re-exports only, zero logic. |
-| `db/init/seed.py` | `seed_all` redacts ticket `subject` + `body` via `redact()` before `upsert_tickets`. Seed data holds the SC-08 PSK in TCK-20264230 → currently in Postgres, violating POL-CRED. |
-| `db/seed.dump` | Regenerated after the seed change. |
 
 File layout matches issue deliverables and architecture §12. `redactor.py` and `injection.py` stand alone (multiple callers: ingestion, agent tool, seed, tool-output quarantine); the three post-checks share `validator.py` (~170 lines). Enums use `StrEnum`, matching `tools/models.py` (ADR-005).
 
@@ -89,7 +87,11 @@ Four layers, applied in order; overlapping spans merged, earliest layer's kind w
 3. **Contextual** (`CONTEXTUAL`): trigger phrase (`psk|pre-shared key|password|passphrase|secret|token|api key|shared key`) → up to 5 words → separator (`is|:|=|was`) → next whitespace-delimited token redacted (trailing sentence punctuation stripped). Catches SC-08 `PSK on our side is: Fg7!qwe-DC-2026-tunnel`.
 4. **Entropy fallback** (`HIGH_ENTROPY`): token ≥ 24 chars, ≥ 3 character classes, Shannon entropy ≥ 3.5 bits/char, and not allowlisted. Allowlist: repo ID patterns (`ACC-\d+`, `S-\d+-\d+`, `INC-\d+`, `TCK-\d+`, `CR-\d+`), URLs without userinfo, kebab-case slugs, UUIDs, pure-hex hashes of length 32/40/64, IPv4/IPv6, MAC addresses, email addresses. Threshold constants live at module top.
 
-Placement: orchestrator calls `redact()` on ingestion, before LLM, DB or traces see text. Same function exposed later as the `redact_credentials` agent tool. Seed path applies it to tickets (§2).
+Placement:
+- **Ingestion chokepoint**: orchestrator calls `redact()` on every customer message before LLM, DB or traces see it. Single chokepoint — `TicketService.create_ticket` stays pure persistence (no hidden redaction); add a second layer only when a non-agent ticket-write path appears.
+- **Tool output**: ticket fields returned to the LLM pass through `redact()` (§4.6) — seed ticket TCK-20264230 holds the SC-08 PSK.
+- **Agent tool**: same function exposed later as `redact_credentials` (SC-08 `must_use_tools`).
+- **Seed / `db/seed.dump` untouched**: data is synthetic and already public in `data/tickets/tickets.jsonl`; the real risk (LLM reading it back) is covered at the tool-output boundary. Avoids a full dump rebuild and a binary conflict with 1.4.
 
 ### 4.2 Injection Detector (`injection.py`) — ~25% of effort
 Same normalization as the redactor, plus lowercase and whitespace collapse. Rule table: `rule_id → (category, compiled regex)`. Any match → `blocked=True`.
@@ -145,9 +147,10 @@ Sink audit (2026-09-30):
 - **HTML/script in UI**: UI must render customer and agent text escaped — Phase 2 UI requirement, not a guard.
 - **No code-payload blocking on customer input**: network engineers paste CLI, configs and SQL-ish log lines; blocking `<script>`, `; DROP`, `$(…)` would false-positive on legitimate tickets.
 
-Actual exposure = **indirect prompt injection via tool output**. Seed ticket TCK-20264246 carries the SC-05 injection text and is returned verbatim by `TicketService.get_ticket_history` to the Triage agent.
-- `injection.detect()` is also applied to customer-authored text inside tool outputs (ticket `subject` + `body`).
-- New helper `injection.quarantine(text) -> str`: if `detect(text).blocked`, returns `[QUARANTINED: prior message matched injection rules <rule_ids>]`; else the text unchanged. Phase 2 tool wrapper applies it to ticket fields before they reach the LLM. Does not block the turn and does not touch `SessionGuardHistory` (the current caller did not send it).
+Actual exposure = **untrusted text in tool output**. `TicketService.get_ticket_history` returns ticket `subject` + `body` verbatim to the Triage agent, and seed data contains both an injection (TCK-20264246, SC-05 text) and a raw secret (TCK-20264230, SC-08 PSK).
+- New helper `injection.quarantine(text) -> str`: if `detect(text).blocked`, returns `[QUARANTINED: prior message matched injection rules <rule_ids>]`; else the text unchanged.
+- Ticket-field sanitization order, applied by the Phase 2 tool wrapper before text reaches the LLM: `redact()` → `quarantine()` on the redacted text. Redact first so a quarantined body never needs its secret, and a clean body never leaks one.
+- Neither step blocks the turn or touches `SessionGuardHistory` (the current caller did not send that text).
 
 ---
 
@@ -160,10 +163,18 @@ Functional, table-driven, zero LLM, zero DB.
   - Citations: valid markers pass; unknown slug / wrong anchor / uncalled tool flagged; uncited `1350 bytes` sentence flagged; same sentence with paragraph marker passes; refusal context with KB marker flagged.
   - Gates: full decision table; output gate flags `$3,600` credit sentence pre-approval, passes it post-approval; secret echo detected via history hashes.
 - `test_session_history.py`: history immutability, `agent_context_note()` content for SC-05 and SC-07 sequences, `None` when clean.
-- `tests/db/test_init.py`: extend — seeded TCK-20264230 body contains `[REDACTED:` and not the PSK.
+- `test_injection.py` also covers the tool-output sanitization order on real ticket bodies: TCK-20264230 → PSK redacted, not quarantined; TCK-20264246 → quarantined; all other bodies unchanged.
 
 ---
 
 ## 6. Cleanup
 - No unused models/rules; every rule id exercised by at least one test.
 - `ApprovalRecord.action_type` literal in `services/models.py` left untouched (Phase 2 aligns it with `ActionType`).
+
+---
+
+## 7. Resolved Decisions
+- `SessionGuardHistory` scope: per session.
+- `create_ticket` does not redact; ingestion chokepoint + tool-output redaction only.
+- Policy citation marker: `[policy:POL-X]`.
+- No seed / dump changes in this issue.

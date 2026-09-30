@@ -4,7 +4,6 @@ import csv
 from datetime import datetime, timedelta
 from functools import lru_cache
 import io
-import json
 from pathlib import Path
 import re
 from re import Pattern
@@ -25,6 +24,7 @@ from tools.models import (
     SiteListPayload,
     SiteRecord,
     TelemetryEvidence,
+    TelemetryPayload,
     TelemetryStatus,
     TelemetryToolResult,
 )
@@ -91,12 +91,15 @@ def _load_with_timeout[R](fn: Callable[[], R], timeout_seconds: float) -> R:
     if timeout_seconds <= 0:
         raise TimeoutError(f"Telemetry read timed out (timeout_seconds={timeout_seconds})")
     started = time.monotonic()
-    with ThreadPoolExecutor(max_workers=1) as executor:
+    executor = ThreadPoolExecutor(max_workers=1)
+    try:
         future = executor.submit(fn)
         try:
             result = future.result(timeout=timeout_seconds)
         except FuturesTimeoutError as exc:
             raise TimeoutError(f"Telemetry read timed out after {timeout_seconds}s") from exc
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
     if (time.monotonic() - started) > timeout_seconds:
         raise TimeoutError(f"Telemetry read exceeded {timeout_seconds}s")
     return result
@@ -120,32 +123,63 @@ class TelemetryService:
 
         return _load_with_timeout(_do_read, self.timeout_seconds)
 
-    def _load_sites_file(self) -> _SitesFileSchema:
-        sites_path = _resolve_safe_path(self.telemetry_dir, "sites.json")
-        if sites_path is None or not sites_path.is_file():
-            raise FileNotFoundError("sites.json is missing")
-        raw_text = self._read_file_text(sites_path)
-        return _SitesFileSchema.model_validate_json(raw_text)
-
-    def list_sites(self, account_id: str) -> TelemetryToolResult[SiteListPayload]:
-        tool_name = "list_sites"
-        err = _validate_identifier(account_id, ACCOUNT_ID_PATTERN, "account_id")
+    def _load_validated[P: TelemetryPayload, R](
+        self,
+        tool_name: str,
+        identifier: str,
+        pattern: Pattern[str],
+        label: str,
+        relative_path: str,
+        parse_fn: Callable[[str], R],
+        *,
+        missing_status: TelemetryStatus = TelemetryStatus.NOT_FOUND,
+        extra_error: str | None = None,
+    ) -> R | TelemetryToolResult[P]:
+        err = _validate_identifier(identifier, pattern, label) or extra_error
         if err is not None:
             return TelemetryToolResult(
                 tool_name=tool_name,
                 status=TelemetryStatus.INVALID_ARGUMENT,
                 error=err,
             )
+        resolved = _resolve_safe_path(self.telemetry_dir, relative_path)
+        if resolved is None:
+            return TelemetryToolResult(
+                tool_name=tool_name,
+                status=TelemetryStatus.INVALID_ARGUMENT,
+                error=f"Invalid path for {label} '{identifier}'.",
+            )
+        if not resolved.is_file():
+            return TelemetryToolResult(
+                tool_name=tool_name,
+                status=missing_status,
+                error=f"Telemetry file '{relative_path}' not found for '{identifier}'.",
+            )
         try:
-            sites_file = self._load_sites_file()
+            raw_text = self._read_file_text(resolved)
+            return parse_fn(raw_text)
         except Exception as exc:
             return TelemetryToolResult(
                 tool_name=tool_name,
                 status=TelemetryStatus.UNAVAILABLE,
-                error=f"Failed to load sites.json: {exc}",
+                error=f"Failed to read or parse '{relative_path}' for '{identifier}': {exc}",
             )
 
-        matching_sites = [s for s in sites_file.sites if s.customer_id == account_id]
+    def list_sites(self, account_id: str) -> TelemetryToolResult[SiteListPayload]:
+        tool_name = "list_sites"
+        loaded = self._load_validated(
+            tool_name,
+            account_id,
+            ACCOUNT_ID_PATTERN,
+            "account_id",
+            "sites.json",
+            _SitesFileSchema.model_validate_json,
+            missing_status=TelemetryStatus.UNAVAILABLE,
+        )
+        if isinstance(loaded, TelemetryToolResult):
+            return loaded
+
+        matching_sites = [s for s in loaded.sites if s.customer_id == account_id]
         if not matching_sites:
             return TelemetryToolResult(
                 tool_name=tool_name,
@@ -165,7 +199,7 @@ class TelemetryService:
         ]
         payload = SiteListPayload(
             account_id=account_id,
-            generated_at=sites_file.generated_at,
+            generated_at=loaded.generated_at,
             sites=matching_sites,
         )
         return TelemetryToolResult(
@@ -177,23 +211,19 @@ class TelemetryService:
 
     def get_site_status(self, site_id: str) -> TelemetryToolResult[SiteRecord]:
         tool_name = "get_site_status"
-        err = _validate_identifier(site_id, SITE_ID_PATTERN, "site_id")
-        if err is not None:
-            return TelemetryToolResult(
-                tool_name=tool_name,
-                status=TelemetryStatus.INVALID_ARGUMENT,
-                error=err,
-            )
-        try:
-            sites_file = self._load_sites_file()
-        except Exception as exc:
-            return TelemetryToolResult(
-                tool_name=tool_name,
-                status=TelemetryStatus.UNAVAILABLE,
-                error=f"Failed to load sites.json: {exc}",
-            )
+        loaded = self._load_validated(
+            tool_name,
+            site_id,
+            SITE_ID_PATTERN,
+            "site_id",
+            "sites.json",
+            _SitesFileSchema.model_validate_json,
+            missing_status=TelemetryStatus.UNAVAILABLE,
+        )
+        if isinstance(loaded, TelemetryToolResult):
+            return loaded
 
-        site = next((s for s in sites_file.sites if s.site_id == site_id), None)
+        site = next((s for s in loaded.sites if s.site_id == site_id), None)
         if site is None:
             return TelemetryToolResult(
                 tool_name=tool_name,
@@ -248,37 +278,16 @@ class TelemetryService:
         self, site_id: str, window: str = "24h"
     ) -> TelemetryToolResult[LinkQualityPayload]:
         tool_name = "get_link_quality"
-        err = _validate_identifier(site_id, SITE_ID_PATTERN, "site_id")
-        if err is not None:
-            return TelemetryToolResult(
-                tool_name=tool_name,
-                status=TelemetryStatus.INVALID_ARGUMENT,
-                error=err,
-            )
         window_hours = _parse_window_hours(window)
-        if window_hours is None:
-            return TelemetryToolResult(
-                tool_name=tool_name,
-                status=TelemetryStatus.INVALID_ARGUMENT,
-                error=f"Invalid window '{window}': expected e.g. '1h', '6h', '12h', '24h', '7d', or 'all'.",
-            )
+        window_err = (
+            None
+            if window_hours is not None
+            else f"Invalid window '{window}': expected e.g. '1h', '6h', '12h', '24h', '7d', or 'all'."
+        )
 
-        csv_path = _resolve_safe_path(self.telemetry_dir, f"link_quality/{site_id}.csv")
-        if csv_path is None:
-            return TelemetryToolResult(
-                tool_name=tool_name,
-                status=TelemetryStatus.INVALID_ARGUMENT,
-                error=f"Invalid path for site_id '{site_id}'.",
-            )
-        if not csv_path.is_file():
-            return TelemetryToolResult(
-                tool_name=tool_name,
-                status=TelemetryStatus.NOT_FOUND,
-                error=f"Link quality telemetry not found for site '{site_id}'.",
-            )
-
-        try:
-            raw_text = self._read_file_text(csv_path)
+        def _parse_csv(
+            raw_text: str,
+        ) -> list[tuple[datetime, str, float, float, float, float, float]]:
             reader = csv.DictReader(io.StringIO(raw_text))
             required_cols = {
                 "ts",
@@ -292,33 +301,45 @@ class TelemetryService:
             if reader.fieldnames is None or not required_cols.issubset(set(reader.fieldnames)):
                 raise ValueError("Missing required CSV columns")
 
-            parsed_rows: list[tuple[datetime, str, float, float, float, float, float]] = []
+            rows: list[tuple[datetime, str, float, float, float, float, float]] = []
             for row in reader:
-                if any(row.get(col) is None or row.get(col, "").strip() == "" for col in required_cols):
+                if any(
+                    row.get(col) is None or row.get(col, "").strip() == "" for col in required_cols
+                ):
                     raise ValueError("Empty or missing CSV field in row")
-                ts_val = _DATETIME_ADAPTER.validate_python(row["ts"].strip())
-                link_name = row["link"].strip()
-                loss = float(row["packet_loss_pct"])
-                latency = float(row["latency_ms"])
-                jitter = float(row["jitter_ms"])
-                up_mbps = float(row["upstream_mbps"])
-                down_mbps = float(row["downstream_mbps"])
-                parsed_rows.append((ts_val, link_name, loss, latency, jitter, up_mbps, down_mbps))
-
-            if not parsed_rows:
+                rows.append(
+                    (
+                        _DATETIME_ADAPTER.validate_python(row["ts"].strip()),
+                        row["link"].strip(),
+                        float(row["packet_loss_pct"]),
+                        float(row["latency_ms"]),
+                        float(row["jitter_ms"]),
+                        float(row["upstream_mbps"]),
+                        float(row["downstream_mbps"]),
+                    )
+                )
+            if not rows:
                 raise ValueError("CSV contains no data rows")
-        except Exception as exc:
-            return TelemetryToolResult(
-                tool_name=tool_name,
-                status=TelemetryStatus.UNAVAILABLE,
-                error=f"Failed to read or parse link quality CSV for '{site_id}': {exc}",
-            )
+            return rows
 
+        loaded = self._load_validated(
+            tool_name,
+            site_id,
+            SITE_ID_PATTERN,
+            "site_id",
+            f"link_quality/{site_id}.csv",
+            _parse_csv,
+            extra_error=window_err,
+        )
+        if isinstance(loaded, TelemetryToolResult):
+            return loaded
+
+        assert window_hours is not None
         now = self.clock.now()
         is_all = window.strip().lower() == "all"
         filtered_rows = [
             r
-            for r in parsed_rows
+            for r in loaded
             if is_all or (timedelta(0) <= (now - r[0]) <= timedelta(hours=window_hours))
         ]
 
@@ -403,45 +424,32 @@ class TelemetryService:
         window: str = "24h",
     ) -> TelemetryToolResult[EventsPayload]:
         tool_name = "get_events"
-        err = _validate_identifier(site_id, SITE_ID_PATTERN, "site_id")
-        if err is not None:
-            return TelemetryToolResult(
-                tool_name=tool_name,
-                status=TelemetryStatus.INVALID_ARGUMENT,
-                error=err,
-            )
-        if _parse_window_hours(window) is None:
-            return TelemetryToolResult(
-                tool_name=tool_name,
-                status=TelemetryStatus.INVALID_ARGUMENT,
-                error=f"Invalid window '{window}': expected e.g. '1h', '6h', '12h', '24h', '7d', or 'all'.",
-            )
+        window_err = (
+            None
+            if _parse_window_hours(window) is not None
+            else f"Invalid window '{window}': expected e.g. '1h', '6h', '12h', '24h', '7d', or 'all'."
+        )
 
-        events_path = _resolve_safe_path(self.telemetry_dir, f"events/{site_id}.jsonl")
-        if events_path is None:
-            return TelemetryToolResult(
-                tool_name=tool_name,
-                status=TelemetryStatus.INVALID_ARGUMENT,
-                error=f"Invalid path for site_id '{site_id}'.",
-            )
-        if not events_path.is_file():
-            return TelemetryToolResult(
-                tool_name=tool_name,
-                status=TelemetryStatus.NOT_FOUND,
-                error=f"Events telemetry not found for site '{site_id}'.",
-            )
+        def _parse_jsonl(raw_text: str) -> list[CmaEvent]:
+            return [
+                CmaEvent.model_validate_json(line.strip())
+                for line in raw_text.splitlines()
+                if line.strip()
+            ]
 
-        try:
-            raw_text = self._read_file_text(events_path)
-            lines = [line.strip() for line in raw_text.splitlines() if line.strip()]
-            events = [CmaEvent.model_validate_json(line) for line in lines]
-        except Exception as exc:
-            return TelemetryToolResult(
-                tool_name=tool_name,
-                status=TelemetryStatus.UNAVAILABLE,
-                error=f"Failed to read or parse events for '{site_id}': {exc}",
-            )
+        loaded = self._load_validated(
+            tool_name,
+            site_id,
+            SITE_ID_PATTERN,
+            "site_id",
+            f"events/{site_id}.jsonl",
+            _parse_jsonl,
+            extra_error=window_err,
+        )
+        if isinstance(loaded, TelemetryToolResult):
+            return loaded
 
+        events = loaded
         # ponytail: each events/<site_id>.jsonl has <20 rows; return all matching events so 4-day-old alerts like S-1008-03 are never dropped by an LLM passing window="24h"
         if event_type is not None and event_type.strip().lower() not in {"", "all"}:
             needle = event_type.strip().lower()
@@ -487,38 +495,18 @@ class TelemetryService:
 
     def get_bgp_status(self, site_id: str) -> TelemetryToolResult[BgpStatusPayload]:
         tool_name = "get_bgp_status"
-        err = _validate_identifier(site_id, SITE_ID_PATTERN, "site_id")
-        if err is not None:
-            return TelemetryToolResult(
-                tool_name=tool_name,
-                status=TelemetryStatus.INVALID_ARGUMENT,
-                error=err,
-            )
+        loaded = self._load_validated(
+            tool_name,
+            site_id,
+            SITE_ID_PATTERN,
+            "site_id",
+            f"bgp_status/{site_id}.json",
+            BgpStatusPayload.model_validate_json,
+        )
+        if isinstance(loaded, TelemetryToolResult):
+            return loaded
 
-        bgp_path = _resolve_safe_path(self.telemetry_dir, f"bgp_status/{site_id}.json")
-        if bgp_path is None:
-            return TelemetryToolResult(
-                tool_name=tool_name,
-                status=TelemetryStatus.INVALID_ARGUMENT,
-                error=f"Invalid path for site_id '{site_id}'.",
-            )
-        if not bgp_path.is_file():
-            return TelemetryToolResult(
-                tool_name=tool_name,
-                status=TelemetryStatus.NOT_FOUND,
-                error=f"BGP status telemetry not found for site '{site_id}'.",
-            )
-
-        try:
-            raw_text = self._read_file_text(bgp_path)
-            payload = BgpStatusPayload.model_validate_json(raw_text)
-        except Exception as exc:
-            return TelemetryToolResult(
-                tool_name=tool_name,
-                status=TelemetryStatus.UNAVAILABLE,
-                error=f"Failed to read or parse BGP status for '{site_id}': {exc}",
-            )
-
+        payload = loaded
         evidence: list[TelemetryEvidence] = []
         for n in payload.neighbors:
             evidence.append(
@@ -587,38 +575,18 @@ class TelemetryService:
 
     def get_ipsec_status(self, site_id: str) -> TelemetryToolResult[IpsecStatusPayload]:
         tool_name = "get_ipsec_status"
-        err = _validate_identifier(site_id, SITE_ID_PATTERN, "site_id")
-        if err is not None:
-            return TelemetryToolResult(
-                tool_name=tool_name,
-                status=TelemetryStatus.INVALID_ARGUMENT,
-                error=err,
-            )
+        loaded = self._load_validated(
+            tool_name,
+            site_id,
+            SITE_ID_PATTERN,
+            "site_id",
+            f"ipsec_status/{site_id}.json",
+            IpsecStatusPayload.model_validate_json,
+        )
+        if isinstance(loaded, TelemetryToolResult):
+            return loaded
 
-        ipsec_path = _resolve_safe_path(self.telemetry_dir, f"ipsec_status/{site_id}.json")
-        if ipsec_path is None:
-            return TelemetryToolResult(
-                tool_name=tool_name,
-                status=TelemetryStatus.INVALID_ARGUMENT,
-                error=f"Invalid path for site_id '{site_id}'.",
-            )
-        if not ipsec_path.is_file():
-            return TelemetryToolResult(
-                tool_name=tool_name,
-                status=TelemetryStatus.NOT_FOUND,
-                error=f"IPsec status telemetry not found for site '{site_id}'.",
-            )
-
-        try:
-            raw_text = self._read_file_text(ipsec_path)
-            payload = IpsecStatusPayload.model_validate_json(raw_text)
-        except Exception as exc:
-            return TelemetryToolResult(
-                tool_name=tool_name,
-                status=TelemetryStatus.UNAVAILABLE,
-                error=f"Failed to read or parse IPsec status for '{site_id}': {exc}",
-            )
-
+        payload = loaded
         evidence: list[TelemetryEvidence] = [
             TelemetryEvidence(
                 tool_name=tool_name,
@@ -694,38 +662,18 @@ class TelemetryService:
         self, user_email: str
     ) -> TelemetryToolResult[ClientDiagnosticsPayload]:
         tool_name = "get_client_diagnostics"
-        err = _validate_identifier(user_email, USER_EMAIL_PATTERN, "user_email")
-        if err is not None:
-            return TelemetryToolResult(
-                tool_name=tool_name,
-                status=TelemetryStatus.INVALID_ARGUMENT,
-                error=err,
-            )
+        loaded = self._load_validated(
+            tool_name,
+            user_email,
+            USER_EMAIL_PATTERN,
+            "user_email",
+            f"clients/{user_email}.json",
+            ClientDiagnosticsPayload.model_validate_json,
+        )
+        if isinstance(loaded, TelemetryToolResult):
+            return loaded
 
-        client_path = _resolve_safe_path(self.telemetry_dir, f"clients/{user_email}.json")
-        if client_path is None:
-            return TelemetryToolResult(
-                tool_name=tool_name,
-                status=TelemetryStatus.INVALID_ARGUMENT,
-                error=f"Invalid path for user_email '{user_email}'.",
-            )
-        if not client_path.is_file():
-            return TelemetryToolResult(
-                tool_name=tool_name,
-                status=TelemetryStatus.NOT_FOUND,
-                error=f"Client diagnostics not found for user '{user_email}'.",
-            )
-
-        try:
-            raw_text = self._read_file_text(client_path)
-            payload = ClientDiagnosticsPayload.model_validate_json(raw_text)
-        except Exception as exc:
-            return TelemetryToolResult(
-                tool_name=tool_name,
-                status=TelemetryStatus.UNAVAILABLE,
-                error=f"Failed to read or parse client diagnostics for '{user_email}': {exc}",
-            )
-
+        payload = loaded
         evidence: list[TelemetryEvidence] = []
         if payload.last_error:
             evidence.append(

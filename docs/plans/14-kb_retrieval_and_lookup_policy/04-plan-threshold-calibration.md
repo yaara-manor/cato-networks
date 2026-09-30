@@ -151,7 +151,7 @@ A pure `choose_threshold` applies the design §4.3 rule to the answerable and of
 
 - [ ] **Step 1: Merge** both task branches into `p-1-4-04_threshold-calibration`. Run `uv run pytest -v`; everything passes.
 - [ ] **Step 2: Apply the doc edits** listed above.
-- [ ] **Step 3: Review the plan diff** with `/ponytail:ponytail-review`, then with `/anthropic-skills:thermo-nuclear-code-quality-review`. Fix accepted findings and re-run the suite.
+- [ ] **Step 3: Review the plan diff** with `/ponytail:ponytail-review`, then with `/anthropic-skills:thermo-nuclear-code-quality-review`. Send the skills to subagent & run them. Fix accepted findings and re-run the suite.
 - [ ] **Step 4: Global cleanup (design §6)**, over the whole feature diff `git diff master...HEAD`:
   - Read every touched file end-to-end.
   - `kbindex/embed.py` and `retrieval/rerank.py` are gone.

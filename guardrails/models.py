@@ -47,3 +47,23 @@ class InjectionVerdict(_GuardModel):
     blocked: bool
     categories: frozenset[InjectionCategory]
     rule_ids: tuple[str, ...]
+
+
+class ClaimKind(StrEnum):
+    TIER = "TIER"
+    AUTHORITY = "AUTHORITY"
+    ACCOUNT = "ACCOUNT"
+
+
+class FalseClaim(_GuardModel):
+    kind: ClaimKind
+    claimed: str
+    actual: str
+
+
+class EntitlementVerdict(_GuardModel):
+    false_claims: tuple[FalseClaim, ...]
+
+    @property
+    def has_false_claims(self) -> bool:
+        return bool(self.false_claims)

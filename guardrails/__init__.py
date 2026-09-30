@@ -1,5 +1,8 @@
 from guardrails.injection import detect, quarantine
 from guardrails.models import (
+    ClaimKind,
+    EntitlementVerdict,
+    FalseClaim,
     InjectionCategory,
     InjectionVerdict,
     RedactionFinding,
@@ -7,13 +10,18 @@ from guardrails.models import (
     SecretKind,
 )
 from guardrails.redactor import redact, secret_hash
+from guardrails.validator import check_claims
 
 __all__ = [
+    "ClaimKind",
+    "EntitlementVerdict",
+    "FalseClaim",
     "InjectionCategory",
     "InjectionVerdict",
     "RedactionFinding",
     "RedactionResult",
     "SecretKind",
+    "check_claims",
     "detect",
     "quarantine",
     "redact",

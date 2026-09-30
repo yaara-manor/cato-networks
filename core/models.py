@@ -31,13 +31,3 @@ class Ticket(BaseModel):
     subject: str
     body: str
     status: TicketStatus
-
-
-class Citation(BaseModel):
-    slug: str
-    title: str
-    heading: str
-    heading_anchor: str
-    public_url: str
-    rrf_score: float
-    rerank_score: float

@@ -359,10 +359,18 @@ class TelemetryService:
             return loaded
 
         assert window_hours is not None
-        try:
-            filtered_rows = [r for r in loaded if self.clock.is_within(r[0], window_hours)]
-        except OverflowError:
-            filtered_rows = loaded
+        filtered_rows: list[tuple[datetime, str, float, float, float, float, float]] = []
+        for r in loaded:
+            try:
+                in_window = self.clock.is_within(r[0], window_hours)
+            except OverflowError:
+                return TelemetryToolResult(
+                    tool_name=tool_name,
+                    status=TelemetryStatus.UNAVAILABLE,
+                    error=f"Window '{window}' overflowed while filtering sample at {r[0].isoformat()}.",
+                )
+            if in_window:
+                filtered_rows.append(r)
 
         grouped: dict[str, list[tuple[datetime, str, float, float, float, float, float]]] = {}
         for r in filtered_rows:
@@ -577,11 +585,12 @@ class TelemetryService:
                 evidence.append(
                     _ev(tool_name, payload.queried_at, "flaps_24h", str(n.flaps_24h), True)
                 )
-            if (
-                n.hold_time_negotiated is not None
-                and n.peer_hold_time is not None
-                and n.peer_keepalive is not None
-            ):
+            if n.hold_time_negotiated is not None:
+                peer_timers = (
+                    f", peer {n.peer_hold_time}s/{n.peer_keepalive}s"
+                    if n.peer_hold_time is not None and n.peer_keepalive is not None
+                    else ""
+                )
                 evidence.append(
                     _ev(
                         tool_name,
@@ -590,12 +599,29 @@ class TelemetryService:
                         (
                             f"negotiated {n.hold_time_negotiated}s "
                             f"(configured {n.hold_time_configured}s, "
-                            f"keepalive {n.keepalive_configured}s, "
-                            f"peer {n.peer_hold_time}s/{n.peer_keepalive}s)"
+                            f"keepalive {n.keepalive_configured}s{peer_timers})"
                         ),
                         n.hold_time_negotiated != n.hold_time_configured,
                     )
                 )
+                missing_peer = [
+                    name
+                    for name, value in (
+                        ("peer_hold_time", n.peer_hold_time),
+                        ("peer_keepalive", n.peer_keepalive),
+                    )
+                    if value is None
+                ]
+                if missing_peer:
+                    evidence.append(
+                        _ev(
+                            tool_name,
+                            payload.queried_at,
+                            "peer_timers",
+                            f"missing {', '.join(missing_peer)}",
+                            False,
+                        )
+                    )
             elif n.state == "Established":
                 evidence.append(
                     _ev(

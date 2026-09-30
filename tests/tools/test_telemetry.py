@@ -609,3 +609,45 @@ def test_bgp_neighbor_timer_fields_optional_and_suppressed_when_absent() -> None
     assert est_neighbor.hold_time_negotiated == 30
     assert any(ev.metric_key == "hold_time" and "negotiated 30s" in ev.raw_value and ev.is_anomaly for ev in est_res.evidence)
 
+
+
+def test_link_quality_overflow_during_filtering_returns_unavailable() -> None:
+    ticks = iter([0.0, 1e9])
+    overflowing_clock = SimulationClock(
+        anchor=datetime.max.replace(tzinfo=timezone.utc),
+        clock_fn=lambda: next(ticks),
+    )
+    res = TelemetryService(clock=overflowing_clock).get_link_quality("S-1008-02", window="24h")
+    assert res.status == TelemetryStatus.UNAVAILABLE
+    assert res.data is None
+    assert res.error is not None and "overflowed" in res.error
+
+
+def test_bgp_hold_time_evidence_emitted_with_partial_peer_timers(tmp_path: Path) -> None:
+    (tmp_path / "bgp_status").mkdir()
+    bgp_data = {
+        "site_id": "S-1007-01",
+        "queried_at": "2026-08-28T17:00:00Z",
+        "neighbors": [
+            {
+                "peer_ip": "10.0.0.1",
+                "peer_asn": 65001,
+                "cato_asn": 65002,
+                "state": "Established",
+                "hold_time_configured": 60,
+                "keepalive_configured": 20,
+                "hold_time_negotiated": 60,
+                "peer_hold_time": 60,
+                "routes_count": 10,
+                "routes_limit": 100,
+            }
+        ],
+    }
+    (tmp_path / "bgp_status" / "S-1007-01.json").write_text(json.dumps(bgp_data), encoding="utf-8")
+    res = TelemetryService(telemetry_dir=tmp_path).get_bgp_status("S-1007-01")
+    assert res.status == TelemetryStatus.OK
+    hold_ev = next(ev for ev in res.evidence if ev.metric_key == "hold_time")
+    assert "negotiated 60s" in hold_ev.raw_value and not hold_ev.is_anomaly
+    assert "missing timer negotiation" not in hold_ev.raw_value
+    peer_ev = next(ev for ev in res.evidence if ev.metric_key == "peer_timers")
+    assert peer_ev.raw_value == "missing peer_keepalive"

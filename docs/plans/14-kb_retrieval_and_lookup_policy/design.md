@@ -17,7 +17,7 @@ The subsystem must:
 3. Rerank the top 20 fused candidates by RRF score with the pinned cross-encoder `cross-encoder/ms-marco-MiniLM-L12-v2` (see §2.8).
 4. Gate on a **calibrated** confidence threshold (`settings.rerank_min_score`) to refuse off-domain questions, while keeping ungated top candidates and snapshot date for `answers.md` and traces. Partially covered questions (SC-09 IPv6 roadmap) pass the gate; refusing their uncovered part is the agent's grounding duty (§4.3).
 5. Serve and cite the 6 internal policies (`POL-CRED`, `POL-CREDIT`, `POL-IDV`, `POL-SEC`, `POL-SEV1`, `POL-SLA`) by normalized id.
-6. Degrade gracefully mid-conversation: KB search returns an `unavailable` envelope on `psycopg.Error`; policy lookup keeps working (in memory).
+6. Degrade gracefully mid-conversation: KB search returns an `UNAVAILABLE` envelope on `psycopg.Error`; policy lookup keeps working (in memory).
 7. Standardize text normalization: KB lexical search and ticket repeat-contact matching both use PostgreSQL's `'english'` Snowball stemmer + stopwords instead of hand-rolled lists.
 
 Out of scope: async API (callers wrap at the tool boundary), metadata filtering by `site_updated_at`, ANN vector index.
@@ -45,14 +45,14 @@ Out of scope: async API (callers wrap at the tool boundary), metadata filtering 
 ```mermaid
 flowchart LR
     Query["Caller query\n(Knowledge Agent / eval)"] --> Guard{"Empty or\nwhitespace?"}
-    Guard -- Yes --> Refusal["KBSearchResult\n(status='low_confidence_refusal')"]
+    Guard -- Yes --> Refusal["KBSearchResult\n(status=LOW_CONFIDENCE_REFUSAL)"]
     Guard -- No --> Embed["encoders.embed.embed_query\n(query + bge prefix -> 384d)"]
     Embed --> HybridSQL["Single-roundtrip SQL\n1. lexical: 'english' OR tsquery vs search_vector (top 20)\n2. vector: pgvector '<=>' (top 20)\n3. fused: FULL OUTER JOIN, RRF k=60"]
-    HybridSQL -- "psycopg.Error" --> Unavail["KBSearchResult\n(status='unavailable', error=...)"]
+    HybridSQL -- "psycopg.Error" --> Unavail["KBSearchResult\n(status=UNAVAILABLE, error=...)"]
     HybridSQL -- "RRF top 20 of <= 40 fused" --> Rerank["encoders.rerank.rerank_pairs\n(MiniLM-L12, CPU, batch 8)"]
     Rerank --> Gate{"top-1 rerank_score >=\nrerank_min_score?"}
-    Gate -- Yes --> Confident["KBSearchResult\n(status='confident',\npassages=filtered[:top_k],\ncandidates=ranked[:top_k])"]
-    Gate -- No --> LowConf["KBSearchResult\n(status='low_confidence_refusal',\npassages=[],\ncandidates=ranked[:top_k])"]
+    Gate -- Yes --> Confident["KBSearchResult\n(status=CONFIDENT,\npassages=filtered[:top_k],\ncandidates=ranked[:top_k])"]
+    Gate -- No --> LowConf["KBSearchResult\n(status=LOW_CONFIDENCE_REFUSAL,\npassages=[],\ncandidates=ranked[:top_k])"]
 ```
 
 > **Proportional effort flag**: ~80% of the accuracy surface is (a) the hybrid SQL query and (b) threshold calibration (§4.3). Everything else is plumbing.
@@ -74,10 +74,10 @@ flowchart LR
 2. **`KBSearchResult` (`BaseModel`, frozen)** — return envelope of `search_kb`.
    - `status: KBSearchStatus` — `StrEnum` with `CONFIDENT`, `LOW_CONFIDENCE_REFUSAL`, `UNAVAILABLE`; mirrors `TelemetryStatus` on the sibling tools envelope.
    - `query: str`.
-   - `passages: list[RetrievedPassage]` — up to `top_k` with `rerank_score >= min_score`; empty unless `confident`.
+   - `passages: list[RetrievedPassage]` — up to `top_k` with `rerank_score >= min_score`; empty unless `CONFIDENT`.
    - `candidates: list[RetrievedPassage]` — up to `top_k` reranked candidates before gating, for `answers.md` and `traces.retrieval_scores`.
    - `snapshot_date: AwareDatetime | None` — pinned `snapshots.crawled_at`.
-   - `error: str | None` — set only when `unavailable`.
+   - `error: str | None` — set only when `UNAVAILABLE`.
 3. **`PolicyDocument` (`BaseModel`, frozen)** — one internal policy.
    - `policy_id: str` (canonical uppercase), `title: str`, `file_path: str`, `body: str` — from `policies`.
    - `citation_tag() -> str` — returns `[policy:{policy_id}]`.
@@ -92,7 +92,7 @@ flowchart LR
    - `_normalize_policy_id(policy_id: str) -> str` — strip, uppercase, drop trailing `.MD`.
    - `_rank_and_gate(query: str, rows: list[_FusedRow], scores: list[float], top_k: int) -> KBSearchResult` — pure: attach scores, sort by `(-rerank_score, -rrf_score, passage_id)`, slice `candidates`, filter `passages` by `min_score`, choose status. `_FusedRow` is a frozen internal model for one SQL row.
 3. **`search_kb(query: str, top_k: int = 5) -> KBSearchResult`**
-   - **Guard**: `top_k <= 0` raises `ValueError` (caller bug). Empty/whitespace query returns `low_confidence_refusal` with no DB/model work.
+   - **Guard**: `top_k <= 0` raises `ValueError` (caller bug). Empty/whitespace query returns `LOW_CONFIDENCE_REFUSAL` with no DB/model work.
    - **Embed**: `embed_query(query)` on the raw query (bge prefix added inside `embed_query`).
    - **Hybrid SQL (one roundtrip)**:
      - `q` CTE (`MATERIALIZED`): `tsquery` built by `string_agg(quote_literal(lexeme), ' | ')::tsquery` over `unnest(tsvector_to_array(to_tsvector('english', query)))`. The plain `::tsquery` cast keeps the already-stemmed lexemes as-is (`to_tsquery('english', …)` would stem them a second time). Empty lexeme set → `NULL` tsquery → lexical branch returns no rows; vector branch still runs. Verified on the live DB.
@@ -101,7 +101,7 @@ flowchart LR
      - `fused`: `FULL OUTER JOIN` on `id`, `rrf_score = coalesce(1/(_RRF_K+lex_rank),0) + coalesce(1/(_RRF_K+vec_rank),0)`.
      - Final select joins `passages` and `kb_articles` for metadata, orders by `rrf_score DESC, id ASC`, limit `_RERANK_K` (20).
    - **Rerank**: `rerank_pairs(query, [row.body for row in rows])` over the (at most 20) returned rows, then `_rank_and_gate`.
-   - **Fault handling**: catch `psycopg.Error`, `logger.error`, `connection.rollback()` (the connection is shared with `TicketService`, so an aborted transaction must not leak), return `unavailable` with `error=str(exc)`.
+   - **Fault handling**: catch `psycopg.Error`, `logger.error`, `connection.rollback()` (the connection is shared with `TicketService`, so an aborted transaction must not leak), return `UNAVAILABLE` with `error=str(exc)`.
 4. **`get_policy(policy_id: str) -> PolicyDocument | None`** — dict lookup after `_normalize_policy_id`.
 5. **`list_policies() -> list[PolicyDocument]`** — all policies ordered by id.
 
@@ -155,10 +155,10 @@ Replace the hand-rolled tokenizer with the same standard pipeline as KB search.
 Functional tests against the real seeded PostgreSQL and local models. New retrieval tests live in `tests/retrieval/`.
 
 1. **KB search (`tests/retrieval/test_search_kb.py`)**
-   - Q01 (DTLS MTU), Q05 (BGP route limit), Q10 (`NO_PROPOSAL_CHOSEN`), Q15 (Azure rekey): `confident`, non-empty `passages`, `snapshot_date` set, `rrf_score > 0`, `rerank_score >= min_score`, `citation_tag` matches `[kb:<slug>#<anchor>]`.
+   - Q01 (DTLS MTU), Q05 (BGP route limit), Q10 (`NO_PROPOSAL_CHOSEN`), Q15 (Azure rekey): `CONFIDENT`, non-empty `passages`, `snapshot_date` set, `rrf_score > 0`, `rerank_score >= min_score`, `citation_tag` matches `[kb:<slug>#<anchor>]`.
    - Stemming: a question using a -y word (`policy` / `priority`) and an inflected form (`rekeying`, `failed`) gets `lex_rank` hits — locks in the §2.4 fix.
-   - Refusal: every off-domain fixture question returns `low_confidence_refusal`, `passages == []`, non-empty `candidates`, using the calibrated threshold; the four answerable questions above stay `confident`. Empty/whitespace query refuses; `top_k=0` raises `ValueError`.
-   - Outage: after `connection.close()`, `search_kb` returns `unavailable` with `error` set and raises nothing. A query cancelled by `statement_timeout` returns `unavailable` and leaves the shared connection usable.
+   - Refusal: every off-domain fixture question returns `LOW_CONFIDENCE_REFUSAL`, `passages == []`, non-empty `candidates`, using the calibrated threshold; the four answerable questions above stay `CONFIDENT`. Empty/whitespace query refuses; `top_k=0` raises `ValueError`.
+   - Outage: after `connection.close()`, `search_kb` returns `UNAVAILABLE` with `error` set and raises nothing. A query cancelled by `statement_timeout` returns `UNAVAILABLE` and leaves the shared connection usable.
 2. **Policy lookup (`tests/retrieval/test_policy_lookup.py`)**: all 6 ids resolve; `"pol-sla.md"` normalizes to `POL-SLA`; unknown id returns `None`; `list_policies()` returns 6; lookups still succeed after `connection.close()`.
 3. **Ticket regressions (`tests/services/`)**: all ADR-003 repeat-contact scenarios (SC-06 Chicago site, `S-1003-01`, `S-1010-02`, free-text `symptom_text`) pass. New case: two tickets sharing only noise words (`please`, `issue`, `today`, `site`) are not a repeat.
 4. **Schema (`tests/db/test_init.py`)**: after restoring `seed.dump` the `search_vector` expression uses `'english'`; `apply_schema` run twice is a no-op.

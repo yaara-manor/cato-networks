@@ -164,8 +164,8 @@ Every agent receives a typed context container via PydanticAI dependency injecti
 - **Typed Output (`KnowledgeBundle`)**:
   - `retrieved_passages: list[RetrievedPassage]` (`passage_id`, `slug`, `title`, `heading`, `heading_anchor`, `public_url`, `body`, `site_updated_at`, `lex_rank`, `vec_rank`, `rrf_score`, `rerank_score`, `citation_tag`)
   - `referenced_policies: list[PolicyDocument]` (`policy_id`, `title`, `file_path`, `body`, `citation_tag`)
-  - `confidence_status: Literal["confident", "low_confidence_refusal", "unavailable"]`
-- **Failure Mode**: If top rerank score < `RERANK_MIN_SCORE`, `KBSearchResult` returns `status="low_confidence_refusal"` with `passages=[]` and unfiltered `candidates` preserved for eval/trace logging. If the database is down, `search_kb` catches `psycopg.Error` and returns a `KBSearchResult` with `status="unavailable"`; policy lookup is unaffected (served from memory).
+  - `confidence_status: KBSearchStatus` (`StrEnum`: `CONFIDENT`, `LOW_CONFIDENCE_REFUSAL`, `UNAVAILABLE`)
+- **Failure Mode**: If top rerank score < `RERANK_MIN_SCORE`, `KBSearchResult` returns `status=KBSearchStatus.LOW_CONFIDENCE_REFUSAL` with `passages=[]` and unfiltered `candidates` preserved for eval/trace logging. If the database is down, `search_kb` catches `psycopg.Error` and returns a `KBSearchResult` with `status=KBSearchStatus.UNAVAILABLE`; policy lookup is unaffected (served from memory).
 
 #### 4. Resolution & Action Agent
 - **Purpose**: Synthesizes customer context, telemetry evidence, and KB passages into a conversational, empathetic, and grounded response. Proposes support actions and marks high-impact operations for approval.
@@ -208,7 +208,7 @@ stateDiagram-v2
 | Failure Event | System Behavior | Customer Experience |
 |---|---|---|
 | **Telemetry source unreachable / file missing** | `Diagnostics Agent` catches error, logs warning, returns partial evidence. | Agent states: *"CMA telemetry for site [X] is temporarily unavailable. Based on your description..."* Guides manual verification without guessing. |
-| **Postgres RAG service down** | `Knowledge Agent` catches DB connection error, sets status to `RetrievalUnavailable`. | Agent states: *"Our documentation service is currently unavailable. To ensure you receive accurate technical guidance, I am escalating this to our engineering team."* Refuses to answer from ungrounded LLM memory. |
+| **Postgres RAG service down** | `Knowledge Agent` catches DB connection error, `search_kb` returns `status=KBSearchStatus.UNAVAILABLE`. | Agent states: *"Our documentation service is currently unavailable. To ensure you receive accurate technical guidance, I am escalating this to our engineering team."* Refuses to answer from ungrounded LLM memory. |
 | **Rerank score < `RERANK_MIN_SCORE`** | Top score below threshold indicates no KB coverage (e.g. roadmap query). | Agent states: *"Cato's knowledge base does not currently document support for [feature]. Let me connect you with product support."* Hallucination prevented. |
 | **Model API rate limit or error** | State machine retries with exponential backoff (up to 2 retries), then falls back to secondary model. | System remains resilient; if unrecoverable, preserves conversation state and returns a courteous system pause message. |
 
@@ -367,18 +367,18 @@ The retrieval pipeline (`RetrievalService` in `retrieval/service.py`) implements
 
 1. **Query Construction**:
    - Vector search prefixes questions with: `Represent this sentence for searching relevant passages: ` (required by `BAAI/bge-small-en-v1.5` via `encoders.embed.embed_query`).
-   - Lexical search passes the query through PostgreSQL's built-in `'english'` Snowball stemmer (`tsvector_to_array(to_tsvector('english', :query))`), strips English stopwords, appends `:*` prefix wildcards joined with `|` (`OR`), and matches against `passages.search_vector` (`'simple'` GIN index).
+   - Lexical search passes the query through PostgreSQL's built-in `'english'` Snowball stemmer, folded straight into a `::tsquery` cast (`string_agg(quote_literal(lexeme), ' | ')::tsquery` over `tsvector_to_array(to_tsvector('english', :query))`) — no `:*` prefix wildcards — and matches against `passages.search_vector`, itself a generated column indexed (`GIN`) on the same `'english'` configuration so stems compare equal on both sides.
 2. **Single-Roundtrip First-Stage Hybrid Retrieval & RRF**:
    - **Lexical CTE**: Top 20 passages via `search_vector @@ tsq` ordered by `ts_rank_cd(search_vector, tsq) DESC`.
    - **Vector CTE**: Top 20 passages via `<=>` cosine distance against passage embedding.
    - **Reciprocal Rank Fusion (RRF CTE)**: `FULL OUTER JOIN` across both top-20 lists computing:
      $$\text{RRF Score} = \sum_{m \in \{\text{lexical}, \text{vector}\}} \frac{1}{60 + \text{rank}_m}$$
-     joined with `kb_articles` and `snapshots` in a single SQL query.
+     joined with `kb_articles` in a single SQL query; the top 20 by RRF score are carried into reranking. `policies` and `snapshots.crawled_at` are not joined per call — `RetrievalService.__init__` loads them once into memory.
 3. **Second-Stage Cross-Encoder Reranking**:
-   - Fused candidates are scored locally using `cross-encoder/ms-marco-MiniLM-L-12-v2` (`retrieval.rerank.rerank_pairs`).
+   - The RRF top 20 fused candidates are scored locally using `cross-encoder/ms-marco-MiniLM-L-12-v2` (`encoders.rerank.rerank_pairs`).
 4. **Confidence Filter & `KBSearchResult` Envelope**:
-   - Candidates with $\text{Rerank Score} \ge \text{RERANK\_MIN\_SCORE}$ populate `KBSearchResult.passages` (top $k$, `status="confident"`).
-   - If no candidate meets threshold, `status="low_confidence_refusal"` is returned with `passages=[]` while `candidates` preserves the top $k$ unfiltered chunks and `snapshot_date` for `answers.md` and `traces`.
+   - Candidates with $\text{Rerank Score} \ge \text{RERANK\_MIN\_SCORE}$ populate `KBSearchResult.passages` (top $k$, `status=KBSearchStatus.CONFIDENT`).
+   - If no candidate meets threshold, `status=KBSearchStatus.LOW_CONFIDENCE_REFUSAL` is returned with `passages=[]` while `candidates` preserves the top $k$ unfiltered chunks and `snapshot_date` for `answers.md` and `traces`.
 
 ---
 

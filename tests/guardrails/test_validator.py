@@ -206,6 +206,22 @@ def test_unknown_markers_are_flagged_with_the_marker_as_detail(marker: str, kind
     assert report.is_grounded is False
 
 
+@pytest.mark.parametrize(
+    ("marker", "kind"),
+    [
+        ("[kb:bad]", CitationViolationKind.UNKNOWN_KB),
+        ("[kb:Bad#anchor]", CitationViolationKind.UNKNOWN_KB),
+        ("[policy:pol-cred]", CitationViolationKind.UNKNOWN_POLICY),
+        ("[telemetry:Get-Status]", CitationViolationKind.UNKNOWN_TELEMETRY),
+        ("[telemetry:]", CitationViolationKind.UNKNOWN_TELEMETRY),
+    ],
+)
+def test_malformed_markers_are_unknown_and_never_ground_a_claim(marker: str, kind: CitationViolationKind) -> None:
+    report = check_citations(f"The payload was 1350 bytes. {marker}", _context())
+    assert [(v.kind, v.detail) for v in report.violations] == [(kind, marker)]
+    assert report.is_grounded is False
+
+
 def test_uncited_claim_is_flagged_with_its_sentence() -> None:
     assert _violations("The payload was 1350 bytes.") == [
         (CitationViolationKind.UNCITED_CLAIM, "The payload was 1350 bytes.")
@@ -397,6 +413,31 @@ def test_echoing_a_previously_redacted_secret_is_flagged_without_leaking_it(
     assert [v.kind for v in violations] == [OutputViolationKind.SECRET_ECHO]
     assert violations[0].detail == "message repeats a previously redacted secret"
     assert all("Fg7" not in v.detail and "Fg7" not in str(v.model_dump()) for v in violations)
+
+
+@pytest.fixture
+def phrase_history() -> SessionGuardHistory:
+    return SessionGuardHistory().with_redaction(redact('{"password": "red blue", "client_secret": "s3cr3t value!"}'))
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "Your password red blue works.",
+        "We kept s3cr3t value! safe.",
+        "You typed 'red blue'.",
+    ],
+)
+def test_echoing_a_multiword_secret_is_flagged_without_leaking_it(
+    phrase_history: SessionGuardHistory, message: str
+) -> None:
+    violations = check_outgoing_message(message, phrase_history, frozenset())
+    assert [v.kind for v in violations] == [OutputViolationKind.SECRET_ECHO]
+    assert violations[0].detail == "message repeats a previously redacted secret"
+
+
+def test_words_that_only_overlap_a_multiword_secret_are_clean(phrase_history: SessionGuardHistory) -> None:
+    assert check_outgoing_message("The red team saw a blue sky.", phrase_history, frozenset()) == []
 
 
 def test_raw_pasted_secret_is_flagged_via_the_redactor_without_history() -> None:

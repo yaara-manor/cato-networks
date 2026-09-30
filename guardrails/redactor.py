@@ -159,13 +159,25 @@ def _merge(hits: list[_Hit]) -> list[_Hit]:
     return merged
 
 
+def _outside(hit: _Hit, blocked: list[tuple[int, int]]) -> list[_Hit]:
+    spans = [(hit.start, hit.end)]
+    for blocked_start, blocked_end in blocked:
+        spans = [
+            piece
+            for start, end in spans
+            for piece in ((start, min(end, blocked_start)), (max(start, blocked_end), end))
+            if piece[0] < piece[1]
+        ]
+    return [_Hit(start, end, hit.kind) for start, end in spans]
+
+
 def redact(text: str) -> RedactionResult:
     norm = normalize(text)
     placeholders = [m.span() for m in _PLACEHOLDER.finditer(norm.text)]
     hits = [
-        hit
+        piece
         for hit in (*_pattern_hits(norm.text), *_contextual_hits(norm.text), *_entropy_hits(norm.text))
-        if not any(hit.start < end and start < hit.end for start, end in placeholders)
+        for piece in _outside(hit, placeholders)
     ]
     findings: list[RedactionFinding] = []
     parts: list[str] = []

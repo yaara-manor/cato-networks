@@ -60,9 +60,10 @@ def check_claims(text: str, identity: CallerIdentity) -> EntitlementVerdict:
 
 
 # anchors are [\w-]+ per kbindex.chunk.heading_anchor; tool names match TelemetryEvidence.format_citation
-_KB_MARKER: Pattern[str] = re.compile(r"\[kb:(?P<slug>[a-z0-9-]+)#(?P<anchor>[\w-]+)\]")
-_POLICY_MARKER: Pattern[str] = re.compile(r"\[policy:(?P<id>POL-[A-Z0-9]+)\]")
-_TELEMETRY_MARKER: Pattern[str] = re.compile(r"\[telemetry:(?P<tool>[a-z_]+)\]")
+_KB_MARKER: Pattern[str] = re.compile(r"\[kb:(?P<ref>[^\]]*)\]")
+_POLICY_MARKER: Pattern[str] = re.compile(r"\[policy:(?P<ref>[^\]]*)\]")
+_TELEMETRY_MARKER: Pattern[str] = re.compile(r"\[telemetry:(?P<ref>[^\]]*)\]")
+_KB_REF: Pattern[str] = re.compile(r"(?P<slug>[a-z0-9-]+)#(?P<anchor>[\w-]+)")
 _ANY_MARKER: Pattern[str] = re.compile(r"\[(?:kb|policy|telemetry):[^\]]*\]")
 _CLAIM_SIGNALS: tuple[Pattern[str], ...] = (
     re.compile(r"(?<![\w.])\d[\d,]*(?:\.\d+)?\s?(?:ms|sec|s|bytes|B|KB|MB|GB|kbps|Mbps|Gbps|dBm|%)(?!\w)"),
@@ -83,12 +84,17 @@ def _has_claim_signal(sentence: str) -> bool:
     return any(signal.search(bare) for signal in _CLAIM_SIGNALS)
 
 
+def _kb_key(ref: str) -> tuple[str, str] | None:
+    parsed = _KB_REF.fullmatch(ref)
+    return (parsed["slug"], parsed["anchor"]) if parsed else None
+
+
 def check_citations(message: str, context: GroundingContext) -> CitationReport:
     violations: list[CitationViolation] = []
     for kind, pattern, known, key in (
-        (CitationViolationKind.UNKNOWN_KB, _KB_MARKER, context.kb_refs, lambda m: (m["slug"], m["anchor"])),
-        (CitationViolationKind.UNKNOWN_POLICY, _POLICY_MARKER, context.policy_ids, lambda m: m["id"]),
-        (CitationViolationKind.UNKNOWN_TELEMETRY, _TELEMETRY_MARKER, context.telemetry_tools, lambda m: m["tool"]),
+        (CitationViolationKind.UNKNOWN_KB, _KB_MARKER, context.kb_refs, lambda m: _kb_key(m["ref"])),
+        (CitationViolationKind.UNKNOWN_POLICY, _POLICY_MARKER, context.policy_ids, lambda m: m["ref"]),
+        (CitationViolationKind.UNKNOWN_TELEMETRY, _TELEMETRY_MARKER, context.telemetry_tools, lambda m: m["ref"]),
     ):
         violations.extend(
             CitationViolation(kind=kind, detail=match.group())
@@ -179,6 +185,8 @@ _OUTPUT_RULES: tuple[_OutputRule, ...] = (
     ),
 )
 _EDGE_PUNCTUATION = ".,;:()\"'"
+# ponytail: echo check hashes word phrases up to 8 words; longer secrets (PEM) rely on the redact() pass. Upgrade path: store the word count with each hash.
+_MAX_SECRET_WORDS: int = 8
 
 
 def check_outgoing_message(
@@ -193,10 +201,19 @@ def check_outgoing_message(
     ]
     # details are fixed descriptions: a SECRET_ECHO must never carry the secret it reports
     findings = redact(body).findings
-    repeats_secret = any(finding.sha256 in history.secret_hashes for finding in findings) or any(
-        secret_hash(candidate) in history.secret_hashes
-        for token in normalize(body).text.split()
-        for candidate in (token, token.strip(_EDGE_PUNCTUATION))
+    words = normalize(body).text.split()
+    phrases = (
+        " ".join(words[start:end])
+        for start in range(len(words))
+        for end in range(start + 1, min(start + _MAX_SECRET_WORDS, len(words)) + 1)
+    )
+    repeats_secret = any(finding.sha256 in history.secret_hashes for finding in findings) or (
+        bool(history.secret_hashes)
+        and any(
+            secret_hash(candidate) in history.secret_hashes
+            for phrase in phrases
+            for candidate in (phrase, phrase.strip(_EDGE_PUNCTUATION))
+        )
     )
     if repeats_secret:
         violations.append(

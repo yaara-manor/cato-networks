@@ -213,6 +213,27 @@ def test_placeholder_is_never_rewrapped() -> None:
     assert result.findings == ()
 
 
+@pytest.mark.parametrize(
+    ("text", "raw_parts", "expected"),
+    [
+        ("token=[REDACTED:KEY_VALUE]abc123", ["abc123"], "token=[REDACTED:KEY_VALUE][REDACTED:KEY_VALUE]"),
+        ("password=abc123[REDACTED:X]", ["abc123"], "password=[REDACTED:KEY_VALUE][REDACTED:X]"),
+        (
+            "password=ab[REDACTED:X]cd",
+            ["ab", "cd"],
+            "password=[REDACTED:KEY_VALUE][REDACTED:X][REDACTED:KEY_VALUE]",
+        ),
+    ],
+    ids=["suffix", "prefix", "both_sides"],
+)
+def test_raw_text_next_to_a_placeholder_is_still_redacted(text: str, raw_parts: list[str], expected: str) -> None:
+    result = redact(text)
+    assert result.text == expected
+    assert [text[f.start : f.end] for f in result.findings] == raw_parts
+    assert [f.sha256 for f in result.findings] == [secret_hash(part) for part in raw_parts]
+    assert redact(result.text).findings == ()
+
+
 def test_fullwidth_psk_is_caught() -> None:
     text = f"\uff30\uff33\uff2b is: {_SC08_PSK}"
     result = redact(text)

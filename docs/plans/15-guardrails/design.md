@@ -80,7 +80,7 @@ All models subclass one frozen base, `_GuardModel` (`model_config = ConfigDict(f
 ## 4. Guards
 
 ### 4.1 Redactor (`redactor.py`) — ~40% of effort
-Input normalized first via `normalize.py`: NFKC + zero-width char removal (spans mapped back to original). `[REDACTED:<KIND>]` placeholders already in the input never produce hits, so re-redacting (tool-output sanitization) is idempotent. Code fences / inline code are scanned like any text (customers paste configs and logs).
+Input normalized first via `normalize.py`: NFKC + zero-width char removal (spans mapped back to original). Detector hits never cover `[REDACTED:<KIND>]` placeholders already in the input (placeholder intervals are subtracted from each hit, so raw text adjacent to a placeholder is still redacted), which makes re-redacting (tool-output sanitization) idempotent. Code fences / inline code are scanned like any text (customers paste configs and logs).
 
 Four layers, applied in order; overlapping spans merged, earliest layer's kind wins:
 1. **Structural** (high precision): PEM `BEGIN … PRIVATE KEY` blocks; `Bearer <token>` / `Authorization:` headers; JWT (three base64url segments); vendor key prefixes (`AKIA…`, `sk-…`, `ghp_…`, `xox[bp]-…`); `key=value` / `key: value` / JSON/YAML `"key": "value"` where key ends in a secret-name word (password, passwd, pwd, psk, pre_shared_key, secret, token, api_key, apikey, shared_key) with any `word_`/`word-` prefix, which covers radius_secret, scim_token, client_secret; credentials in URLs (`scheme://user:pass@`); curl `-u user:pass`.
@@ -116,7 +116,7 @@ Non-blocking: verdict goes to `SessionGuardHistory` and agent context. Hard enfo
 
 ### 4.4 Citation & Grounding Validator (`validator.check_citations`) — ~20% of effort
 Marker grammar: `[kb:<slug>#<anchor>]`, `[policy:POL-XXX]`, `[telemetry:<tool>]`.
-1. **Validity**: every `kb` marker's (slug, anchor) ∈ `context.kb_refs`; every policy ∈ `context.policy_ids`; every telemetry tool ∈ `context.telemetry_tools`. Else `UNKNOWN_*`.
+1. **Validity**: every `kb` marker's (slug, anchor) ∈ `context.kb_refs`; every policy ∈ `context.policy_ids`; every telemetry tool ∈ `context.telemetry_tools`. Else `UNKNOWN_*`. Markers are recognised loosely (`[kb:…]`, `[policy:…]`, `[telemetry:…]`, any body up to `]`) and then validated, so a malformed marker such as `[kb:bad]` is itself an `UNKNOWN_*` violation and can never silently mark a paragraph as cited.
 2. **Uncited claims**: split message into paragraphs → sentences. Sentence flagged `UNCITED_CLAIM` when it has a technical-claim signal and neither it nor its paragraph carries a marker. Signals: number + unit (`ms|s|sec|bytes|B|KB|MB|GB|kbps|Mbps|Gbps|%|dBm`), port expressions (`UDP|TCP \d+`, `port \d+`), all-caps error codes (`[A-Z]+(_[A-Z]+)+`, e.g. `NO_PROPOSAL_CHOSEN`), CLI/config tokens (backtick spans only; bare `set …` / `show …` would fire on "set up the tunnel" / "I'll show you", so the Resolution agent prompt must put commands in backticks).
 3. **Refusal consistency**: `context.is_refusal` and message contains any `kb` marker or any technical-claim sentence → `REFUSAL_BREACH` (SC-09).
 
@@ -138,7 +138,7 @@ Orchestrator (Phase 2): not grounded → re-prompt once, then route to human (pe
 - `CREDIT_AMOUNT_PROMISE`: currency amount (`$`, `€`, `£`, `USD`, `EUR`) within the same sentence as credit/refund/compensation, unless `CREDIT ∈ approved` (SC-03).
 - `MFA_RESET_CLAIM`: "(have|has|I've) reset (your|the|his|her|their) MFA" unless `MFA_RESET ∈ approved`.
 - `VERDICT_OVERRIDE_CLAIM`: "(whitelisted|allowlisted|unblocked|overrode|overridden)" near "domain|verdict|C2|malware" — always.
-- `SECRET_ECHO`: sha256 of any whitespace token in the message (raw and with surrounding punctuation stripped) ∈ `history.secret_hashes` (POL-CRED "never quote back"). Also runs `redact()` on the message; any finding → violation. `detail` is a fixed description (`message repeats a previously redacted secret` / `message contains an unredacted <KIND> secret`), never the secret.
+- `SECRET_ECHO`: sha256 of any run of up to 8 consecutive whitespace-delimited words in the message (raw and with surrounding punctuation stripped, so multiword secrets such as `s3cr3t value!` match) ∈ `history.secret_hashes` (POL-CRED "never quote back"). Also runs `redact()` on the message; any finding → violation. `detail` is a fixed description (`message repeats a previously redacted secret` / `message contains an unredacted <KIND> secret`), never the secret.
 
 Citation markers (`[kb:…]`, `[policy:…]`, `[telemetry:…]`) are stripped from the message before `redact()` and the sentence rules: a kb anchor such as `#psk-length-1` would otherwise trip the entropy layer and raise a false `SECRET_ECHO` on every cited message. The three sentence rules are a table (`_OUTPUT_RULES`: kind, patterns that must all match within one sentence, approving `ActionType` or none); the loop has no rule-specific branches.
 

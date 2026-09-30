@@ -119,8 +119,7 @@ Every agent receives a typed context container via PydanticAI dependency injecti
 - `clock: SimulationClock` — Provides frozen time `2026-08-28T17:00:00Z` and elapsed time calculations.
 - `db_pool: AsyncConnectionPool` — Connection pool to Postgres.
 - `telemetry: TelemetryService` — Interface to read synthetic CMA telemetry files.
-- `retrieval: RetrievalService` — Interface for keyword, vector, and cross-encoder search.
-- `policy_store: PolicyStore` — Direct loader for the 6 internal policy markdown documents.
+- `retrieval: RetrievalService` — Unified interface in `retrieval/service.py` for hybrid KB search (`search_kb` returning `KBSearchResult`) and authoritative internal policy lookup (`get_policy` / `list_policies` returning `PolicyLookupResult`).
 - `customer_store: CustomerService` — Account tier and ticket history query engine.
 
 ---
@@ -158,14 +157,14 @@ Every agent receives a typed context container via PydanticAI dependency injecti
 - **Failure Mode**: If a telemetry file is missing or corrupt, outputs `TelemetryUnavailable(tool_name, site_id)` and continues without inventing numbers.
 
 #### 3. Knowledge Agent
-- **Purpose**: Formulates search queries against Cato documentation, queries Postgres hybrid index, executes cross-encoder reranking, and checks policy rules.
-- **Allowed Tools**: `search_knowledge_base(query: str)`, `get_policy_by_id(policy_id: str)`.
+- **Purpose**: Formulates search queries against Cato documentation, queries Postgres hybrid index via `RetrievalService`, executes cross-encoder reranking, and checks policy rules.
+- **Allowed Tools**: `search_knowledge_base(query: str) -> KBSearchResult`, `get_policy_by_id(policy_id: str) -> PolicyLookupResult`.
 - **Typed Input**: Diagnosis findings or customer technical question.
 - **Typed Output (`KnowledgeBundle`)**:
-  - `retrieved_passages: list[PassageCitation]` (slug, heading, heading_anchor, public_url, rrf_score, rerank_score, snippet)
-  - `referenced_policies: list[PolicyCitation]` (policy_id, title, excerpt)
-  - `confidence_status: Literal["confident", "low_confidence_refusal", "not_covered"]`
-- **Failure Mode**: If top rerank score < `RERANK_MIN_SCORE`, flags `low_confidence_refusal`. If database is down, raises `RetrievalUnavailableError`.
+  - `retrieved_passages: list[RetrievedPassage]` (`passage_id`, `slug`, `title`, `heading`, `heading_anchor`, `public_url`, `body`, `site_updated_at`, `lex_rank`, `vec_rank`, `rrf_score`, `rerank_score`, `citation_tag`)
+  - `referenced_policies: list[PolicyDocument]` (`policy_id`, `title`, `file_path`, `body`, `citation_tag`)
+  - `confidence_status: Literal["confident", "low_confidence_refusal", "unavailable"]`
+- **Failure Mode**: If top rerank score < `RERANK_MIN_SCORE`, `KBSearchResult` returns `status="low_confidence_refusal"` with `passages=[]` and unfiltered `candidates` preserved for eval/trace logging. If database is down, `KBSearchResult` / `PolicyLookupResult` catches `psycopg.Error` and returns `status="unavailable"`.
 
 #### 4. Resolution & Action Agent
 - **Purpose**: Synthesizes customer context, telemetry evidence, and KB passages into a conversational, empathetic, and grounded response. Proposes support actions and marks high-impact operations for approval.
@@ -363,21 +362,22 @@ erDiagram
 
 ## 7. Hybrid RAG & Knowledge Grounding Architecture
 
-The retrieval pipeline implements the contract specified in `00-2026-09-28-kb-ingestion-design.md`:
+The retrieval pipeline (`RetrievalService` in `retrieval/service.py`) implements the hybrid retrieval and reranking contract:
 
 1. **Query Construction**:
-   - Technical questions are prefixed with: `Represent this sentence for searching relevant passages: ` (required by `BAAI/bge-small-en-v1.5`).
-2. **First-Stage Hybrid Retrieval**:
-   - **Lexical**: Top 20 passages via Postgres `tsvector @@ plainto_tsquery('simple', :query)`.
-   - **Vector**: Top 20 passages via `<=>` cosine distance against passage embedding.
-3. **Reciprocal Rank Fusion (RRF)**:
-   - For every candidate passage in either list:
+   - Vector search prefixes questions with: `Represent this sentence for searching relevant passages: ` (required by `BAAI/bge-small-en-v1.5` via `kbindex.embed.embed_query`).
+   - Lexical search passes the query through PostgreSQL's built-in `'english'` Snowball stemmer (`tsvector_to_array(to_tsvector('english', :query))`), strips English stopwords, appends `:*` prefix wildcards joined with `|` (`OR`), and matches against `passages.search_vector` (`'simple'` GIN index).
+2. **Single-Roundtrip First-Stage Hybrid Retrieval & RRF**:
+   - **Lexical CTE**: Top 20 passages via `search_vector @@ tsq` ordered by `ts_rank_cd(search_vector, tsq) DESC`.
+   - **Vector CTE**: Top 20 passages via `<=>` cosine distance against passage embedding.
+   - **Reciprocal Rank Fusion (RRF CTE)**: `FULL OUTER JOIN` across both top-20 lists computing:
      $$\text{RRF Score} = \sum_{m \in \{\text{lexical}, \text{vector}\}} \frac{1}{60 + \text{rank}_m}$$
-4. **Second-Stage Cross-Encoder Reranking**:
-   - The top fused candidates are evaluated locally using `cross-encoder/ms-marco-MiniLM-L-12-v2`.
-5. **Confidence Filter**:
-   - Filter candidates where $\text{Rerank Score} \ge \text{RERANK\_MIN\_SCORE}$.
-   - Pass top 3–5 surviving chunks to the agent with exact heading anchors for citation.
+     joined with `kb_articles` and `snapshots` in a single SQL query.
+3. **Second-Stage Cross-Encoder Reranking**:
+   - Fused candidates are scored locally using `cross-encoder/ms-marco-MiniLM-L-12-v2` (`retrieval.rerank.rerank_pairs`).
+4. **Confidence Filter & `KBSearchResult` Envelope**:
+   - Candidates with $\text{Rerank Score} \ge \text{RERANK\_MIN\_SCORE}$ populate `KBSearchResult.passages` (top $k$, `status="confident"`).
+   - If no candidate meets threshold, `status="low_confidence_refusal"` is returned with `passages=[]` while `candidates` preserves the top $k$ unfiltered chunks and `snapshot_date` for `answers.md` and `traces`.
 
 ---
 
@@ -498,11 +498,9 @@ The codebase is organized into clean, single-responsibility packages separating 
 │   ├── hashing.py                     # SHA-256 integrity verifier
 │   └── store.py                       # Loads KB articles & passages into Postgres
 │
-├── retrieval/                         # Online RAG & search pipeline
-│   ├── search.py                      # Hybrid lexical (tsvector) + vector (pgvector) + RRF fusion
-│   ├── rerank.py                      # Cross-encoder MiniLM reranker (query-time)
-│   ├── threshold.py                   # RERANK_MIN_SCORE confidence gate & refusal evaluation
-│   └── policies.py                    # Direct authoritative policy reader by ID
+├── retrieval/                         # Online RAG & policy lookup pipeline
+│   ├── service.py                     # RetrievalService: single-roundtrip hybrid SQL + RRF + threshold gate + policy lookup
+│   └── rerank.py                      # Cross-encoder MiniLM reranker (query-time)
 │
 ├── core/                              # Central primitives & domain models
 │   ├── clock.py                       # SimulationClock frozen at 2026-08-28T17:00:00Z

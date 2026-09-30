@@ -1,4 +1,4 @@
-"""Relevance judge: one Gemini call per (query, passage) pair in cache/pools.json.
+"""Relevance judge: one LLM call per (query, passage) pair in cache/pools.json.
 
     uv run --env-file .env python -m experiments.llm.judge [--dry-run] [--limit N] [--ids Q01]
     uv run python -m experiments.llm.judge --sample-audit 20      # no LLM calls

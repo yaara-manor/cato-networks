@@ -1,4 +1,4 @@
-"""Shared plumbing for the Gemini runners: model resolution, retries, caches, CLI selection."""
+"""Shared plumbing for the LLM runners: model resolution, retries, caches, CLI selection."""
 import argparse
 import asyncio
 import json
@@ -16,13 +16,17 @@ from pydantic_ai.models import Model, infer_model
 from pydantic_ai.settings import ModelSettings
 from pydantic_ai.usage import RunUsage
 
-from core.config import settings
 
 EXPERIMENTS_DIR: Path = Path(__file__).resolve().parents[1]
 CACHE_DIR: Path = EXPERIMENTS_DIR / "cache"
 QUERIES_PATH: Path = EXPERIMENTS_DIR / "data" / "queries.jsonl"
 
-API_KEY_VARS: tuple[str, ...] = ("GEMINI_API_KEY", "GOOGLE_API_KEY")
+DEFAULT_MODEL: str = "openai:gpt-4.1-mini"
+# Model-id prefix -> env vars of which one must be set for a real (non-dry) run.
+API_KEY_VARS: dict[str, tuple[str, ...]] = {
+    "openai": ("OPENAI_API_KEY",),
+    "google": ("GEMINI_API_KEY", "GOOGLE_API_KEY"),
+}
 MODEL_SETTINGS: ModelSettings = ModelSettings(temperature=0.0)
 RETRY_ATTEMPTS: int = 6
 RETRY_BASE_DELAY_S: float = 2.0
@@ -48,14 +52,16 @@ class CallMeta(TypedDict):
 # ---------------------------------------------------------------- model
 
 def model_name(env_var: str) -> str:
-    """Model id from `env_var`, defaulting to the production `settings.llm_model`."""
-    return os.environ.get(env_var) or settings.llm_model
+    """Model id from `env_var`, defaulting to the cheap OpenAI model used for experiments."""
+    return os.environ.get(env_var) or DEFAULT_MODEL
 
 
 def require_api_key(name: str) -> None:
-    if name.startswith("google") and not any(os.environ.get(v) for v in API_KEY_VARS):
+    provider = name.split(":", 1)[0].split("-", 1)[0]
+    variables = API_KEY_VARS.get(provider, ())
+    if variables and not any(os.environ.get(v) for v in variables):
         raise SystemExit(
-            f"None of {' / '.join(API_KEY_VARS)} is set, but model '{name}' needs one. "
+            f"None of {' / '.join(variables)} is set, but model '{name}' needs one. "
             "Run with: uv run --env-file .env python -m <module> (or use --dry-run)."
         )
 

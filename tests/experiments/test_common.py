@@ -62,9 +62,9 @@ def test_pool_reports_failures_and_keeps_going() -> None:
     assert failures == 1 and sorted(stored) == [10, 30]
 
 
-def test_model_defaults_to_settings_and_env_overrides(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_model_defaults_to_cheap_openai_and_env_overrides(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("EXPERIMENT_LLM_MODEL", raising=False)
-    assert common.model_name("EXPERIMENT_LLM_MODEL") == "google-gla:gemini-3.8-flash"
+    assert common.model_name("EXPERIMENT_LLM_MODEL") == "openai:gpt-4.1-mini"
     monkeypatch.setenv("EXPERIMENT_LLM_MODEL", "google-gla:other")
     assert common.model_name("EXPERIMENT_LLM_MODEL") == "google-gla:other"
 
@@ -73,8 +73,9 @@ def test_model_defaults_to_settings_and_env_overrides(monkeypatch: pytest.Monkey
 def test_dry_run_needs_no_key_and_a_real_run_fails_clearly_without_one(
     module: object, monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    for var in common.API_KEY_VARS:
-        monkeypatch.delenv(var, raising=False)
+    for variables in common.API_KEY_VARS.values():
+        for var in variables:
+            monkeypatch.delenv(var, raising=False)
     monkeypatch.delenv("EXPERIMENT_LLM_MODEL", raising=False)
     monkeypatch.delenv("EXPERIMENT_JUDGE_MODEL", raising=False)
     (tmp_path / "pools.json").write_text('{"Q01": ["a-passage-id"]}')
@@ -82,5 +83,5 @@ def test_dry_run_needs_no_key_and_a_real_run_fails_clearly_without_one(
 
     assert module.main([*base, "--dry-run"]) == 0  # type: ignore[attr-defined]
     assert "pending=1" in capsys.readouterr().out
-    with pytest.raises(SystemExit, match="GEMINI_API_KEY"):
+    with pytest.raises(SystemExit, match="OPENAI_API_KEY"):
         module.main(base)  # type: ignore[attr-defined]

@@ -1,4 +1,4 @@
-"""Direction B: one Gemini call per customer message -> {is_kb_question, intent, search_queries}.
+"""Direction B: one LLM call per customer message -> {is_kb_question, intent, search_queries}.
 
     uv run --env-file .env python -m experiments.llm.rewrite [--dry-run] [--limit N] [--ids Q01,Q02]
 

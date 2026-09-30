@@ -1,4 +1,4 @@
-"""System prompts for the Gemini runners (Direction B rewrite, Direction D agent, relevance judge)."""
+"""System prompts for the LLM runners (Direction B rewrite, Direction D agent, relevance judge)."""
 
 REWRITE_SYSTEM: str = """\
 You turn a customer support message into retrieval input for a Cato Networks knowledge-base search.

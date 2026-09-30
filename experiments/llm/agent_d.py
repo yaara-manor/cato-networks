@@ -1,4 +1,4 @@
-"""Direction D: a Gemini agent that uses `search_kb` (production retrieval, no score gate) to decide
+"""Direction D: an LLM agent that uses `search_kb` (production retrieval, no score gate) to decide
 ANSWER / ASK_CUSTOMER / NOT_IN_KB, with a per-run search budget and a citation validator.
 
     uv run --env-file .env python -m experiments.llm.agent_d [--variant d_hidden_b3] [--dry-run] [--limit N] [--ids Q01]

@@ -48,10 +48,12 @@ Before starting, check that all of these exist on the base branch. If anything i
 ## Review Focus
 
 1. **Integer division in RRF.** `1 / (60 + rank)` over SQL integers is `0`. The SQL must divide a float literal (`1.0 / …`). → Task 1 invariant test checks `rrf_score` against the ranks.
-2. **Queries whose every word is a stopword** (`"what is the"`): the tsquery is `NULL`, so the lexical branch is empty. The vector branch must still return candidates, with every `lex_rank` `None`, and no SQL error. → Task 2 test.
-3. **User text carrying SQL or tsquery syntax** (`O'Brien`, `a & b | !c :*`, `'); drop table passages; --`): lexemes pass through `quote_literal` and bound parameters. The status is not `UNAVAILABLE`, and `passages` still has 14,109 rows afterwards. → Task 2 test.
+2. **Queries whose every word is a stopword** (`"what is the"`): the tsquery is `NULL`, so the lexical branch is empty. The vector branch must still return candidates, with every `lex_rank` `None`, and no SQL error. → Task 2 user-input test.
+3. **User text carrying SQL or tsquery syntax** (`O'Brien`, `a & b | !c :*`, `'); drop table passages; --`): lexemes pass through `quote_literal` and bound parameters. The status is not `UNAVAILABLE`, and `passages` still has 14,109 rows afterwards. → Task 2 user-input test.
 4. **Rollback on a closed connection raises** (`OperationalError: the connection is closed`, verified). The fault handler rolls back only when `not self._conn.closed`, or the outage path itself crashes. → Task 2 tests (closed connection, and `statement_timeout` cancellation followed by `select 1` on the same connection).
-5. **Very long input** (a 5,000-character pasted log): both encoders truncate to 512 tokens, and the search returns a normal envelope without raising. → Task 2 test.
+5. **Very long input** (a 5,000-character pasted log): both encoders truncate to 512 tokens, and the search returns a normal envelope without raising. → Task 2 user-input test.
+
+Deliberately not tested (simple guard): `top_k <= 0` raising `ValueError`. The guard stays in the code.
 
 ---
 
@@ -60,6 +62,8 @@ Before starting, check that all of these exist on the base branch. If anything i
 **Files:**
 - Modify: `retrieval/models.py` (add `KBSearchStatus`, `RetrievedPassage`, `KBSearchResult`)
 - Modify: `retrieval/service.py` (constants, `_FusedRow`, `_HYBRID_SQL`, snapshot load, `min_score`, `_fetch_fused`, `_rank_and_gate`, `search_kb`)
+- Modify: `core/models.py` and `core/__init__.py`: delete the unused `Citation` model and its export, which `RetrievedPassage` replaces (design §2.2).
+- Modify: `docs/overview/decisions.md` ADR-005 "Package Cohesion" bullet: drop `Citation` from the `core/models.py` list.
 - Test: `tests/retrieval/test_search_kb.py`
 
 **Interfaces:**
@@ -94,16 +98,16 @@ Before starting, check that all of these exist on the base branch. If anything i
     - every passage has `rerank_score >= min_score` and `rrf_score > 0`
     - `citation_tag()` matches the regex `^\[kb:[^#\]]+#[^\]]+\]$`
     - one of the top-3 passage bodies contains, case-insensitively, the question's key term (Q01 `mtu`, Q05 `bgp`, Q10 `no_proposal_chosen`, Q15 `azure`).
-  - `test_result_invariants`, using `ungated.search_kb(Q01 text, top_k=20)`:
+  - `test_ungated_ranking_is_consistent_and_deterministic`, using `ungated.search_kb(Q01 text, top_k=20)` run twice:
+    - both runs give identical `passage_id` lists
     - `len(candidates) <= 20`
     - candidates are sorted by `rerank_score` descending
     - each candidate has at least one of `lex_rank`/`vec_rank`, each within 1–20
     - `rrf_score` equals the sum of `1 / (60 + rank)` over present ranks, within `1e-9`
     - `passages == candidates` (ungated).
   - `test_english_stemming_reaches_lexical_branch`: `ungated.search_kb("Which priority policy applies when rekeying failed?", top_k=20)` has at least one candidate with a `lex_rank`. Under the old `'simple'` column, `polici`, `prioriti` and `rekey` could never match.
-  - `test_search_is_deterministic`: the same query run twice gives identical `passage_id` lists.
 - [ ] **Step 2: Run to confirm failure.** `uv run pytest tests/retrieval/test_search_kb.py -v`. Expected: `ImportError` for `KBSearchResult`, or `AttributeError: search_kb`.
-- [ ] **Step 3: Add the three models** to `retrieval/models.py` exactly as in Interfaces.
+- [ ] **Step 3: Add the three models** to `retrieval/models.py` exactly as in Interfaces. Delete `Citation` from `core/models.py` and `core/__init__.py`, then check `grep -rn "Citation\b" --include=*.py .` (excluding `.venv`) returns nothing.
 - [ ] **Step 4: Add the internals to `retrieval/service.py`.**
   - Constants `_RRF_K`, `_CANDIDATE_K`, `_RERANK_K`.
   - `_FusedRow(NamedTuple)`, private, with the 11 fields of `RetrievedPassage` minus `rerank_score`, in SQL select order. `class_row(_FusedRow)` builds it straight from the cursor, so there is no index-based tuple mapping.
@@ -139,12 +143,12 @@ Before starting, check that all of these exist on the base branch. If anything i
 - Consumes: Task 1's `search_kb`, `_fetch_fused`, `KBSearchStatus`.
 - Produces: the final `search_kb` contract. `ValueError` on `top_k <= 0`. Otherwise it always returns a `KBSearchResult`, and never raises on `psycopg.Error`.
 
-- [ ] **Step 1: Write the failing tests.** Each outage test gets its own fresh connection.
-  - `test_blank_query_refuses_without_work`: `""` and `"   \n"` → `LOW_CONFIDENCE_REFUSAL`, empty `candidates`, `snapshot_date` set.
-  - `test_non_positive_top_k_raises`: `top_k=0` and `top_k=-1` raise `ValueError`.
-  - `test_stopword_only_query_uses_vector_branch`: `ungated.search_kb("what is the", top_k=20)` has non-empty `candidates`, and every `lex_rank is None`.
-  - `test_hostile_query_text_is_inert`: every string in Review Focus 3 returns a status other than `UNAVAILABLE`. Afterwards, `select count(*) from passages` is still 14,109 on the same connection.
-  - `test_very_long_query_returns_envelope`: a 5,000-character query returns a status other than `UNAVAILABLE`.
+- [ ] **Step 1: Write three failing functional tests.** Each outage test gets its own fresh connection.
+  - `test_unusual_user_input_never_breaks_search`, one test covering what real chat users type:
+    - `""` and `"   \n"` → `LOW_CONFIDENCE_REFUSAL`, empty `candidates`, `snapshot_date` set
+    - `ungated.search_kb("what is the", top_k=20)` has non-empty `candidates`, every `lex_rank is None`
+    - every string in Review Focus 3, and a 5,000-character query, return a status other than `UNAVAILABLE`
+    - afterwards, `select count(*) from passages` is still 14,109 on the same connection.
   - `test_closed_connection_returns_unavailable`:
     - build the service, then `conn.close()`
     - `search_kb(Q01 text)` → `UNAVAILABLE` with a non-empty `error`, `candidates == []` and `snapshot_date` still set
@@ -154,8 +158,7 @@ Before starting, check that all of these exist on the base branch. If anything i
     - then `conn.execute("select 1")` succeeds, which proves the rollback left the connection out of the aborted state
     - `show statement_timeout` is back to `0`.
 - [ ] **Step 2: Run to confirm failure.** `uv run pytest tests/retrieval/test_search_kb.py -v`. Expected:
-  - the blank-query, `top_k` and both outage tests FAIL (model errors, `psycopg` exceptions escaping)
-  - the rest may already pass; they stay as guards.
+  - all three FAIL: the blank query reaches the models, and `psycopg` exceptions escape the outage tests.
 - [ ] **Step 3: Implement in `search_kb`.**
   - The guard clauses come first:
     - `top_k <= 0` raises `ValueError(f"top_k must be positive, got {top_k}")`
@@ -174,7 +177,7 @@ Before starting, check that all of these exist on the base branch. If anything i
 ### Task 3: Docs, review, cleanup (plan branch)
 
 **Files:**
-- Modify: `docs/overview/decisions.md`. Rewrite the stale parts of ADR-005: it still describes the `'simple'` column with `:*` prefixes, `PolicyLookupResult` and the `snapshots` join. Make it state:
+- Modify: `docs/overview/decisions.md`. Rewrite the stale parts of ADR-007 (retrieval): it still describes the `'simple'` column with `:*` prefixes, `PolicyLookupResult` and the `snapshots` join. Make it state:
   - the `'english'` column plus plain `::tsquery` cast, with the `polici`/`prioriti`/`proxi` evidence
   - rerank depth 20 at batch 8, with the measured numbers from design §2.8
   - the `KBSearchStatus` `StrEnum`
@@ -190,9 +193,8 @@ Before starting, check that all of these exist on the base branch. If anything i
   - No `'simple'` or `:*` in `retrieval/`.
   - `_FusedRow` is used only inside `service.py`.
 - [ ] **Step 5: Apply the doc edits** listed above.
-- [ ] **Step 6: Commit** `chore(plan-03): ADR-005 + architecture §7 for english hybrid search, review fixes`.
+- [ ] **Step 6: Commit** `chore(plan-03): ADR-007 + architecture §7 for english hybrid search, review fixes`.
 
 ## Unresolved Questions
 
-1. Is rerank depth 20 at batch size 8 (design §2.8, ~0.9 s vs ~2 s for 40) OK, or should all 40 fused candidates be reranked?
-2. Models load lazily on the first `search_kb` (a cold start of a few seconds). Should the future app entrypoint warm them (`load_embedder()`, `load_reranker()`)? That's out of scope here.
+None. Decided: models stay lazy-loaded here. The future app entrypoint pre-loads them (`load_embedder()`, `load_reranker()`) to avoid a first-search delay of a few seconds (design §8).

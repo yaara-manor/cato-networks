@@ -33,10 +33,9 @@
 ## Review Focus
 
 1. **Restoring the old `'simple'` dump:** startup's `apply_schema` must convert the column. Restoring the new dump must be a no-op (no table rewrite on every start). → Task 2, idempotency test.
-2. **`embed_passages([])`** must return `[]` without error. The batched `encode` path changes how empty input behaves. → Task 1 test.
-3. **Symptom text of only stopwords or noise words** (`"please, still the same issue today"`) must yield no keyword match and no error. → Task 3 test.
-4. **Short technical tokens and inflections** (`VPN`, `DNS`, `tunnels dropping` vs `tunnel drops`) now match. That's the intended behavior change, and it must not break ADR-003's two negative cases (`S-1003-01`, `S-1010-02`). → Task 3 tests.
-5. **Ticket text containing quotes, apostrophes, or tsquery operators** (`O'Brien`, `a & b | !c`): stemming goes through a bound `text[]` parameter, never string-built SQL. → Task 3 test.
+2. **Symptom text of only stopwords or noise words** (`"please, still the same issue today"`) must yield no keyword match and no error. → Task 3 test.
+3. **Short technical tokens and inflections** (`VPN`, `DNS`, `tunnels dropping` vs `tunnel drops`) now match. That's the intended behavior change, and it must not break ADR-003's two negative cases (`S-1003-01`, `S-1010-02`). → Task 3 tests.
+4. **Ticket text containing quotes, apostrophes, or tsquery operators** (`O'Brien`, `a & b | !c`): stemming goes through a bound `text[]` parameter, never string-built SQL. → Task 3 test.
 
 ---
 
@@ -63,17 +62,16 @@
 - [ ] **Step 1: Update tests to the target API first.**
   - Switch every `kbindex.embed` / `retrieval.rerank` import in the four test files to `encoders.embed` / `encoders.rerank`.
   - In the embed/rerank test, define `BGP_PASSAGE`, `SLA_PASSAGE` and `SMOKE_QUESTION` as module constants (same strings as `kbindex/embed.py:7-9`) and stop importing them.
-  - Add two assertions to that test: `embed_passages([]) == []` and `rerank_pairs(SMOKE_QUESTION, []) == []`.
   - In the startup test, delete the `probe_width(load_embedder())` line (the `SentenceTransformer` duck-typing goes away) and drop the now-unused `load_embedder` import.
 - [ ] **Step 2: Run to confirm failure.** `uv run pytest tests/kbindex -v`. Expected: `ModuleNotFoundError: encoders`.
 - [ ] **Step 3: Move the two modules** with `git mv`, add `encoders/__init__.py`, and fix the three production imports listed above.
 - [ ] **Step 4: Edit `encoders/embed.py`.**
   - Delete the three test constants.
-  - `embed_passages`: return `[]` for empty input, otherwise one `model.encode(texts, prompt="", show_progress_bar=False)` call, converting each row to `list[float]`.
+  - `embed_passages`: one `model.encode(texts, prompt="", show_progress_bar=False)` call, converting each row to `list[float]`. There is no empty-input branch: no caller passes `[]` (`kbindex/store.py` already guards).
   - `embed_query` stays `embed_passages([embedding_prefix(text)])[0]`.
   - `probe_width`: new signature from Interfaces; its body is the length of `embed(["width-check"])[0]`.
   - Drop `from typing import Any`. Add `from collections.abc import Callable`.
-- [ ] **Step 5: Edit `encoders/rerank.py`.** `rerank_pairs` returns `[]` when `passages` is empty. Otherwise it calls `predict` with `batch_size=8` (design §2.8: measured faster than 32 on CPU), `convert_to_numpy=True`, `show_progress_bar=False`.
+- [ ] **Step 5: Edit `encoders/rerank.py`.** `rerank_pairs` calls `predict` with `batch_size=8` (design §2.8: measured faster than 32 on CPU), `convert_to_numpy=True`, `show_progress_bar=False`.
 - [ ] **Step 6: Run and confirm pass.** `uv run pytest tests/kbindex tests/db -v`. Expected: all PASS, including the exact-float equality against `tests/kbindex/output/*.json`.
   - If batching shifts floats, do not regenerate the fixtures silently. STOP and report the max absolute diff.
 - [ ] **Step 7: Clean-code gate.** `uvx ruff check encoders kbindex db tests/kbindex` and `uvx pyright encoders kbindex/chunk.py kbindex/store.py db/init/startup.py`. Both clean.

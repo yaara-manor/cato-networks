@@ -27,7 +27,7 @@ Out of scope: async API (callers wrap at the tool boundary), metadata filtering 
 ## 2. Structural Decisions
 
 1. **`encoders/` package**: move `kbindex/embed.py` → `encoders/embed.py` and `retrieval/rerank.py` → `encoders/rerank.py`. `kbindex/`, `db/init/` and `retrieval/` all depend downward on `encoders/`; no `kbindex` ↔ `retrieval` cross-imports; `core/` stays free of PyTorch.
-2. **One service, one models module**: all KB search, RRF, gating and policy lookup live in `RetrievalService` (`retrieval/service.py`); its Pydantic models live in `retrieval/models.py`. `core/models.py` keeps only cross-domain models. When `SupportDeps` is introduced, it holds one `retrieval: RetrievalService` field (no separate `policy_store`).
+2. **One service, one models module**: all KB search, RRF, gating and policy lookup live in `RetrievalService` (`retrieval/service.py`); its Pydantic models live in `retrieval/models.py`. `core/models.py` keeps only cross-domain models; its unused `Citation` model is deleted — `RetrievedPassage` is the KB citation model. When `SupportDeps` is introduced, it holds one `retrieval: RetrievalService` field (no separate `policy_store`).
 3. **Sync-only API**: the codebase has no async code; every service takes `psycopg.Connection[Any]`. One sync method per operation. An async agent runtime wraps calls at the tool boundary with `asyncio.to_thread`. Halves method count and test surface vs. a sync+async pair.
 4. **English stemming on the stored lexical column**: a new migration changes the `passages.search_vector` generated column from `to_tsvector('simple', body)` to `to_tsvector('english', body)`; the query `tsquery` is built from the same `'english'` config.
    - **Why not keep `'simple'` + stem-prefix (`stem:*`)**: verified on the live DB that Snowball stems are not always prefixes of the surface word — `policy`→`polici`, `priority`→`prioriti`, `proxy`→`proxi` each fail to match themselves against the `'simple'` index. Stemming both sides with one config removes that failure class.
@@ -118,7 +118,7 @@ Retrieval-only; no agent required. Runs as soon as `search_kb` exists.
 2. **Process**: build `RetrievalService` with `min_score = -inf` so nothing is gated; record per query the top-1 `rerank_score`, top-1 slug, and `search_kb` wall-clock latency.
 3. **Output**: `docs/eval/threshold_calibration.md` — per-query table for all three sets, score ranges, chosen threshold, count of answerable questions it refuses, p50/p95 latency.
 4. **Decision rule** (answerable vs off-domain only): if the sets separate, threshold = midpoint of the gap. If they overlap, pick the lowest threshold that refuses every off-domain query and report how many answerable questions it refuses.
-5. **Apply**: set the `rerank_min_score` default in `core/config.py` to the chosen value and record the rationale (including the SC-09 finding) in the retrieval ADR (ADR-005) in `docs/overview/decisions.md`.
+5. **Apply**: set the `rerank_min_score` default in `core/config.py` to the chosen value and record the rationale (including the SC-09 finding) in the retrieval ADR (ADR-007) in `docs/overview/decisions.md`.
 
 ### 4.4 Schema & Seed Change
 
@@ -144,8 +144,8 @@ Replace the hand-rolled tokenizer with the same standard pipeline as KB search.
 
 1. Move files (§2.1); update imports in `kbindex/chunk.py`, `kbindex/store.py`, `db/init/startup.py`, and tests.
 2. Move test constants `BGP_PASSAGE`, `SLA_PASSAGE`, `SMOKE_QUESTION` from `encoders/embed.py` into `tests/kbindex/test_embed_and_rerank_prefer_the_relevant_passage.py`.
-3. `embed_passages`: replace the per-string loop with one batched `model.encode(texts, ...)` call. Risk: batch padding can shift floats slightly; the exact-equality assertions in the embed test are the check.
-4. `rerank_pairs`: return `[]` for empty `passages` without calling the model; pass `batch_size=8` (§2.8), `convert_to_numpy=True`, `show_progress_bar=False`.
+3. `embed_passages`: replace the per-string loop with one batched `model.encode(texts, ...)` call (no empty-input branch; no caller passes `[]`). Risk: batch padding can shift floats slightly; the exact-equality assertions in the embed test are the check.
+4. `rerank_pairs`: pass `batch_size=8` (§2.8), `convert_to_numpy=True`, `show_progress_bar=False`.
 5. `probe_width`: typed as `probe_width(embed: Callable[[list[str]], list[list[float]]] = embed_passages) -> int`, returning the length of the first vector. Drops the `Any` + `hasattr` duck-typing; the only runtime caller (`db/init/startup.py`) already passes that callable type. The test line passing a raw `SentenceTransformer` goes.
 
 ---
@@ -178,5 +178,10 @@ Functional tests against the real seeded PostgreSQL and local models. New retrie
 
 ## 7. Unresolved Questions
 
-1. `core/models.Citation` duplicates most `RetrievedPassage` fields and has no caller. Left untouched here; decide when traces/`AgentTrace` consume retrieval output.
-2. ADR numbering: this branch's ADR-005 (retrieval) collides with `p-1-3`'s ADR-005/006 (telemetry). Renumber at merge.
+None.
+
+---
+
+## 8. Follow-ups (outside this feature)
+
+1. **Model warm-up**: `search_kb` loads the embedder and reranker lazily on first call (a delay of a few seconds). The future app entrypoint (agent runtime / UI startup) must call `encoders.embed.load_embedder()` and `encoders.rerank.load_reranker()` at boot.

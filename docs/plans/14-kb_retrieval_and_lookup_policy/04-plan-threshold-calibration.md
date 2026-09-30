@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace the placeholder `rerank_min_score = 0.0` with a measured threshold. The threshold must refuse off-domain questions while keeping the 35 answerable eval questions answerable, and the evidence goes into a committed report and ADR-005.
+**Goal:** Replace the placeholder `rerank_min_score = 0.0` with a measured threshold. The threshold must refuse off-domain questions while keeping the 35 answerable eval questions answerable, and the evidence goes into a committed report and ADR-007.
 
 **Architecture:** A retrieval-only script, `eval/calibrate_threshold.py`. It builds `RetrievalService(min_score=-inf)`, so nothing is gated, and runs three question sets through `search_kb`, recording top-1 score, top-1 slug and latency:
 - the 35 answerable questions
@@ -23,7 +23,7 @@ A pure `choose_threshold` applies the design §4.3 rule to the answerable and of
 - New Pydantic models are frozen (`ConfigDict(frozen=True)`).
 - No new dependencies. Percentiles use `statistics.quantiles`, the "just above" threshold uses `math.nextafter`, and timing uses `time.perf_counter`.
 - Commands, not queries: only `main` reads files, writes the report or prints. Every other function is pure or a pure query.
-- Tests are functional against the real DB and models. The single unit test (`choose_threshold`) is allowed as isolated decision math.
+- Tests are functional against the real DB and models. No unit tests on simple logic: `choose_threshold`'s few lines are checked by one functional run on real scores and by the Task 2 refusal tests.
 - Never read `.env`. If a `RERANK_MIN_SCORE` override is suspected (a test sees a threshold different from the code default), ask the user.
 - Verify with `uv run pytest <path> -v`, `uvx ruff check <paths>` and `uvx pyright <paths>`.
 
@@ -35,9 +35,9 @@ A pure `choose_threshold` applies the design §4.3 rule to the answerable and of
 
 ## Review Focus
 
-1. **Off-domain and answerable scores overlap.** `choose_threshold` must still return a threshold that refuses every off-domain query. It reports the answerable questions it sacrifices, and never silently picks a midpoint that lets an off-domain query through. → Task 1 unit test (overlap case).
-2. **Empty input sets or a malformed JSONL line** (a blank trailing line, a missing `question` key): blank lines are skipped, and a missing key raises `pydantic.ValidationError` through `model_validate_json`. Calibrating on a partial set must never happen silently. → The loader is too trivial for its own test; `choose_threshold` guards the empty sets (Task 1 test).
-3. **An answerable question whose ungated result has no candidates** (all branches empty). Its top-1 score is `-inf` and it is listed in the report rather than crashing `max()`. → handled in `score_questions`; checked in the Task 1 functional smoke test.
+1. **Off-domain and answerable scores overlap.** `choose_threshold` must still return a threshold that refuses every off-domain query. It reports the answerable questions it sacrifices, and never silently picks a midpoint that lets an off-domain query through. → Reviewed in Task 3; the Task 2 off-domain refusal tests catch a wrong applied value.
+2. **Empty input sets or a malformed JSONL line** (a blank trailing line, a missing `question` key): blank lines are skipped, and a missing key raises `pydantic.ValidationError` through `model_validate_json`. Calibrating on a partial set must never happen silently. → The loader is too trivial for its own test; `choose_threshold` raises `ValueError` on empty sets (a guard, not tested).
+3. **An answerable question whose ungated result has no candidates** (all branches empty). Its top-1 score is `-inf` and it is listed in the report rather than crashing `max()`. → handled in `score_questions`; checked by reading in the Task 3 review.
 4. **The threshold is rounded for `config.py`.** Rounding must go up, to 2 decimals, so every off-domain question is still refused after rounding. → Task 2 test runs every off-domain question through the default-threshold service.
 5. **The four plan-03 confident questions (Q01, Q05, Q10, Q15)** must stay `CONFIDENT` under the new default. If one flips, STOP and report instead of lowering the threshold by hand. → Task 2 (re-run plan 03 tests).
 
@@ -81,15 +81,12 @@ A pure `choose_threshold` applies the design §4.3 rule to the answerable and of
   8. replacing an iPhone battery
   9. Oracle database license audit rules
   10. how to file a US tax return extension
-- [ ] **Step 2: Write the failing tests** in `tests/eval/test_calibrate_threshold.py`.
-  - `test_choose_threshold_midpoint_when_separated`: answerable `{a: 3.0, b: 5.0}`, off-domain `[-4.0, 1.0]` → threshold `2.0`, `separated=True`, `refused_answerable=[]`.
-  - `test_choose_threshold_refuses_all_off_domain_when_overlapping`: answerable `{a: 0.5, b: 5.0}`, off-domain `[-4.0, 1.0]` →
-    - `separated=False`
-    - `threshold > 1.0`
-    - `threshold == math.nextafter(1.0, math.inf)`
-    - `refused_answerable == ["a"]`.
-  - `test_choose_threshold_rejects_empty_sets`: either set empty → `ValueError`.
-  - `test_score_questions_smoke`: a real service with `min_score=-inf`, over Q01 plus OOD06 → two `QueryScore` rows, Q01 scoring higher than OOD06, `latency_ms > 0`.
+- [ ] **Step 2: Write one failing functional test** in `tests/eval/test_calibrate_threshold.py`: `test_calibration_separates_real_answerable_from_off_domain`.
+  - Build a real service with `min_score=-inf`.
+  - Run `score_questions` on Q01 and Q05 (answerable, loaded from `questions.jsonl`) and OOD06 and OOD07 (off-domain, loaded from the fixture).
+  - Pass the scores into `choose_threshold`.
+  - Assert: `separated is True`, `refused_answerable == []`, the threshold lies strictly between the highest off-domain score and the lowest answerable score, and every `latency_ms > 0`.
+  - This covers the script's whole flow (load → score → decide) on real data, minus file writing.
 - [ ] **Step 3: Run to confirm failure.** `uv run pytest tests/eval -v`. Expected: `ModuleNotFoundError: eval.calibrate_threshold`.
 - [ ] **Step 4: Implement `eval/calibrate_threshold.py`.**
   - `choose_threshold`:
@@ -146,7 +143,7 @@ A pure `choose_threshold` applies the design §4.3 rule to the answerable and of
 ### Task 3: ADR, global cleanup, review (plan branch)
 
 **Files:**
-- Modify: `docs/overview/decisions.md` ADR-005. Add a "Threshold calibration" bullet covering:
+- Modify: `docs/overview/decisions.md` ADR-007 (retrieval). Add a "Threshold calibration" bullet covering:
   - the chosen value, whether the sets separated, and the refused answerable count
   - p50/p95 latency
   - the SC-09 finding: partial coverage passes the gate, and refusing roadmap dates is agent grounding.
@@ -162,9 +159,8 @@ A pure `choose_threshold` applies the design §4.3 rule to the answerable and of
   - No `'simple'` tsvector outside `20260929_1500_kb-schema.sql` and the new migration's guard. No `kbindex.embed` or `retrieval.rerank` imports.
   - `uvx ruff check .` and `uvx pyright encoders core services db kbindex retrieval eval` are clean. Every function is fully typed, with no unused imports or helpers.
   - `README.md` and the architecture tree mention `encoders/`, `retrieval/service.py`, `retrieval/models.py` and `eval/calibrate_threshold.py`.
-- [ ] **Step 5: Commit** `chore(plan-04): ADR-005 calibration, global cleanup`.
+- [ ] **Step 5: Commit** `chore(plan-04): ADR-007 calibration, global cleanup`.
 
 ## Unresolved Questions
 
-1. Is the gate scope OK: off-domain refusal only, with SC-09 roadmap-date refusal left to the agent's grounding (design §4.3)?
-2. Should the stop condition be "more than 3 answerable refused" (Task 2, Step 3), or a different tolerance?
+None. Decided: the stop tolerance is more than 3 refused answerable questions.

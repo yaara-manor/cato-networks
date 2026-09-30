@@ -1,12 +1,12 @@
 import json
-import os
 import re
 from collections.abc import Iterator
+from typing import Any
 
 import psycopg
 import pytest
 
-from core.config import REPO_ROOT
+from core.config import REPO_ROOT, settings
 from retrieval.models import KBSearchStatus
 from retrieval.service import RetrievalService
 
@@ -31,19 +31,18 @@ def _question_text(question_id: str) -> str:
 
 
 @pytest.fixture(scope="module")
-def connection() -> Iterator[psycopg.Connection[object]]:
-    database_url = os.environ.get("DATABASE_URL", "postgresql://kb:kb@localhost:5432/kb")
-    with psycopg.connect(database_url) as conn:
+def connection() -> Iterator[psycopg.Connection[Any]]:
+    with psycopg.connect(settings.database_url) as conn:
         yield conn
 
 
 @pytest.fixture(scope="module")
-def service(connection: psycopg.Connection[object]) -> RetrievalService:
+def service(connection: psycopg.Connection[Any]) -> RetrievalService:
     return RetrievalService(connection)
 
 
 @pytest.fixture(scope="module")
-def ungated(connection: psycopg.Connection[object]) -> RetrievalService:
+def ungated(connection: psycopg.Connection[Any]) -> RetrievalService:
     return RetrievalService(connection, min_score=float("-inf"))
 
 
@@ -58,7 +57,7 @@ def test_eval_questions_are_answered_confidently(
     assert result.snapshot_date is not None
 
     for passage in result.passages:
-        assert passage.rerank_score >= service._min_score
+        assert passage.rerank_score >= settings.rerank_min_score
         assert passage.rrf_score > 0
         assert _CITATION_TAG_RE.match(passage.citation_tag())
 
@@ -111,14 +110,10 @@ def test_english_stemming_reaches_lexical_branch(ungated: RetrievalService) -> N
     assert any(c.lex_rank is not None for c in result.candidates)
 
 
-def _database_url() -> str:
-    return os.environ.get("DATABASE_URL", "postgresql://kb:kb@localhost:5432/kb")
-
-
 def test_unusual_user_input_never_breaks_search(
     service: RetrievalService,
     ungated: RetrievalService,
-    connection: psycopg.Connection[object],
+    connection: psycopg.Connection[Any],
 ) -> None:
     for blank in ("", "   \n"):
         result = service.search_kb(blank)
@@ -148,7 +143,7 @@ def test_unusual_user_input_never_breaks_search(
 
 
 def test_closed_connection_returns_unavailable() -> None:
-    with psycopg.connect(_database_url()) as conn:
+    with psycopg.connect(settings.database_url) as conn:
         service = RetrievalService(conn)
         conn.close()
 
@@ -161,7 +156,7 @@ def test_closed_connection_returns_unavailable() -> None:
 
 
 def test_cancelled_query_rolls_back_shared_connection() -> None:
-    with psycopg.connect(_database_url()) as conn:
+    with psycopg.connect(settings.database_url) as conn:
         service = RetrievalService(conn)
         conn.execute("set statement_timeout = 1")
 

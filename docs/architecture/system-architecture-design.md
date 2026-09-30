@@ -367,15 +367,15 @@ The retrieval pipeline (`RetrievalService` in `retrieval/service.py`) implements
 
 1. **Query Construction**:
    - Vector search prefixes questions with: `Represent this sentence for searching relevant passages: ` (required by `BAAI/bge-small-en-v1.5` via `encoders.embed.embed_query`).
-   - Lexical search passes the query through PostgreSQL's built-in `'english'` Snowball stemmer (`tsvector_to_array(to_tsvector('english', :query))`), strips English stopwords, appends `:*` prefix wildcards joined with `|` (`OR`), and matches against `passages.search_vector` (`'simple'` GIN index).
+   - Lexical search passes the query through PostgreSQL's built-in `'english'` Snowball stemmer, folded straight into a `::tsquery` cast (`string_agg(quote_literal(lexeme), ' | ')::tsquery` over `tsvector_to_array(to_tsvector('english', :query))`) — no `:*` prefix wildcards — and matches against `passages.search_vector`, itself a generated column indexed (`GIN`) on the same `'english'` configuration so stems compare equal on both sides.
 2. **Single-Roundtrip First-Stage Hybrid Retrieval & RRF**:
    - **Lexical CTE**: Top 20 passages via `search_vector @@ tsq` ordered by `ts_rank_cd(search_vector, tsq) DESC`.
    - **Vector CTE**: Top 20 passages via `<=>` cosine distance against passage embedding.
    - **Reciprocal Rank Fusion (RRF CTE)**: `FULL OUTER JOIN` across both top-20 lists computing:
      $$\text{RRF Score} = \sum_{m \in \{\text{lexical}, \text{vector}\}} \frac{1}{60 + \text{rank}_m}$$
-     joined with `kb_articles` and `snapshots` in a single SQL query.
+     joined with `kb_articles` in a single SQL query; the top 20 by RRF score are carried into reranking. `policies` and `snapshots.crawled_at` are not joined per call — `RetrievalService.__init__` loads them once into memory.
 3. **Second-Stage Cross-Encoder Reranking**:
-   - Fused candidates are scored locally using `cross-encoder/ms-marco-MiniLM-L-12-v2` (`retrieval.rerank.rerank_pairs`).
+   - The RRF top 20 fused candidates are scored locally using `cross-encoder/ms-marco-MiniLM-L-12-v2` (`encoders.rerank.rerank_pairs`).
 4. **Confidence Filter & `KBSearchResult` Envelope**:
    - Candidates with $\text{Rerank Score} \ge \text{RERANK\_MIN\_SCORE}$ populate `KBSearchResult.passages` (top $k$, `status="confident"`).
    - If no candidate meets threshold, `status="low_confidence_refusal"` is returned with `passages=[]` while `candidates` preserves the top $k$ unfiltered chunks and `snapshot_date` for `answers.md` and `traces`.

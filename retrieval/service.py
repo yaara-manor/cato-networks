@@ -156,11 +156,7 @@ class RetrievalService:
         )
         candidates = ranked[:top_k]
         confident = bool(candidates) and candidates[0].rerank_score >= self._min_score
-        passages = (
-            [p for p in candidates if p.rerank_score >= self._min_score]
-            if confident
-            else []
-        )
+        passages = [p for p in candidates if p.rerank_score >= self._min_score]
         status = (
             KBSearchStatus.CONFIDENT if confident else KBSearchStatus.LOW_CONFIDENCE_REFUSAL
         )

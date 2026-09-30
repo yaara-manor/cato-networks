@@ -15,7 +15,7 @@ from core.config import (
     RERANKER_MODEL,
 )
 from db.init.seed import apply_schema, seed_all
-from kbindex.embed import embed_passages
+from encoders.embed import embed_passages
 from kbindex.hashing import sha256_bytes, sha256_file
 
 

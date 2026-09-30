@@ -1,12 +1,8 @@
-from typing import Any
+from collections.abc import Callable
 
 from sentence_transformers import SentenceTransformer
 
 from core.config import EMBEDDING_MODEL, EMBEDDING_REVISION, QUERY_PREFIX
-
-BGP_PASSAGE = "BGP route limits cap the number of routes a Socket accepts from a neighbor."
-SLA_PASSAGE = "SLA credits refund a share of the fee after a qualifying service outage."
-SMOKE_QUESTION = "What happens when a Socket hits its BGP route limit?"
 
 _embedder: SentenceTransformer | None = None
 
@@ -27,12 +23,10 @@ def load_embedder() -> SentenceTransformer:
 
 
 def embed_passages(texts: list[str]) -> list[list[float]]:
-    # Embed passage text with no query prefix.
+    # Embed passage text with no query prefix, batched in one model call.
     model = load_embedder()
-    return [
-        [float(value) for value in model.encode(text, prompt="", show_progress_bar=False)]
-        for text in texts
-    ]
+    vectors = model.encode(texts, prompt="", show_progress_bar=False)
+    return [[float(value) for value in vector] for vector in vectors]
 
 
 def embedding_prefix(question: str) -> str:
@@ -45,23 +39,6 @@ def embed_query(text: str) -> list[float]:
     return embed_passages([embedding_prefix(text)])[0]
 
 
-def probe_width(embed: Any = None) -> int:
+def probe_width(embed: Callable[[list[str]], list[list[float]]] = embed_passages) -> int:
     # Embed the fixed string width-check and return the vector length.
-    target: Any = embed_passages if embed is None else embed
-
-    if hasattr(target, "encode"):
-        vec: Any = target.encode("width-check")
-        if hasattr(vec, "shape"):
-            return int(vec.shape[-1])
-        return len(vec)
-
-    try:
-        res: Any = target(["width-check"])
-    except Exception:
-        res = target("width-check")
-
-    if hasattr(res, "shape"):
-        return int(res.shape[-1])
-    if isinstance(res, (list, tuple)) and len(res) > 0 and isinstance(res[0], (list, tuple)):
-        return len(res[0])
-    return len(res)
+    return len(embed(["width-check"])[0])

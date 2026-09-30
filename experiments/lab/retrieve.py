@@ -28,13 +28,16 @@ DSN: str = os.environ.get("KB_DSN", "postgresql://kb:kb@localhost:5432/kb")
 BODY_MAX: int = 1200
 
 
-class Passage(TypedDict, total=False):
+class _PassageBase(TypedDict):
     passage_id: str
     slug: str
     heading: str
     body: str
     score: float
     rank: int
+
+
+class Passage(_PassageBase, total=False):
     rerank_score: float
     rrf_score: float
     lex_rank: int | None
@@ -72,7 +75,7 @@ def conn() -> psycopg.Connection[Any]:
     """Cached read-only autocommit connection."""
     global _conn
     if _conn is None or _conn.closed:
-        c: psycopg.Connection[Any] = psycopg.connect(DSN, autocommit=True, row_factory=dict_row)
+        c = psycopg.connect(DSN, autocommit=True, row_factory=dict_row)  # pyright: ignore[reportArgumentType]
         c.read_only = True
         _conn = c
     return _conn
@@ -228,7 +231,7 @@ def rerank(query: str, passages: Sequence[Passage], top_n: int = 20,
         p["rerank_score"] = s
         p["score"] = s
         out.append(p)
-    out.sort(key=lambda p: (-p["rerank_score"], -p.get("rrf_score", 0.0), p["passage_id"]))
+    out.sort(key=lambda p: (-p["score"], -p.get("rrf_score", 0.0), p["passage_id"]))
     for i, p in enumerate(out, 1):
         p["rank"] = i
     return out

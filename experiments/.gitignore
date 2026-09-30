@@ -1,0 +1,3 @@
+cache/passages.json
+cache/judge_calls.jsonl
+cache/**/*.tmp

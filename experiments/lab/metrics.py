@@ -7,7 +7,8 @@ Queries with no relevant passage return nan (undefined); use `mean` to aggregate
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 Qrels = dict[str, dict[str, int]]
 
@@ -48,7 +49,7 @@ def mean(xs: Sequence[float]) -> float:
     return sum(v) / len(v) if v else math.nan
 
 
-def evaluate(rankings: dict[str, Sequence[str]], qrels: Qrels, min_grade: int = 1) -> dict[str, float]:
+def evaluate(rankings: Mapping[str, Sequence[str]], qrels: Qrels, min_grade: int = 1) -> dict[str, float]:
     """Mean hit@1, hit@5, MRR, nDCG@5 over queries present in both dicts."""
     qs = [q for q in rankings if q in qrels]
     return {
@@ -67,7 +68,7 @@ def _prf(tp: int, fp: int, fn: int) -> dict[str, float]:
     return {"precision": p, "recall": r, "f1": f}
 
 
-def answer_refuse_prf(should_answer: Sequence[bool], did_answer: Sequence[bool]) -> dict[str, dict[str, float] | float]:
+def answer_refuse_prf(should_answer: Sequence[bool], did_answer: Sequence[bool]) -> dict[str, Any]:
     """Precision/recall/F1 for the ANSWER class and the REFUSE class, plus accuracy."""
     pairs = list(zip(should_answer, did_answer, strict=True))
     tp = sum(s and d for s, d in pairs)

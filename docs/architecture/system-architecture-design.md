@@ -515,6 +515,7 @@ The codebase is organized into clean, single-responsibility packages separating 
 │   └── telemetry.py                   # TelemetryService and verbatim [telemetry] evidence extraction
 │
 ├── services/                          # Business domain logic
+│   ├── models.py                      # Service-domain Pydantic schemas (CallerIdentity, SLADeadlines, RepeatContactResult, ApprovalRecord, CountryCodeOutput)
 │   ├── customer_service.py            # Account identification & SLA calculations
 │   ├── ticket_service.py              # Historical tickets & repeat contact analysis
 │   ├── approval_service.py            # Non-blocking HITL approvals lifecycle
@@ -526,6 +527,7 @@ The codebase is organized into clean, single-responsibility packages separating 
 │   └── validator.py                   # Citation verification & entitlement checks
 │
 ├── agents/                            # PydanticAI specialized role agents
+│   ├── models.py                      # Agent-domain Pydantic schemas (AgentTrace, role outputs)
 │   ├── base.py                        # Common agent contracts & SupportDeps
 │   ├── triage.py                      # Caller identification, SLA binding, scoping
 │   ├── diagnostics.py                 # Telemetry inspection & evidence extraction

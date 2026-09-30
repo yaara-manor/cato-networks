@@ -173,7 +173,26 @@ class RetrievalService:
         )
 
     def search_kb(self, query: str, top_k: int = 5) -> KBSearchResult:
+        if top_k <= 0:
+            raise ValueError(f"top_k must be positive, got {top_k}")
+        if not query.strip():
+            return KBSearchResult(
+                status=KBSearchStatus.LOW_CONFIDENCE_REFUSAL,
+                query=query,
+                snapshot_date=self._snapshot_date,
+            )
         embedding = embed_query(query)
-        rows = self._fetch_fused(query, embedding)
+        try:
+            rows = self._fetch_fused(query, embedding)
+        except psycopg.Error as exc:
+            logger.error("KB search failed: %r", exc)
+            if not self._conn.closed:
+                self._conn.rollback()
+            return KBSearchResult(
+                status=KBSearchStatus.UNAVAILABLE,
+                query=query,
+                snapshot_date=self._snapshot_date,
+                error=str(exc),
+            )
         scores = rerank_pairs(query, [row.body for row in rows])
         return self._rank_and_gate(query, rows, scores, top_k)

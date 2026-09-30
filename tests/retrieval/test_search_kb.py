@@ -109,3 +109,70 @@ def test_english_stemming_reaches_lexical_branch(ungated: RetrievalService) -> N
     )
 
     assert any(c.lex_rank is not None for c in result.candidates)
+
+
+def _database_url() -> str:
+    return os.environ.get("DATABASE_URL", "postgresql://kb:kb@localhost:5432/kb")
+
+
+def test_unusual_user_input_never_breaks_search(
+    service: RetrievalService,
+    ungated: RetrievalService,
+    connection: psycopg.Connection[object],
+) -> None:
+    for blank in ("", "   \n"):
+        result = service.search_kb(blank)
+        assert result.status == KBSearchStatus.LOW_CONFIDENCE_REFUSAL
+        assert result.candidates == []
+        assert result.snapshot_date is not None
+
+    ungated_result = ungated.search_kb("what is the", top_k=20)
+    assert ungated_result.candidates != []
+    assert all(c.lex_rank is None for c in ungated_result.candidates)
+
+    adversarial = [
+        "O'Brien",
+        "a & b | !c :*",
+        "'); drop table passages; --",
+        "x" * 5000,
+    ]
+    for query in adversarial:
+        result = service.search_kb(query)
+        assert result.status != KBSearchStatus.UNAVAILABLE, query
+
+    with connection.cursor() as cur:
+        cur.execute("select count(*) from passages")
+        row = cur.fetchone()
+        assert row is not None
+        assert row[0] == 14109
+
+
+def test_closed_connection_returns_unavailable() -> None:
+    with psycopg.connect(_database_url()) as conn:
+        service = RetrievalService(conn)
+        conn.close()
+
+        result = service.search_kb(_question_text("Q01"))
+
+        assert result.status == KBSearchStatus.UNAVAILABLE
+        assert result.error
+        assert result.candidates == []
+        assert result.snapshot_date is not None
+
+
+def test_cancelled_query_rolls_back_shared_connection() -> None:
+    with psycopg.connect(_database_url()) as conn:
+        service = RetrievalService(conn)
+        conn.execute("set statement_timeout = 1")
+
+        result = service.search_kb(_question_text("Q01"))
+
+        assert result.status == KBSearchStatus.UNAVAILABLE
+
+        conn.execute("select 1")
+
+        with conn.cursor() as cur:
+            cur.execute("show statement_timeout")
+            row = cur.fetchone()
+            assert row is not None
+            assert row[0] == "0"

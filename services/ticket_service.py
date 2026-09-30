@@ -1,5 +1,5 @@
 import re
-from typing import Any, cast
+from typing import Any, LiteralString, cast
 
 import psycopg
 
@@ -47,7 +47,7 @@ _STOPWORDS: frozenset[str] = frozenset(
     }
 )
 
-_TICKET_COLUMNS: str = (
+_TICKET_COLUMNS: LiteralString = (
     "ticket_id, created_at, channel, customer_id, customer_name, "
     "requester_email, company, tier, site_id, product_area, "
     "priority, subject, body, status"
@@ -135,7 +135,7 @@ class TicketService:
         product_area: str | None = None,
         include_open: bool = True,
     ) -> list[Ticket]:
-        clauses: list[str] = ["customer_id = %s"]
+        clauses: list[LiteralString] = ["customer_id = %s"]
         params: list[Any] = [account_id.strip()]
 
         if site_id is not None:
@@ -147,8 +147,8 @@ class TicketService:
         if not include_open:
             clauses.append("status != 'open'")
 
-        where_sql = " and ".join(clauses)
-        query = (
+        where_sql: LiteralString = " and ".join(clauses)
+        query: LiteralString = (
             f"select {_TICKET_COLUMNS} from tickets "
             f"where {where_sql} order by created_at asc, ticket_id asc"
         )

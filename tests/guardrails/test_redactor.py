@@ -1,8 +1,9 @@
 import hashlib
+import time
 
 import pytest
 
-from guardrails import redact
+from guardrails import redact, secret_hash
 
 _PEM = "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA7vbqajDw\n4pS6xZq9kR2TfLw=\n-----END RSA PRIVATE KEY-----"
 _PEM_TRUNCATED = "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEF"
@@ -18,6 +19,7 @@ _STRUCTURAL_CASES: list[tuple[str, str, str, str]] = [
         "abcdefghijklmnop1234",
         "BEARER_TOKEN",
     ),
+    ("bearer_bare", "my bearer abcdefghijklmnop1234 expired", "abcdefghijklmnop1234", "BEARER_TOKEN"),
     ("authorization_basic", "Authorization: Basic dXNlcjpwYXNz", "dXNlcjpwYXNz", "BEARER_TOKEN"),
     ("jwt", f"my session token {_JWT} stopped working", _JWT, "JWT"),
     ("aws_akia", "the access key AKIAIOSFODNN7EXAMPLE was rotated", "AKIAIOSFODNN7EXAMPLE", "VENDOR_KEY"),
@@ -32,6 +34,7 @@ _STRUCTURAL_CASES: list[tuple[str, str, str, str]] = [
         "s3cr3t value!",
         "KEY_VALUE",
     ),
+    ("kv_single_quoted", "set token: 'pass phrase 42' in the portal", "pass phrase 42", "KEY_VALUE"),
     ("radius_secret", "radius_secret = Tr0ub4dor", "Tr0ub4dor", "KEY_VALUE"),
     ("scim_token_env", "SCIM_TOKEN=tok-12345", "tok-12345", "KEY_VALUE"),
     ("psk_key", "pre_shared_key: abc123", "abc123", "KEY_VALUE"),
@@ -83,6 +86,7 @@ _REDACTION_CASES: list[tuple[str, str, str, str]] = _STRUCTURAL_CASES + _VENDOR_
 
 _SC08_PSK = "Fg7!qwe-DC-2026-tunnel"
 _SC08_TAIL = "Can you confirm what you have on your side?"
+_SEED_SECRET_KEYS = ("TCK-20264230.body", "SC-08-psk-pasted.opening")
 
 
 @pytest.mark.parametrize(
@@ -175,3 +179,72 @@ def test_url_with_userinfo_is_not_allowlisted() -> None:
 )
 def test_below_thresholds_is_not_flagged(token: str) -> None:
     assert redact(f"value {token} here").findings == ()
+
+
+def test_seed_secrets_are_redacted(corpus: dict[str, str]) -> None:
+    for key in _SEED_SECRET_KEYS:
+        result = redact(corpus[key])
+        assert _SC08_PSK not in result.text, key
+        assert len(result.findings) == 1, key
+        assert result.findings[0].kind == "CONTEXTUAL", key
+        assert result.findings[0].sha256 == secret_hash(_SC08_PSK), key
+
+
+def test_negative_corpus_has_no_findings(corpus: dict[str, str]) -> None:
+    offenders = {
+        key: [(f.kind.value, text[f.start : f.end]) for f in result.findings]
+        for key, text in corpus.items()
+        if key not in _SEED_SECRET_KEYS and (result := redact(text)).findings
+    }
+    assert not offenders, offenders
+
+
+def test_redaction_is_idempotent(corpus: dict[str, str]) -> None:
+    texts = [case[1] for case in _REDACTION_CASES] + [corpus[key] for key in _SEED_SECRET_KEYS]
+    for text in texts:
+        first = redact(text)
+        second = redact(first.text)
+        assert second.findings == (), text
+        assert second.text == first.text, text
+
+
+def test_placeholder_is_never_rewrapped() -> None:
+    result = redact("password: [REDACTED:KEY_VALUE] and PSK is: [REDACTED:CONTEXTUAL]")
+    assert result.findings == ()
+
+
+def test_fullwidth_psk_is_caught() -> None:
+    text = f"\uff30\uff33\uff2b is: {_SC08_PSK}"
+    result = redact(text)
+    assert _SC08_PSK not in result.text
+    assert [f.kind for f in result.findings] == ["CONTEXTUAL"]
+
+
+def test_zero_width_inside_secret_is_caught_and_span_covers_it() -> None:
+    text = "PSK is: Fg7!q\u200bwe-DC-2026-tunnel"
+    result = redact(text)
+    assert len(result.findings) == 1
+    finding = result.findings[0]
+    assert "\u200b" in text[finding.start : finding.end]
+    assert result.text == "PSK is: [REDACTED:CONTEXTUAL]"
+
+
+def test_zero_width_outside_secret_is_preserved() -> None:
+    result = redact(f"hel\u200blo PSK is: {_SC08_PSK}")
+    assert result.text == "hel\u200blo PSK is: [REDACTED:CONTEXTUAL]"
+
+
+def test_large_adversarial_inputs_stay_fast() -> None:
+    inputs = [
+        "a_" * 25_000,
+        "password " * 8_000,
+        "-----BEGIN PRIVATE KEY-----" * 2_000,
+        ("Ab1!" * 10 + " ") * 5_000,
+        "password" + "_a" * 20_000,
+        "curl " + "x " * 20_000,
+        "psk " + "w " * 20_000,
+    ]
+    for text in inputs:
+        started = time.perf_counter()
+        redact(text)
+        assert time.perf_counter() - started < 1.0, text[:30]

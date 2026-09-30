@@ -3,7 +3,7 @@
 **Issue**: `#5` ([Phase 1] 1.5: Deterministic Guardrails Engine)
 **Date**: 2026-09-30
 **Status**: Ready for Review
-**Target Files**: `guardrails/__init__.py`, `guardrails/models.py`, `guardrails/redactor.py`, `guardrails/injection.py`, `guardrails/validator.py`, `tests/guardrails/*`
+**Target Files**: `guardrails/__init__.py`, `guardrails/models.py`, `guardrails/normalize.py`, `guardrails/redactor.py`, `guardrails/injection.py`, `guardrails/validator.py`, `tests/guardrails/*`
 
 ---
 
@@ -38,6 +38,7 @@ flowchart LR
 | File | Responsibility |
 |---|---|
 | `guardrails/models.py` | All guard contracts (enums + frozen Pydantic models), incl. `SessionGuardHistory`. |
+| `guardrails/normalize.py` | `normalize(text) -> NormalizedText`: per-character NFKC + zero-width removal with a normalized→original offset map. Shared by the redactor and (Plan 2) the injection detector and validator. |
 | `guardrails/redactor.py` | `redact(text) -> RedactionResult`. POL-CRED. Also the `redact_credentials` agent tool target (SC-08 `must_use_tools`). |
 | `guardrails/injection.py` | `detect(text) -> InjectionVerdict` (prompt injection / jailbreak / exfil / fake authority / delimiter injection) and `quarantine(text) -> str` for untrusted tool output (§4.6). |
 | `guardrails/validator.py` | Post-checks against ground truth: `check_claims(text, identity) -> EntitlementVerdict` (§4.3), `check_citations(message, context) -> CitationReport` (§4.4), `check_action(action, identity) -> GateDecision` and `check_outgoing_message(message, history, approved) -> list[OutputViolation]` (§4.5). |
@@ -49,9 +50,9 @@ File layout matches issue deliverables and architecture §12. `redactor.py` and 
 
 ## 3. Contracts (`guardrails/models.py`)
 
-All models frozen (`model_config = ConfigDict(frozen=True)`), collections as `tuple[...]` / `frozenset[...]`.
+All models subclass one frozen base, `_GuardModel` (`model_config = ConfigDict(frozen=True)`), collections as `tuple[...]` / `frozenset[...]`.
 
-- **`SecretKind(StrEnum)`**: `PRIVATE_KEY`, `BEARER_TOKEN`, `JWT`, `VENDOR_KEY`, `KEY_VALUE`, `VENDOR_CONFIG`, `CONTEXTUAL`, `HIGH_ENTROPY`.
+- **`SecretKind(StrEnum)`**: `PRIVATE_KEY`, `BEARER_TOKEN`, `JWT`, `VENDOR_KEY`, `KEY_VALUE`, `VENDOR_CONFIG`, `CONTEXTUAL`, `HIGH_ENTROPY`; each value equals its name (placeholder `[REDACTED:CONTEXTUAL]`); declaration order is merge precedence.
 - **`RedactionFinding`**: `kind: SecretKind`, `start: int`, `end: int` (span in *original* text), `sha256: str`. Never the raw value.
 - **`RedactionResult`**: `text: str` (secrets replaced by `[REDACTED:<kind>]`), `findings: tuple[RedactionFinding, ...]`. Property `was_redacted`.
 - **`InjectionCategory(StrEnum)`**: `INSTRUCTION_OVERRIDE`, `ROLE_OVERRIDE`, `PROMPT_EXFILTRATION`, `FAKE_AUTHORITY`, `DELIMITER_INJECTION`.
@@ -79,13 +80,13 @@ All models frozen (`model_config = ConfigDict(frozen=True)`), collections as `tu
 ## 4. Guards
 
 ### 4.1 Redactor (`redactor.py`) — ~40% of effort
-Input normalized first: NFKC + zero-width char removal (spans mapped back to original). Code fences / inline code are scanned like any text (customers paste configs and logs).
+Input normalized first via `normalize.py`: NFKC + zero-width char removal (spans mapped back to original). `[REDACTED:<KIND>]` placeholders already in the input never produce hits, so re-redacting (tool-output sanitization) is idempotent. Code fences / inline code are scanned like any text (customers paste configs and logs).
 
 Four layers, applied in order; overlapping spans merged, earliest layer's kind wins:
-1. **Structural** (high precision): PEM `BEGIN … PRIVATE KEY` blocks; `Bearer <token>` / `Authorization:` headers; JWT (three base64url segments); vendor key prefixes (`AKIA…`, `sk-…`, `ghp_…`, `xox[bp]-…`); `key=value` / `key: value` / JSON/YAML `"key": "value"` where key matches a secret-name list (password, passwd, pwd, psk, pre_shared_key, secret, token, api_key, apikey, shared_key, radius_secret, scim_token, client_secret); credentials in URLs (`scheme://user:pass@`); curl `-u user:pass`.
-2. **Vendor config** (`VENDOR_CONFIG`): FortiGate `set psksecret`, Cisco `pre-shared-key` / `key 0|7 …` / `password 0|7 …` / `secret 5 …`, strongSwan `: PSK "…"`, `.env`-style `*_KEY=` / `*_SECRET=` / `*_TOKEN=` / `*_PASSWORD=`.
-3. **Contextual** (`CONTEXTUAL`): trigger phrase (`psk|pre-shared key|password|passphrase|secret|token|api key|shared key`) → up to 5 words → separator (`is|:|=|was`) → next whitespace-delimited token redacted (trailing sentence punctuation stripped). Catches SC-08 `PSK on our side is: Fg7!qwe-DC-2026-tunnel`.
-4. **Entropy fallback** (`HIGH_ENTROPY`): token ≥ 24 chars, ≥ 3 character classes, Shannon entropy ≥ 3.5 bits/char, and not allowlisted. Allowlist: repo ID patterns (`ACC-\d+`, `S-\d+-\d+`, `INC-\d+`, `TCK-\d+`, `CR-\d+`), URLs without userinfo, kebab-case slugs, UUIDs, pure-hex hashes of length 32/40/64, IPv4/IPv6, MAC addresses, email addresses. Threshold constants live at module top.
+1. **Structural** (high precision): PEM `BEGIN … PRIVATE KEY` blocks; `Bearer <token>` / `Authorization:` headers; JWT (three base64url segments); vendor key prefixes (`AKIA…`, `sk-…`, `ghp_…`, `xox[bp]-…`); `key=value` / `key: value` / JSON/YAML `"key": "value"` where key ends in a secret-name word (password, passwd, pwd, psk, pre_shared_key, secret, token, api_key, apikey, shared_key) with any `word_`/`word-` prefix, which covers radius_secret, scim_token, client_secret; credentials in URLs (`scheme://user:pass@`); curl `-u user:pass`.
+2. **Vendor config** (`VENDOR_CONFIG`): FortiGate `set psksecret`, Cisco `pre-shared-key` / `key 0|7 …` / `password 0|7 …` / `secret 5 …`, strongSwan `: PSK "…"`, `.env`-style `*_KEY=` only (`*_SECRET=` / `*_TOKEN=` / `*_PASSWORD=` are already `KEY_VALUE` via the prefix wildcard).
+3. **Contextual** (`CONTEXTUAL`): trigger phrase (`psk|pre-shared key|password|passphrase|secret|token|api key|shared key`) → up to 5 words → separator (`is` / `was` with an optional `:` / `=`, or a bare `:` / `=`) → next token redacted, excluding surrounding quotes and trailing `.,;:)`. The value must contain a digit or at least 3 character classes, so prose such as "the password reset is pending" is not flagged (agent output is also passed through `redact()`). Catches SC-08 `PSK on our side is: Fg7!qwe-DC-2026-tunnel`.
+4. **Entropy fallback** (`HIGH_ENTROPY`): token ≥ 24 chars, ≥ 3 character classes, Shannon entropy ≥ 3.5 bits/char, and not allowlisted. Allowlist (full match): lowercase-delimited identifiers (slugs, FQDNs, snake_case), UUIDs, URLs without userinfo, email addresses, IPv6 / CIDR, lowercase file paths. Repo IDs, IPv4, MAC addresses and lowercase hex hashes can never pass the three gates, so they need no entry; segments are lowercase-only so mixed-case base64url tokens stay detectable. Threshold constants live at module top.
 
 Placement:
 - **Ingestion chokepoint**: orchestrator calls `redact()` on every customer message before LLM, DB or traces see it. Single chokepoint — `TicketService.create_ticket` stays pure persistence (no hidden redaction); add a second layer only when a non-agent ticket-write path appears.

@@ -1,0 +1,329 @@
+{
+  "Q02": {
+    "is_kb_question": true,
+    "intent": "Confirm jumbo frame support for Cato Sockets LAN ports and the handling of a 9000-byte frame on a LAN port.",
+    "search_queries": [
+      "jumbo frames LAN ports",
+      "9000-byte frame handling LAN"
+    ],
+    "model": "openai:gpt-5-nano",
+    "usage": {
+      "input_tokens": 277,
+      "output_tokens": 1100,
+      "requests": 1
+    },
+    "latency_s": 8.62,
+    "ts": "2026-09-30T20:59:01+00:00"
+  },
+  "Q01": {
+    "is_kb_question": true,
+    "intent": "Determine the effective MTU for the Socket-to-PoP DTLS tunnel and explain how oversized WAN packets with the DF bit set are handled by the Socket.",
+    "search_queries": [
+      "Socket-to-PoP DTLS MTU",
+      "DF bit oversized WAN packet handling"
+    ],
+    "model": "openai:gpt-5-nano",
+    "usage": {
+      "input_tokens": 285,
+      "output_tokens": 1047,
+      "requests": 1
+    },
+    "latency_s": 11.655,
+    "ts": "2026-09-30T20:59:04+00:00"
+  },
+  "Q03": {
+    "is_kb_question": true,
+    "intent": "Explain which MTU value is used downstream when two WAN links are present and whether passive links affect it.",
+    "search_queries": [
+      "MTU downstream",
+      "passive links MTU"
+    ],
+    "model": "openai:gpt-5-nano",
+    "usage": {
+      "input_tokens": 286,
+      "output_tokens": 2269,
+      "requests": 1
+    },
+    "latency_s": 18.464,
+    "ts": "2026-09-30T20:59:11+00:00"
+  },
+  "Q07": {
+    "is_kb_question": true,
+    "intent": "Provide the default BFD timers for IPsec site and Cloud Interconnect, and describe post-change steps for BFD timers.",
+    "search_queries": [
+      "BFD timers IPsec site",
+      "BFD timers Cloud Interconnect site",
+      "post-change actions BFD timers"
+    ],
+    "model": "openai:gpt-5-nano",
+    "usage": {
+      "input_tokens": 283,
+      "output_tokens": 1509,
+      "requests": 1
+    },
+    "latency_s": 12.617,
+    "ts": "2026-09-30T21:00:15+00:00"
+  },
+  "Q06": {
+    "is_kb_question": true,
+    "intent": "Identify prerequisites and limits for BGP summary routes on Socket sites.",
+    "search_queries": [
+      "BGP summary routes prerequisites",
+      "BGP summary routes limits"
+    ],
+    "model": "openai:gpt-5-nano",
+    "usage": {
+      "input_tokens": 264,
+      "output_tokens": 1542,
+      "requests": 1
+    },
+    "latency_s": 12.83,
+    "ts": "2026-09-30T21:00:16+00:00"
+  },
+  "Q04": {
+    "is_kb_question": true,
+    "intent": "Provide default BGP Hold Time and keep-alive interval for a Cato site and explain behavior when neighbor Hold Times differ.",
+    "search_queries": [
+      "BGP Hold Time default",
+      "BGP keep-alive interval",
+      "Hold Time mismatch"
+    ],
+    "model": "openai:gpt-5-nano",
+    "usage": {
+      "input_tokens": 283,
+      "output_tokens": 1648,
+      "requests": 1
+    },
+    "latency_s": 12.933,
+    "ts": "2026-09-30T21:00:16+00:00"
+  },
+  "Q05": {
+    "is_kb_question": true,
+    "intent": "Determine the maximum BGP routes a Socket can accept from a neighbor before performance is affected, and identify two recommended methods to reduce advertised routes.",
+    "search_queries": [
+      "BGP route limit per neighbor",
+      "advertised routes reduction"
+    ],
+    "model": "openai:gpt-5-nano",
+    "usage": {
+      "input_tokens": 281,
+      "output_tokens": 2350,
+      "requests": 1
+    },
+    "latency_s": 18.683,
+    "ts": "2026-09-30T21:00:22+00:00"
+  },
+  "Q10": {
+    "is_kb_question": true,
+    "intent": "Explain NO_PROPOSAL_CHOSEN in IPsec IKEv2 and how to determine the proposed parameters.",
+    "search_queries": [
+      "NO_PROPOSAL_CHOSEN",
+      "IKEv2 proposals",
+      "IPsec proposal parameters"
+    ],
+    "model": "openai:gpt-5-nano",
+    "usage": {
+      "input_tokens": 283,
+      "output_tokens": 1082,
+      "requests": 1
+    },
+    "latency_s": 10.754,
+    "ts": "2026-09-30T21:00:27+00:00"
+  },
+  "Q09": {
+    "is_kb_question": true,
+    "intent": "Identify which CMA views the playbook uses to determine the BGP disconnect reason and to verify the route table.",
+    "search_queries": [
+      "CMA BGP disconnect views",
+      "CMA route table verification views"
+    ],
+    "model": "openai:gpt-5-nano",
+    "usage": {
+      "input_tokens": 278,
+      "output_tokens": 1601,
+      "requests": 1
+    },
+    "latency_s": 15.1,
+    "ts": "2026-09-30T21:00:31+00:00"
+  },
+  "Q08": {
+    "is_kb_question": true,
+    "intent": "Identify site types supported for active BFD with BGP neighbors and the UDP port used by multi-hop BFD.",
+    "search_queries": [
+      "Cato active BFD BGP site types",
+      "multi-hop BFD UDP port"
+    ],
+    "model": "openai:gpt-5-nano",
+    "usage": {
+      "input_tokens": 277,
+      "output_tokens": 1962,
+      "requests": 1
+    },
+    "latency_s": 16.641,
+    "ts": "2026-09-30T21:00:32+00:00"
+  },
+  "Q11": {
+    "is_kb_question": true,
+    "intent": "Explain why TS_UNACCEPTABLE occurs when negotiating a Cato IPsec proposal with Cisco ASA and how to fix.",
+    "search_queries": [
+      "TS_UNACCEPTABLE"
+    ],
+    "model": "openai:gpt-5-nano",
+    "usage": {
+      "input_tokens": 276,
+      "output_tokens": 1278,
+      "requests": 1
+    },
+    "latency_s": 11.572,
+    "ts": "2026-09-30T21:00:33+00:00"
+  },
+  "Q12": {
+    "is_kb_question": true,
+    "intent": "Determine Cato's recommended IPsec encryption algorithms for sites with 100 Mbps or more and the rationale behind the recommendation.",
+    "search_queries": [
+      "IPsec encryption algorithms",
+      "IPsec 100 Mbps",
+      "Cato IPsec recommendations"
+    ],
+    "model": "openai:gpt-5-nano",
+    "usage": {
+      "input_tokens": 271,
+      "output_tokens": 1110,
+      "requests": 1
+    },
+    "latency_s": 10.431,
+    "ts": "2026-09-30T21:00:37+00:00"
+  },
+  "Q15": {
+    "is_kb_question": true,
+    "intent": "Explain Azure behavior around PFS/DH groups that could cause IKE rekey failure for a tunnel to Azure.",
+    "search_queries": [
+      "Azure PFS groups",
+      "IKE rekey failure",
+      "Azure VPN DH groups"
+    ],
+    "model": "openai:gpt-5-nano",
+    "usage": {
+      "input_tokens": 274,
+      "output_tokens": 815,
+      "requests": 1
+    },
+    "latency_s": 8.765,
+    "ts": "2026-09-30T21:00:42+00:00"
+  },
+  "Q13": {
+    "is_kb_question": true,
+    "intent": "Explain why Cato recommends selecting 'Initiate connection by Cato' for IKEv2 sites.",
+    "search_queries": [
+      "IKEv2 Initiate connection by Cato"
+    ],
+    "model": "openai:gpt-5-nano",
+    "usage": {
+      "input_tokens": 271,
+      "output_tokens": 1496,
+      "requests": 1
+    },
+    "latency_s": 13.74,
+    "ts": "2026-09-30T21:00:45+00:00"
+  },
+  "Q16": {
+    "is_kb_question": true,
+    "intent": "Need KB answer on IP Overlapping requirements between sites and the default Cato system range.",
+    "search_queries": [
+      "IP overlapping",
+      "site IP range",
+      "Cato system range"
+    ],
+    "model": "openai:gpt-5-nano",
+    "usage": {
+      "input_tokens": 272,
+      "output_tokens": 1038,
+      "requests": 1
+    },
+    "latency_s": 9.144,
+    "ts": "2026-09-30T21:00:46+00:00"
+  },
+  "Q14": {
+    "is_kb_question": true,
+    "intent": "Determine max IPsec pre-shared key length and what changes when switching from IKEv1 to IKEv2.",
+    "search_queries": [
+      "IPsec pre-shared key length",
+      "IKEv1 to IKEv2 changes"
+    ],
+    "model": "openai:gpt-5-nano",
+    "usage": {
+      "input_tokens": 286,
+      "output_tokens": 1998,
+      "requests": 1
+    },
+    "latency_s": 16.926,
+    "ts": "2026-09-30T21:00:49+00:00"
+  },
+  "Q17": {
+    "is_kb_question": true,
+    "intent": "Identify the alternate UDP port for DTLS tunnels, when to use it, and the version prerequisites.",
+    "search_queries": [
+      "DTLS alternate UDP port",
+      "DTLS port recommendation",
+      "DTLS version prerequisites"
+    ],
+    "model": "openai:gpt-5-nano",
+    "usage": {
+      "input_tokens": 272,
+      "output_tokens": 1360,
+      "requests": 1
+    },
+    "latency_s": 12.212,
+    "ts": "2026-09-30T21:00:54+00:00"
+  },
+  "Q18": {
+    "is_kb_question": true,
+    "intent": "Explain why throughput may drop for a Socket behind a third-party firewall and provide the recommended fix.",
+    "search_queries": [
+      "Cato Socket throughput firewall",
+      "third-party firewall throughput",
+      "Socket firewall fix"
+    ],
+    "model": "openai:gpt-5-nano",
+    "usage": {
+      "input_tokens": 271,
+      "output_tokens": 2127,
+      "requests": 1
+    },
+    "latency_s": 18.47,
+    "ts": "2026-09-30T21:01:03+00:00"
+  },
+  "Q19": {
+    "is_kb_question": true,
+    "intent": "Explain how the secondary Socket decides to take over in a Socket HA pair and what it does immediately after takeover.",
+    "search_queries": [
+      "Socket HA failover",
+      "secondary socket takeover",
+      "post-takeover actions"
+    ],
+    "model": "openai:gpt-5-nano",
+    "usage": {
+      "input_tokens": 275,
+      "output_tokens": 2248,
+      "requests": 1
+    },
+    "latency_s": 18.482,
+    "ts": "2026-09-30T21:01:05+00:00"
+  },
+  "Q21": {
+    "is_kb_question": true,
+    "intent": "Determine HA compatibility between X1600 and X1600 LTE Socket, and between X1500 and X1500B.",
+    "search_queries": [
+      "X1600 HA compatibility",
+      "X1500B HA compatibility"
+    ],
+    "model": "openai:gpt-5-nano",
+    "usage": {
+      "input_tokens": 278,
+      "output_tokens": 1429,
+      "requests": 1
+    },
+    "latency_s": 12.203,
+    "ts": "2026-09-30T21:01:06+00:00"
+  }
+}

@@ -76,15 +76,15 @@ def _has_claim_signal(sentence: str) -> bool:
 
 def check_citations(message: str, context: GroundingContext) -> CitationReport:
     violations: list[CitationViolation] = []
-    for kind, pattern, known in (
-        (CitationViolationKind.UNKNOWN_KB, _KB_MARKER, context.kb_refs),
-        (CitationViolationKind.UNKNOWN_POLICY, _POLICY_MARKER, context.policy_ids),
-        (CitationViolationKind.UNKNOWN_TELEMETRY, _TELEMETRY_MARKER, context.telemetry_tools),
+    for kind, pattern, known, key in (
+        (CitationViolationKind.UNKNOWN_KB, _KB_MARKER, context.kb_refs, lambda m: (m["slug"], m["anchor"])),
+        (CitationViolationKind.UNKNOWN_POLICY, _POLICY_MARKER, context.policy_ids, lambda m: m["id"]),
+        (CitationViolationKind.UNKNOWN_TELEMETRY, _TELEMETRY_MARKER, context.telemetry_tools, lambda m: m["tool"]),
     ):
         violations.extend(
             CitationViolation(kind=kind, detail=match.group())
             for match in pattern.finditer(message)
-            if match.group(*match.groupdict()) not in known  # one named group -> str, two -> (slug, anchor)
+            if key(match) not in known
         )
     claims: list[str] = []
     for paragraph in _PARAGRAPH_BREAK.split(message):

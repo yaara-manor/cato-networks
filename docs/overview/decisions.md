@@ -48,19 +48,22 @@
 
 ---
 
-## ADR-005: File-Backed `TelemetryService`, Unified `TelemetryToolResult[T]` Envelope, and Single-Module Evidence Extraction (`tools/telemetry.py`)
+## ADR-005: File-Backed `TelemetryService`, Package-Scoped `tools/models.py`, and Bounded Generic `TelemetryToolResult[T]`
 
 - **Context / Problem**: Phase 1.3 (Issue #3) requires 7 typed telemetry tools (`list_sites`, `get_site_status`, `get_link_quality`, `get_events`, `get_bgp_status`, `get_ipsec_status`, `get_client_diagnostics`) over `data/telemetry/`. In real production at Cato, telemetry lives in the external CMA GraphQL API and time-series backend rather than the agent's Postgres database. Furthermore:
-  1. Each `link_quality/<site_id>.csv` contains ~580 rows (24h of 5-minute intervals across WAN links), which would bloat LLM context if returned raw.
-  2. Conversely, each `events/<site_id>.jsonl` contains `<20` rows, and in scenario `SC-02-vague-slow` (`S-1008-03`), the critical `"Last-Mile Quality"` alert occurred at `2026-08-24T17:00:00Z` (4 days before the `2026-08-28T17:00:00Z` anchor), which would be dropped if an LLM passed `window="24h"` to a strict filter.
-  3. The system architecture initially listed a separate `tools/formatters.py` module alongside `tools/telemetry.py`.
+  1. Placing ~12 telemetry-specific Pydantic models into `core/models.py` would turn `core/models.py` into a cross-domain "god schema" coupling magnet.
+  2. Each `link_quality/<site_id>.csv` contains ~580 rows (24h of 5-minute intervals across WAN links), which would bloat LLM context if returned raw.
+  3. Conversely, each `events/<site_id>.jsonl` contains `<20` rows, and in scenario `SC-02-vague-slow` (`S-1008-03`), the critical `"Last-Mile Quality"` alert occurred at `2026-08-24T17:00:00Z` (4 days before the `2026-08-28T17:00:00Z` anchor), which would be dropped if an LLM passed `window="24h"` to a strict filter.
+  4. Tool results need a uniform envelope (`status: TelemetryStatus`, `data`, `evidence`, `error`) that supports both narrow per-tool type safety at direct call sites and heterogeneous collection across tools.
 - **Options Evaluated**:
-  1. Ingest `data/telemetry/` into PostgreSQL tables alongside `accounts` and `tickets`.
-  2. Return raw `dict[str, Any]` payloads from `tools/telemetry.py` and format strings in a separate `tools/formatters.py` wrapper module.
-  3. Read `data/telemetry/` directly from disk in a single module (`tools/telemetry.py`) using stdlib (`pathlib`, `json`, `csv`) + `@lru_cache` keyed on `(resolved_path, mtime_ns)`, returning a generic `TelemetryToolResult[T]` envelope that pairs typed Pydantic domain models (`data: T | None`) with deterministically extracted `evidence: list[TelemetryEvidence]`, aggregating 580-row `link_quality` CSVs per link while preserving all `<20` rows in `get_events`.
-- **Chosen Approach**: Option 3 (`TelemetryService` in `tools/telemetry.py`).
+  1. Ingest `data/telemetry/` into PostgreSQL tables alongside `accounts` and `tickets`, and store all telemetry schemas in `core/models.py`.
+  2. Use a bare `Union` for `TelemetryToolResult.data: TelemetryPayload | None` (non-generic) or return raw `dict[str, Any]` payloads with a separate `tools/formatters.py` module.
+  3. Read `data/telemetry/` directly from disk in `tools/telemetry.py` using stdlib (`pathlib`, `json`, `csv`) + `@lru_cache` keyed on `(resolved_path, mtime_ns)`; colocate all telemetry contracts (`TelemetryStatus(StrEnum)` with `"OK"`, `"NOT_FOUND"`, `"UNAVAILABLE"`, `"INVALID_ARGUMENT"`, `TelemetryEvidence`, `TelemetryPayload` union alias, and bounded generic `TelemetryToolResult[T: TelemetryPayload]`) in `tools/models.py` (removing `TelemetryEvidence` from `core/models.py`); aggregate 580-row `link_quality` CSVs per link while preserving all `<20` rows in `get_events`.
+- **Chosen Approach**: Option 3 (`tools/models.py` + `tools/telemetry.py`).
 - **Reasoning**:
-  - **Production Alignment & YAGNI**: Unlike `tickets` (which are mutated during conversations and require persistence across restarts), telemetry is 100% read-only point-in-time CMA data. Reading directly from `data/telemetry/` accurately models querying an external read-only CMA API per `site_id` / `user_email` without unnecessary SQL tables, migrations, or seed steps, while making missing/corrupt file simulation (`status="unavailable"`) trivial in tests.
-  - **Code-Judo Layer Deletion**: Embedding deterministic `TelemetryEvidence` extraction directly into `TelemetryToolResult[T]` inside `tools/telemetry.py` eliminates `tools/formatters.py`, removes per-tool error branching in `DiagnosticsAgent`, and guarantees verbatim metric quoting (`routes_count 1024/1024`, `NO_PROPOSAL_CHOSEN`, `AUTHENTICATION_FAILED`, `TUNNEL_TIMEOUT (408)`).
-  - **Context-Aware Windowing**: Slicing and aggregating `link_quality/<site_id>.csv` by `window` reduces 580 CSV rows to compact per-link statistical summaries + anomaly evidence, whereas ignoring the time cutoff in `get_events` (while still validating `window` and filtering by `event_type`) ensures multi-day historical alerts in tiny `<20`-line JSONL logs (`S-1008-03`) are never lost.
+  - **Package Cohesion (`tools/models.py`)**: Moving `TelemetryEvidence` out of `core/models.py` and colocating all telemetry schemas in `tools/models.py` enforces Single Responsibility and prevents `core/models.py` from coupling unrelated packages.
+  - **Bounded Generic `TelemetryToolResult[T: TelemetryPayload]` vs. Bare `Union`**: If `.data` were typed only as a 7-way `Union` (`TelemetryPayload | None`), Pyright (`typeCheckingMode: "standard"`) would reject direct attribute access such as `res.data.neighbors` on `get_bgp_status()` because the other 6 union members lack `.neighbors`, forcing `isinstance` assertions or `cast()` boilerplate at every call site and test. Defining `TelemetryPayload` as the union alias and bounding `T` to `TelemetryPayload` gives narrow compile-time types per tool (`TelemetryToolResult[BgpStatusPayload]`) while still allowing heterogeneous collections to use `TelemetryToolResult[TelemetryPayload]`.
+  - **Production Alignment & YAGNI**: Reading directly from `data/telemetry/` accurately models querying an external read-only CMA API per `site_id` / `user_email` without unnecessary SQL tables, migrations, or `tools/formatters.py` indirection.
+  - **Context-Aware Windowing**: Slicing and aggregating `link_quality/<site_id>.csv` by `window` reduces 580 CSV rows to compact per-link statistical summaries + anomaly evidence, whereas ignoring the time cutoff in `get_events` ensures multi-day historical alerts in tiny `<20`-line JSONL logs (`S-1008-03`) are never lost.
+
 

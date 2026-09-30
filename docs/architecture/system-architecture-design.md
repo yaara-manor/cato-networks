@@ -143,7 +143,7 @@ Every agent receives a typed context container via PydanticAI dependency injecti
 
 #### 2. Diagnostics Agent
 - **Purpose**: Acts as TAC engineer opening CMA. Formulates an inspection plan based on reported symptoms, executes telemetry tools, and extracts verbatim evidence.
-- **Allowed Tools** (all returning `TelemetryToolResult[T]` with `status: Literal["ok", "not_found", "unavailable", "invalid_argument"]`, typed `data: T | None`, and deterministic `evidence: list[TelemetryEvidence]`):
+- **Allowed Tools** (all returning `TelemetryToolResult[T]` from `tools/models.py` with `status: TelemetryStatus` (`"OK"`, `"NOT_FOUND"`, `"UNAVAILABLE"`, `"INVALID_ARGUMENT"`), typed `data: T | None`, and deterministic `evidence: list[TelemetryEvidence]`):
   - `list_sites(account_id: str) -> TelemetryToolResult[SiteListPayload]`
   - `get_site_status(site_id: str) -> TelemetryToolResult[SiteRecord]`
   - `get_link_quality(site_id: str, window: str = "24h") -> TelemetryToolResult[LinkQualityPayload]`
@@ -156,7 +156,7 @@ Every agent receives a typed context container via PydanticAI dependency injecti
   - `inspected_tools: list[str]`
   - `evidence_items: list[TelemetryEvidence]` (each item includes `tool_name`, `metric_key`, `raw_value`, `timestamp`, and `is_anomaly`)
   - `root_cause_hypothesis: str`
-- **Failure Mode**: If a telemetry file is missing or corrupt, the tool returns `status="not_found"` or `status="unavailable"` with an explicit `error` description, allowing the agent to continue without inventing numbers.
+- **Failure Mode**: If a telemetry file is missing or corrupt, the tool returns `status=TelemetryStatus.NOT_FOUND` or `status=TelemetryStatus.UNAVAILABLE` with an explicit `error` description, allowing the agent to continue without inventing numbers.
 
 #### 3. Knowledge Agent
 - **Purpose**: Formulates search queries against Cato documentation, queries Postgres hybrid index, executes cross-encoder reranking, and checks policy rules.
@@ -505,13 +505,14 @@ The codebase is organized into clean, single-responsibility packages separating 
 │   ├── threshold.py                   # RERANK_MIN_SCORE confidence gate & refusal evaluation
 │   └── policies.py                    # Direct authoritative policy reader by ID
 │
-├── core/                              # Central primitives & domain models
+├── core/                              # Central primitives & shared domain models
 │   ├── clock.py                       # SimulationClock frozen at 2026-08-28T17:00:00Z
 │   ├── config.py                      # Centralized Pydantic settings
-│   └── models.py                      # Pydantic schemas (Accounts, Tickets, Evidence, Citations)
+│   └── models.py                      # Shared Pydantic schemas (Accounts, Tickets, Citations)
 │
 ├── tools/                             # Typed CMA Telemetry inspection tools
-│   └── telemetry.py                   # TelemetryService, TelemetryToolResult[T], and verbatim [telemetry] evidence extraction
+│   ├── models.py                      # TelemetryStatus, TelemetryEvidence, TelemetryToolResult[T], payload schemas
+│   └── telemetry.py                   # TelemetryService and verbatim [telemetry] evidence extraction
 │
 ├── services/                          # Business domain logic
 │   ├── customer_service.py            # Account identification & SLA calculations

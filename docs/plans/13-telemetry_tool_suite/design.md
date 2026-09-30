@@ -3,26 +3,26 @@
 **Issue**: `#3` ([Phase 1] 1.3: Telemetry Tool Suite)  
 **Date**: 2026-09-30  
 **Status**: Ready for Review  
-**Target Files**: `core/models.py`, `tools/__init__.py`, `tools/telemetry.py`, `tests/tools/test_telemetry.py`
+**Target Files**: `core/models.py`, `tools/__init__.py`, `tools/models.py`, `tools/telemetry.py`, `tests/tools/test_telemetry.py`
 
 ---
 
 ## 1. Objective & Architectural Scope
 
-Design and implement the read-only Cato Management Application (CMA) telemetry inspection tool suite over `data/telemetry/` in a single, cohesive module (`tools/telemetry.py`).
+Design and implement the read-only Cato Management Application (CMA) telemetry inspection tool suite over `data/telemetry/` with package-scoped Pydantic contracts (`tools/models.py`) and tool execution (`tools/telemetry.py`).
 
-In production, CMA telemetry resides in Cato's external GraphQL API and time-series backend rather than the agent's PostgreSQL database. Accordingly, `TelemetryService` reads directly from `data/telemetry/` using Python standard library primitives (`pathlib`, `json`, `csv`, `functools.lru_cache`, `concurrent.futures`) and returns a unified, generic Pydantic envelope (`TelemetryToolResult[T]`) that pairs structured domain data with deterministically extracted `TelemetryEvidence` items.
+In production, CMA telemetry resides in Cato's external GraphQL API and time-series backend rather than the agent's PostgreSQL database. Accordingly, `TelemetryService` reads directly from `data/telemetry/` using Python standard library primitives (`pathlib`, `json`, `csv`, `functools.lru_cache`) and returns a unified, bounded-generic Pydantic envelope (`TelemetryToolResult[T: TelemetryPayload]`) that pairs structured domain data with deterministically extracted `TelemetryEvidence` items.
 
 ```mermaid
 flowchart LR
     DiagAgent["Diagnostics Agent / Caller"] --> TS["TelemetryService (tools/telemetry.py)"]
     TS --> Guard["1. Boundary & Path-Traversal Guard"]
-    Guard -- Invalid --> InvalidRes["TelemetryToolResult (status='invalid_argument')"]
+    Guard -- Invalid --> InvalidRes["TelemetryToolResult (status=TelemetryStatus.INVALID_ARGUMENT)"]
     Guard -- Valid --> Loader["2. Timed & Cached File Loader\n(lru_cache keyed on resolved_path + mtime_ns)"]
-    Loader -- Missing File --> NotFoundRes["TelemetryToolResult (status='not_found')"]
-    Loader -- Timeout / Corrupt / Missing Root --> UnavailRes["TelemetryToolResult (status='unavailable')"]
+    Loader -- Missing File --> NotFoundRes["TelemetryToolResult (status=TelemetryStatus.NOT_FOUND)"]
+    Loader -- Timeout / Corrupt / Missing Root --> UnavailRes["TelemetryToolResult (status=TelemetryStatus.UNAVAILABLE)"]
     Loader -- Valid Payload --> Parser["3. Domain Model Validation + Pure Evidence Extractor"]
-    Parser --> OkRes["TelemetryToolResult[T]\n(status='ok', data=T, evidence=list[TelemetryEvidence])"]
+    Parser --> OkRes["TelemetryToolResult[T]\n(status=TelemetryStatus.OK, data=T, evidence=list[TelemetryEvidence])"]
 ```
 
 ---
@@ -31,29 +31,32 @@ flowchart LR
 
 | File Path | Responsibility |
 |---|---|
-| `core/models.py` | Houses `TelemetryEvidence` (existing) and adds a one-line helper method `format_citation(self) -> str` returning the verbatim metric key, raw value, and `[telemetry:<tool_name>]` tag, plus the generic `TelemetryToolResult[T]` envelope and the 6 typed telemetry payload models. |
-| `tools/__init__.py` | Exports `TelemetryService` and the 7 tool functions/methods cleanly with zero logic. |
+| `core/models.py` | Removes `TelemetryEvidence` so `core/models.py` does not couple `tools/` schemas with `services/` schemas. |
+| `tools/__init__.py` | Re-exports `TelemetryService`, `TelemetryStatus`, `TelemetryEvidence`, `TelemetryPayload`, `TelemetryToolResult`, and the 7 tool payload models cleanly with zero logic. |
+| `tools/models.py` | Owns `TelemetryStatus(StrEnum)` (`"OK"`, `"NOT_FOUND"`, `"UNAVAILABLE"`, `"INVALID_ARGUMENT"`), `TelemetryEvidence` (with `format_citation() -> str`), the 7 tool payload models, the `TelemetryPayload` union type alias, and the bounded generic `TelemetryToolResult[T: TelemetryPayload]` envelope. |
 | `tools/telemetry.py` | Implements input validation, path-traversal protection, timed cached file loading, CSV window slicing and statistical aggregation, JSON/JSONL parsing, deterministic anomaly/evidence extraction, and the `TelemetryService` class exposing all 7 tools. |
 | `tests/tools/test_telemetry.py` | Functional test suite verifying all 5 primary scenario anomalies, the 5 additional scenario telemetry datasets, window aggregation math, boundary validation, missing/corrupt file degradation, and timeout enforcement. |
 
 > [!NOTE]
-> The previously speculative `tools/formatters.py` module is intentionally eliminated. Formatting and evidence extraction live directly on `TelemetryEvidence` and inside pure extractor helpers in `tools/telemetry.py`.
+> The previously speculative `tools/formatters.py` module is intentionally eliminated. Formatting and evidence extraction live directly on `TelemetryEvidence` in `tools/models.py` and inside pure extractor helpers in `tools/telemetry.py`.
 
 ---
 
-## 3. Data Models & Contracts (`core/models.py`)
+## 3. Data Models & Contracts (`tools/models.py`)
 
-### 3.1 Evidence & Generic Result Envelope
-- **`TelemetryEvidence` (`core/models.py`)**:
-  - Fields (existing): `tool_name: str`, `metric_key: str`, `raw_value: str`, `timestamp: AwareDatetime`, `is_anomaly: bool`.
-  - Method to add: `format_citation(self) -> str` — returns a single formatted string combining `metric_key`, `raw_value`, and `[telemetry]` / `[telemetry:<tool_name>]` for direct agent quoting.
-- **`TelemetryStatus` (`core/models.py`)**:
-  - `Literal["ok", "not_found", "unavailable", "invalid_argument"]`.
-- **`TelemetryToolResult[T]` (`core/models.py`)**:
-  - Generic Pydantic `BaseModel` parameterized over `T`.
+### 3.1 Status Enum, Evidence & Bounded Generic Result Envelope
+- **`TelemetryStatus(StrEnum)` (`tools/models.py`)**:
+  - Enum members with capitalized string values: `OK = "OK"`, `NOT_FOUND = "NOT_FOUND"`, `UNAVAILABLE = "UNAVAILABLE"`, `INVALID_ARGUMENT = "INVALID_ARGUMENT"`.
+- **`TelemetryEvidence` (`tools/models.py`, moved from `core/models.py`)**:
+  - Fields: `tool_name: str`, `metric_key: str`, `raw_value: str`, `timestamp: AwareDatetime`, `is_anomaly: bool`.
+  - Method: `format_citation(self) -> str` — returns a single formatted string combining `metric_key`, `raw_value`, and `[telemetry:<tool_name>]` for direct agent quoting.
+- **`TelemetryPayload` (`tools/models.py`)**:
+  - Union type alias of all 7 tool payload models: `SiteListPayload | SiteRecord | LinkQualityPayload | EventsPayload | BgpStatusPayload | IpsecStatusPayload | ClientDiagnosticsPayload`.
+- **`TelemetryToolResult[T: TelemetryPayload]` (`tools/models.py`)**:
+  - Bounded generic Pydantic `BaseModel` parameterized over `T` (bound to `TelemetryPayload`).
   - Fields: `tool_name: str`, `status: TelemetryStatus`, `data: T | None = None`, `evidence: list[TelemetryEvidence]`, `error: str | None = None`.
 
-### 3.2 Domain Payload Models (`core/models.py`)
+### 3.2 Domain Payload Models (`tools/models.py`)
 1. **`SiteRecord` & `SiteListPayload`**:
    - `SiteRecord`: `site_id: str`, `customer_id: str`, `name: str`, `country: str`, `connection_type: Literal["socket", "ipsec"]`, `socket_model: str | None`, `socket_version: str | None`, `ha: bool`, `wan_links: list[str]`, `connected_pop: str`, `status: str`, `last_seen: AwareDatetime`, `native_range: str`.
    - `SiteListPayload`: `account_id: str`, `generated_at: AwareDatetime`, `sites: list[SiteRecord]`.
@@ -89,7 +92,7 @@ flowchart LR
 
 | Method Name | Input Parameters | Output Type | One-Line Behavior & Deterministic `TelemetryEvidence` Extraction |
 |---|---|---|---|
-| `list_sites` | `account_id: str` | `TelemetryToolResult[SiteListPayload]` | Validates `account_id` (`^ACC-\d{4}$`), filters `sites.json` by `customer_id`, returns `not_found` if no sites match, and emits `TelemetryEvidence` for each site's `status` (`is_anomaly=True` when `status != "connected"`). |
+| `list_sites` | `account_id: str` | `TelemetryToolResult[SiteListPayload]` | Validates `account_id` (`^ACC-\d{4}$`), filters `sites.json` by `customer_id`, returns `TelemetryStatus.NOT_FOUND` if no sites match, and emits `TelemetryEvidence` for each site's `status` (`is_anomaly=True` when `status != "connected"`). |
 | `get_site_status` | `site_id: str` | `TelemetryToolResult[SiteRecord]` | Validates `site_id` (`^S-\d{4}-\d{2}$`), finds the site in `sites.json`, and emits `TelemetryEvidence` for `status`, `last_seen`, `socket_version`, and `wan_links` (`is_anomaly=True` when `status != "connected"`). |
 | `get_link_quality` | `site_id: str, window: str = "24h"` | `TelemetryToolResult[LinkQualityPayload]` | Validates `site_id` and `window` (`1h`, `6h`, `12h`, `24h`, `7d`, `all`), slices rows in `link_quality/<site_id>.csv` within `window` before `clock.now()`, aggregates per-link stats, and emits `TelemetryEvidence` (`is_anomaly=True` when `max_packet_loss_pct >= 2.0`, `latest_packet_loss_pct == 100.0`, or `max_jitter_ms >= 30.0`). |
 | `get_events` | `site_id: str, event_type: str | None = None, window: str = "24h"` | `TelemetryToolResult[EventsPayload]` | Validates `site_id` and `window`, reads all rows in `events/<site_id>.jsonl` without dropping older alerts (preserving 4-day-old alerts like `S-1008-03`), filters case-insensitively by `event_type` against `event_type` or `sub_type` (`None` or `"all"` returns all), and emits `TelemetryEvidence` (`is_anomaly=True` when `action in {"Alert", "Disconnected", "Failed", "Block"}`). |
@@ -107,7 +110,7 @@ flowchart LR
 - **`_read_text_cached(resolved_path: str, mtime_ns: int) -> str`**:
   - `@lru_cache(maxsize=256)` pure file reader keyed on resolved path string and file modification nanosecond timestamp so repeated reads avoid disk I/O while test modifications automatically invalidate cache entries.
 - **`_load_with_timeout(fn: Callable[[], R], timeout_seconds: float) -> R`**:
-  - Runs the file read/parse callable with a deadline check (`time.monotonic()` elapsed check + thread timeout when needed) and raises `TimeoutError` if exceeded.
+  - Runs the file read/parse callable with a deadline check and raises `TimeoutError` if exceeded.
 
 ---
 
@@ -142,13 +145,14 @@ Following the **Functional over Unit Testing** standard, `tests/tools/test_telem
 2. **Additional Scenario Telemetry Workflows**:
    - Verifies `SC-02` (`S-1008-03` link quality + 4-day-old alert preserved even when `window="24h"` is passed to `get_events`), `SC-05` (`sam.dubois@atlas-eng.com` 408 + captive portal), `SC-06` (`S-1008-01` 8 disconnect pairs + 22% loss), `SC-08` (`S-1010-02` `AUTHENTICATION_FAILED` + PSK note), and `SC-10` (`S-1004-01` 6 C2 block events).
 3. **Boundary, Partial-Failure & Security Guards**:
-   - Path traversal attempts (`site_id="../../.env"`, `user_email="../secrets@test.com"`) return `status="invalid_argument"`.
-   - Non-existent site/BGP/IPsec/client files return `status="not_found"` without raising uncaught exceptions.
-   - Missing root `sites.json`, malformed JSON/CSV in a `tmp_path` telemetry directory, or exceeded `timeout_seconds` return `status="unavailable"`.
+   - Path traversal attempts (`site_id="../../.env"`, `user_email="../secrets@test.com"`) return `status=TelemetryStatus.INVALID_ARGUMENT`.
+   - Non-existent site/BGP/IPsec/client files return `status=TelemetryStatus.NOT_FOUND` without raising uncaught exceptions.
+   - Missing root `sites.json`, malformed JSON/CSV in a `tmp_path` telemetry directory, or exceeded `timeout_seconds` return `status=TelemetryStatus.UNAVAILABLE`.
 
 ---
 
 ## 7. Cleanup & Hygiene Step
 
+- Remove `TelemetryEvidence` from `core/models.py` and verify no existing module imports `TelemetryEvidence` from `core.models`.
 - Verify that `tools/formatters.py` is never created and all references to it in `docs/architecture/system-architecture-design.md` are removed.
-- Ensure all imports in `core/models.py`, `tools/telemetry.py`, and `tests/tools/test_telemetry.py` are placed strictly at the top of each module (no inline imports) and pass Pyright standard type checking and Ruff linting with zero unused symbols.
+- Ensure all imports in `core/models.py`, `tools/__init__.py`, `tools/models.py`, `tools/telemetry.py`, and `tests/tools/test_telemetry.py` are placed strictly at the top of each module (no inline imports) and pass Pyright standard type checking and Ruff linting with zero unused symbols.

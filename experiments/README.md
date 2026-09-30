@@ -13,6 +13,19 @@ and the Postgres KB; nothing under `experiments/` is imported by production code
 - `run_variants.py` (retrieval variants, no LLM), `build_pools.py` (judging pools), `run_all.sh` (the whole pipeline in order).
 - `cache/` — LLM-produced and run outputs (see below).
 
+## Notebooks (`notebooks/`, read top to bottom)
+Each notebook states its required caches at the top and ends with a RESULT TABLE. They only read `cache/` (override the
+directory with env `EXPERIMENT_CACHE_DIR`) and never call an LLM; a missing cache prints `Run step first: <command>` and the dependent
+cells are skipped, so every notebook always executes end-to-end. Shared helpers: `lab/notebook_utils.py`.
+- `01_real_tickets_current_pipeline.ipynb` - current pipeline on the 89 queries, confident-but-wrong tickets, "Result boundaries explained" (needs DB; judgments optional).
+- `02_fusion_merging.ipynb` - RRF / linear fusion, weight study, lexical-vs-dense overlap (needs `runs/FUS_*`; judgments for metrics).
+- `03_direction_a_relative_gates.ipynb` - A_clean and relative gates (margin, z-score, agreement) (runs; judgments for real labels).
+- `04_direction_b_rewrite.ipynb` - LLM rewrite, router accuracy, gates on B (`rewrites.json`, `runs/B_*`).
+- `05_direction_d_agent_tool_user.ipynb` - agent variants (`d_runs/`, `judgments.json`).
+- `06_results_and_threshold.ipynb` - the comparison table, recommendation rule, safety-floor threshold and ADR-007 text.
+Order after the LLM steps: `run_all.sh`, then re-execute notebooks 01-06. Without `judgments.json` gate sweeps use a provisional label
+(ANS answerable, OOD/ADJ unanswerable) and say so.
+
 ## Running notebooks
 Postgres must be up (`postgresql://kb:kb@localhost:5432/kb`; `pg_ctlcluster 18 main start` if refused). From the repo root:
 

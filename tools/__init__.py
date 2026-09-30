@@ -19,6 +19,7 @@ from tools.models import (
     TelemetryStatus,
     TelemetryToolResult,
 )
+from tools.telemetry import TelemetryService
 
 __all__ = [
     "BgpNeighbor",
@@ -38,6 +39,7 @@ __all__ = [
     "SiteRecord",
     "TelemetryEvidence",
     "TelemetryPayload",
+    "TelemetryService",
     "TelemetryStatus",
     "TelemetryToolResult",
 ]

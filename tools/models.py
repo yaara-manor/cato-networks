@@ -78,6 +78,11 @@ class CmaEvent(BaseModel):
     src: str | None = None
     dst: str | None = None
     verdict: str | None = None
+    tunnel: str | None = None
+    signature_id: str | None = None
+    direction: str | None = None
+    bgp_disconnect_error_code: str | None = None
+    peer: str | None = None
 
 
 class EventsPayload(BaseModel):
@@ -103,6 +108,9 @@ class BgpNeighbor(BaseModel):
     last_error: str | None = None
     flaps_24h: int = 0
     bfd: str | None = None
+    advertised: str | None = None
+    static_ranges_overriding: list[str] | None = None
+    learned_prefixes_sample: list[str] | None = None
 
 
 class BgpStatusPayload(BaseModel):
@@ -116,6 +124,7 @@ class IpsecTunnelEndpoint(BaseModel):
     last_error: str | None = None
     cato_egress_ip: str | None = None
     site_ip: str | None = None
+    since: AwareDatetime | None = None
 
 
 class IkeParameters(BaseModel):
@@ -143,6 +152,9 @@ class IpsecStatusPayload(BaseModel):
     peer_reported_parameters_from_pcap: PeerPcapParameters | None = None
     psk_last_changed: AwareDatetime | None = None
     note: str | None = None
+    network_ranges_configured: list[str] | None = None
+    vnet_address_spaces_reported_by_customer: list[str] | None = None
+    traffic_last_hour_mbps: dict[str, float] | None = None
     queried_at: AwareDatetime
 
 
@@ -151,6 +163,8 @@ class ClientNetworkInfo(BaseModel):
     captive_portal_detected: bool = False
     udp_443_reachable: bool = True
     tcp_443_reachable: bool = True
+    country: str | None = None
+    udp_1337_reachable: bool | None = None
 
 
 class ClientSession(BaseModel):

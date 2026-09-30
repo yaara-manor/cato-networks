@@ -588,7 +588,7 @@ class TelemetryService:
                 evidence.append(
                     _ev(tool_name, payload.queried_at, "flaps_24h", str(n.flaps_24h), True)
                 )
-            if n.hold_time_negotiated is not None:
+            if n.state == "Established" and n.hold_time_negotiated is not None:
                 peer_timers = (
                     f", peer {n.peer_hold_time}s/{n.peer_keepalive}s"
                     if n.peer_hold_time is not None and n.peer_keepalive is not None

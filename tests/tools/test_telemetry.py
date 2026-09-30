@@ -664,3 +664,29 @@ def test_bgp_hold_time_evidence_emitted_with_partial_peer_timers(tmp_path: Path)
     assert "missing timer negotiation" not in hold_ev.raw_value
     peer_ev = next(ev for ev in res.evidence if ev.metric_key == "peer_timers")
     assert peer_ev.raw_value == "missing peer_keepalive"
+
+
+def test_bgp_non_established_neighbor_with_stale_timers_emits_no_timer_evidence(tmp_path: Path) -> None:
+    (tmp_path / "bgp_status").mkdir()
+    bgp_data = {
+        "site_id": "S-1007-01",
+        "queried_at": "2026-08-28T17:00:00Z",
+        "neighbors": [
+            {
+                "peer_ip": "10.0.0.1",
+                "peer_asn": 65001,
+                "cato_asn": 65002,
+                "state": "Idle",
+                "hold_time_configured": 60,
+                "keepalive_configured": 20,
+                "hold_time_negotiated": 30,
+                "peer_hold_time": 30,
+                "routes_count": 0,
+                "routes_limit": 100,
+            }
+        ],
+    }
+    (tmp_path / "bgp_status" / "S-1007-01.json").write_text(json.dumps(bgp_data), encoding="utf-8")
+    res = TelemetryService(telemetry_dir=tmp_path).get_bgp_status("S-1007-01")
+    assert res.status == TelemetryStatus.OK
+    assert not any(ev.metric_key in ("hold_time", "peer_timers") for ev in res.evidence)

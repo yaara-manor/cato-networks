@@ -97,8 +97,6 @@ def _matches_area_or_symptom(
         return bool(symptom_text and _shares_keywords(candidate_text, symptom_text))
     if symptom_text is not None:
         return _shares_keywords(candidate_text, symptom_text)
-    if candidate.status == "closed":
-        return True
     return any(
         peer.ticket_id != candidate.ticket_id
         and (
@@ -147,7 +145,7 @@ class TicketService:
             clauses.append("lower(product_area) = lower(%s)")
             params.append(product_area.strip())
         if not include_open:
-            clauses.append("status = 'closed'")
+            clauses.append("status != 'open'")
 
         where_sql = " and ".join(clauses)
         query = (
@@ -178,11 +176,7 @@ class TicketService:
         ]
         prior_closed = [t for t in matching if t.status == "closed"]
 
-        is_repeat = (
-            len(prior_closed) >= 1
-            or (exclude_ticket_id is not None and len(matching) >= 1)
-            or len(matching) >= 2
-        )
+        is_repeat = len(prior_closed) >= 1 or len(matching) >= 2
         if not is_repeat:
             return RepeatContactResult(
                 is_repeat_contact=False,

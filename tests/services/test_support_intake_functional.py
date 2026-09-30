@@ -96,13 +96,42 @@ def test_repeat_contact_and_regional_sla_flow(db_conn: psycopg.Connection) -> No
     assert prem_perf_p4.update_cadence == "on every state change"
 
     # Clock pause rules: pending_customer pauses resolution; pending_approval does NOT pause; elapsed_before_pause deducts time
-    paused_sla = cust_svc.calculate_sla_deadlines(
+    current_monotonic = 1000.0
+    ticking_clock = SimulationClock(
+        anchor=DEFAULT_ANCHOR,
+        ticking=True,
+        clock_fn=lambda: current_monotonic,
+    )
+    ticking_cust_svc = CustomerService(db_conn, ticking_clock)
+
+    paused_sla_1 = ticking_cust_svc.calculate_sla_deadlines(
         tier="Standard",
         priority="P2",
-        country_code="DE",
+        country_code="US",
         status="pending_customer",
     )
-    assert paused_sla.resolution_paused is True
+    assert paused_sla_1.resolution_paused is True
+    assert paused_sla_1.resolution_due == datetime(2026, 8, 31, 17, 0, 0, tzinfo=timezone.utc)
+
+    # Advance SimulationClock.now() by 2 hours while ticket remains pending_customer with omitted created_at
+    current_monotonic += 7200.0
+    paused_sla_2 = ticking_cust_svc.calculate_sla_deadlines(
+        tier="Standard",
+        priority="P2",
+        country_code="US",
+        status="pending_customer",
+    )
+    assert paused_sla_2.resolution_paused is True
+    assert paused_sla_2.resolution_due == paused_sla_1.resolution_due
+
+    # Reject naive created_at datetimes deterministically
+    with pytest.raises(ValueError, match="timezone-aware"):
+        cust_svc.calculate_sla_deadlines(
+            tier="Standard",
+            priority="P2",
+            country_code="US",
+            created_at=datetime(2026, 8, 28, 17, 0, 0),
+        )
 
     approval_sla = cust_svc.calculate_sla_deadlines(
         tier="Standard",
@@ -278,8 +307,33 @@ def test_live_ticket_creation_and_status_lifecycle(db_conn: psycopg.Connection) 
     assert fetched is not None
     assert fetched.subject == "Warsaw warehouse dropped again"
 
+    # Excluded current ticket + 1 open historical match must NOT trigger repeat contact (only 1 open match, 0 prior closed)
+    open_match_only = ticket_svc.detect_repeat_contact(
+        account_id="ACC-1001",
+        site_id="S-1001-02",
+        product_area="connectivity",
+        exclude_ticket_id="TCK-20264219",
+    )
+    assert open_match_only.is_repeat_contact is False
+
+    # Pending statuses must be retained when include_open=False
+    pending_cust = ticket_svc.update_ticket_status("TCK-20264254", "pending_customer")
+    assert pending_cust.status == "pending_customer"
+    non_open_history = ticket_svc.get_ticket_history(
+        "ACC-1001", site_id="S-1001-02", include_open=False
+    )
+    assert [t.ticket_id for t in non_open_history] == ["TCK-20264254"]
+
     closed = ticket_svc.update_ticket_status("TCK-20264254", "closed")
     assert closed.status == "closed"
+
+    # Single closed candidate with omitted product_area and symptom_text has no peer/relevance criteria -> False
+    no_criteria_repeat = ticket_svc.detect_repeat_contact(
+        account_id="ACC-1001",
+        site_id="S-1001-02",
+        exclude_ticket_id="TCK-20264219",
+    )
+    assert no_criteria_repeat.is_repeat_contact is False
 
     repeat_after_close = ticket_svc.detect_repeat_contact(
         account_id="ACC-1001",

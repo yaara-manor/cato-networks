@@ -153,6 +153,9 @@ class CustomerService:
         self._country_agent: Agent[None, CountryCodeOutput] = (
             country_agent if country_agent is not None else _DEFAULT_COUNTRY_AGENT
         )
+        self._paused_resolution_due: dict[
+            tuple[AccountTier, TicketPriority, str, str | None, float], datetime
+        ] = {}
 
     def lookup_account(self, email_or_account_id: str) -> CustomerAccount | None:
         value = email_or_account_id.strip()
@@ -294,9 +297,15 @@ class CustomerService:
         status: TicketStatus = "open",
         elapsed_before_pause: timedelta | None = None,
     ) -> SLADeadlines:
-        started_utc = (created_at if created_at is not None else self._clock.now()).astimezone(
-            timezone.utc
-        )
+        if created_at is not None and (
+            created_at.tzinfo is None or created_at.tzinfo.utcoffset(created_at) is None
+        ):
+            raise ValueError("created_at must be a timezone-aware datetime")
+
+        raw_start = created_at if created_at is not None else self._clock.now()
+        if raw_start.tzinfo is None or raw_start.tzinfo.utcoffset(raw_start) is None:
+            raise ValueError("SimulationClock returned a naive datetime")
+        started_utc = raw_start.astimezone(timezone.utc)
         tz = self.resolve_timezone_for_country(country_code) if country_code else None
         tz_info = tz if tz is not None else ZoneInfo("UTC")
         tz_name = tz_info.key
@@ -307,8 +316,20 @@ class CustomerService:
             else 0.0
         )
 
+        pause_key = (tier, priority, tz_name, product_area, prior_elapsed_hours)
+
         if priority == "P1":
             remaining_res_hours = max(0.0, 4.0 - prior_elapsed_hours)
+            if resolution_paused and created_at is None:
+                if pause_key not in self._paused_resolution_due:
+                    self._paused_resolution_due[pause_key] = started_utc + timedelta(
+                        hours=remaining_res_hours
+                    )
+                p1_resolution_due = self._paused_resolution_due[pause_key]
+            else:
+                if not resolution_paused:
+                    self._paused_resolution_due.pop(pause_key, None)
+                p1_resolution_due = started_utc + timedelta(hours=remaining_res_hours)
             return SLADeadlines(
                 priority=priority,
                 tier=tier,
@@ -316,7 +337,7 @@ class CustomerService:
                 product_area=product_area,
                 started_at=started_utc,
                 first_response_due=started_utc + timedelta(minutes=15),
-                resolution_due=started_utc + timedelta(hours=remaining_res_hours),
+                resolution_due=p1_resolution_due,
                 update_cadence="every 30 minutes",
                 is_24x7=True,
                 resolution_paused=resolution_paused,
@@ -335,7 +356,18 @@ class CustomerService:
         remaining_resolution_hours = max(0.0, base_resolution_hours - prior_elapsed_hours)
         started_local = started_utc.astimezone(tz_info)
         first_response_local = _advance_business_hours(started_local, first_response_hours)
-        resolution_local = _advance_business_hours(started_local, remaining_resolution_hours)
+        if resolution_paused and created_at is None:
+            if pause_key not in self._paused_resolution_due:
+                self._paused_resolution_due[pause_key] = _advance_business_hours(
+                    started_local, remaining_resolution_hours
+                ).astimezone(timezone.utc)
+            resolution_due = self._paused_resolution_due[pause_key]
+        else:
+            if not resolution_paused:
+                self._paused_resolution_due.pop(pause_key, None)
+            resolution_due = _advance_business_hours(
+                started_local, remaining_resolution_hours
+            ).astimezone(timezone.utc)
 
         return SLADeadlines(
             priority=priority,
@@ -344,7 +376,7 @@ class CustomerService:
             product_area=product_area,
             started_at=started_utc,
             first_response_due=first_response_local.astimezone(timezone.utc),
-            resolution_due=resolution_local.astimezone(timezone.utc),
+            resolution_due=resolution_due,
             update_cadence=cadence,
             is_24x7=False,
             resolution_paused=resolution_paused,

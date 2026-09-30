@@ -119,14 +119,15 @@ Retrieval-only; no agent required. Runs as soon as `search_kb` exists.
 1. In `db/migrations/20260929_1500_kb-schema.sql`, change the `passages.search_vector` generated expression from `'simple'` to `'english'`; the GIN index `passages_search_vector` is unchanged.
 2. Regenerate `db/seed.dump` without re-crawling or re-embedding: restore the current dump, drop and re-add `search_vector` as the `'english'` generated column, recreate `passages_search_vector`, then `db.init.build.write_dump`.
 
-### 4.5 `TicketService` Text Normalization (`services/ticket_service.py`)
+### 4.5 `TicketService` Text Normalization (`core/stopwords.py`, `services/ticket_service.py`)
 
 Replace the hand-rolled tokenizer with the same standard pipeline as KB search.
 1. **Exclusion stems**, three layers:
    - PostgreSQL `'english'` stopwords (applied by `to_tsvector` itself).
    - scikit-learn `ENGLISH_STOP_WORDS` (318 general English words: `since`, `would`, `every`, `please`, `still`, …).
-   - `_SUPPORT_NOISE_WORDS`: `ticket`, `issue`, `user`, `site`, `cato`, `today`, `week`, `minutes`, `fine`, `say` — support-process words found high in `ts_stat` over the 54 seeded tickets, documented as domain-specific. No published support-ticket stopword list exists; corpus-derived lists are the standard method, and 54 tickets are too few to derive one automatically.
-   - Both word lists are passed once through the same `'english'` stemmer at `TicketService.__init__` (one query) and stored as a `frozenset[str]` of excluded stems, so exclusion always matches the stemmer's output.
+   - `SUPPORT_NOISE_WORDS`: `ticket`, `issue`, `user`, `site`, `cato`, `today`, `week`, `minutes`, `fine`, `say` — support-process words found high in `ts_stat` over the 54 seeded tickets, documented as domain-specific. No published support-ticket stopword list exists; corpus-derived lists are the standard method, and 54 tickets are too few to derive one automatically.
+   - **Location**: new `core/stopwords.py` — pure data, no DB. Holds `SUPPORT_NOISE_WORDS` and `EXCLUDED_WORDS: frozenset[str]` (= `ENGLISH_STOP_WORDS | SUPPORT_NOISE_WORDS`). Cross-domain vocabulary, not ticket logic, so it sits beside `core/config.py`. Not re-exported from `core/__init__.py`: the scikit-learn import costs ~0.6 s, paid only by modules that import `core.stopwords`.
+   - `TicketService.__init__` passes `EXCLUDED_WORDS` once through the same `'english'` stemmer (one query) and stores a `frozenset[str]` of excluded stems, so exclusion always matches the stemmer's output.
 2. **`_stem_texts(texts: list[str]) -> list[frozenset[str]]`** — one SQL roundtrip (`unnest ... with ordinality` + `tsvector_to_array(to_tsvector('english', text))`), returns stems per input text in order, minus excluded stems.
 3. **`detect_repeat_contact`**: after `get_ticket_history`, one `_stem_texts` call over every candidate's `subject + body` plus `symptom_text`; `_matches_area_or_symptom` receives precomputed stem sets. The rule is unchanged: two or more shared stems means a keyword match.
 4. **Delete**: `import re`, `_STOPWORDS`, `_symptom_stems`, `_shares_keywords`.
@@ -159,7 +160,7 @@ Functional tests against the real seeded PostgreSQL and local models.
 
 ## 6. Cleanup (final step)
 
-1. Read every file created or modified (`encoders/`, `retrieval/`, `kbindex/`, `db/`, `services/`, `eval/`, `tests/`) end-to-end; audit with `/ponytail` and `/thermo-nuclear-code-quality-review`.
+1. Read every file created or modified (`encoders/`, `retrieval/`, `kbindex/`, `db/`, `core/`, `services/`, `eval/`, `tests/`) end-to-end; audit with `/ponytail` and `/thermo-nuclear-code-quality-review`.
 2. Confirm deleted: `kbindex/embed.py`, `retrieval/rerank.py`, `_STOPWORDS`, `_symptom_stems`, `_shares_keywords`, `import re` in `ticket_service.py`.
 3. Grep: no remaining `'simple'` tsvector references, no `kbindex.embed` / `retrieval.rerank` imports.
 4. Pyright `standard` and ruff clean; every function fully typed; no unused imports or helpers.

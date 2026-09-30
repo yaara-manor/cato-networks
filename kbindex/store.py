@@ -2,11 +2,10 @@ from collections import defaultdict
 from collections.abc import Callable
 import json
 from pathlib import Path
-from typing import LiteralString, NotRequired, TypedDict, cast
+from typing import Any, NotRequired, TypedDict
 import uuid
 
 import psycopg
-import psycopg.sql
 from pgvector.psycopg import register_vector
 
 from core.config import (
@@ -15,9 +14,9 @@ from core.config import (
     REPO_ROOT,
     RERANKER_MODEL,
 )
+from db.init.seed import apply_schema, seed_all
 from kbindex.embed import embed_passages
 from kbindex.hashing import sha256_bytes, sha256_file
-from kbindex.policies import load_policies
 
 
 class Article(TypedDict):
@@ -37,42 +36,10 @@ class StartupError(Exception):
     pass
 
 
-def apply_schema(connection: psycopg.Connection) -> None:
-    """Create the four knowledge-base tables when they are missing."""
-    schema_path = REPO_ROOT / "db" / "migrations" / "20260929_1500_kb-schema.sql"
-    schema_text = cast(LiteralString, schema_path.read_text(encoding="utf-8"))
-    sql = psycopg.sql.SQL(schema_text)
-    with connection.cursor() as cursor:
-        cursor.execute(sql)
-    connection.commit()
-
-
-def upsert_policies(connection: psycopg.Connection, policies: list[dict[str, str]]) -> None:
-    # Insert or replace each policy row from its file record.
-    query = """
-    insert into policies (id, title, content_hash, file_path, body)
-    values (%s, %s, %s, %s, %s)
-    on conflict (id) do update set
-        title = excluded.title,
-        content_hash = excluded.content_hash,
-        file_path = excluded.file_path,
-        body = excluded.body
-    """
-    with connection.cursor() as cursor:
-        cursor.executemany(
-            query,
-            [
-                (p["id"], p["title"], p["content_hash"], p["file_path"], p["body"])
-                for p in policies
-            ],
-        )
-    connection.commit()
-
-
 def _insert_passages(
     cursor: psycopg.Cursor,
     article_slug: str,
-    passages: list[dict],
+    passages: list[dict[str, Any]],
 ) -> None:
     if not passages:
         return
@@ -110,9 +77,8 @@ def upsert_article(
     connection: psycopg.Connection,
     snapshot_id: uuid.UUID,
     article: Article,
-    passages: list[dict],
+    passages: list[dict[str, Any]],
 ) -> None:
-    # Replace an article's passages only when its content hash changes.
     file_path = article.get("file_path", "")
     try:
         file_path = Path(file_path).resolve().relative_to(REPO_ROOT).as_posix()
@@ -171,13 +137,12 @@ def upsert_article(
 def load_index(
     connection: psycopg.Connection,
     crawl_dir: Path | str,
-    policies_dir: Path | str,
+    policies_dir: Path | str = REPO_ROOT / "data" / "policies",
+    tickets_dir: Path | str = REPO_ROOT / "data" / "tickets",
 ) -> None:
-    # Insert the snapshot, the articles, the embedded passages, and the policies.
     apply_schema(connection)
     register_vector(connection)
     crawl_dir = Path(crawl_dir)
-    policies_dir = Path(policies_dir)
     manifest = json.loads((crawl_dir / "manifest.json").read_text(encoding="utf-8"))
     crawled_at: str = manifest["crawled_at"]
 
@@ -198,7 +163,7 @@ def load_index(
     connection.commit()
 
     passages_file = crawl_dir / "passages.jsonl"
-    passages_by_slug: defaultdict[str, list[dict]] = defaultdict(list)
+    passages_by_slug: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
     if passages_file.exists():
         with passages_file.open(encoding="utf-8") as f:
             for line in f:
@@ -215,16 +180,18 @@ def load_index(
         if idx % 200 == 0 or idx == total:
             print(f"Loaded article {idx}/{total}: {slug}")
 
-    policies = load_policies(policies_dir)
-    upsert_policies(connection, policies)
-    connection.commit()
+    seed_all(
+        connection,
+        policies_dir=policies_dir,
+        tickets_dir=tickets_dir,
+        preserve_existing_tickets=False,
+    )
 
 
 def verify_hashes(
     connection: psycopg.Connection,
     read_file: Callable[[Path], bytes | str] | None = None,
 ) -> None:
-    # Raise HashMismatch when a stored hash differs from the file at file_path.
     with connection.cursor() as cursor:
         cursor.execute("select file_path, content_hash from kb_articles order by slug")
         kb_articles: list[tuple[str, str]] = cursor.fetchall()

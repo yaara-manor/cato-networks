@@ -217,15 +217,16 @@ stateDiagram-v2
 ## 6. Database Schema Design (PostgreSQL + pgvector)
 
 The database schema is managed via sequential SQL migrations under `db/migrations/`:
-- `db/migrations/20260929_1500_kb-schema.sql`: Vector extension, snapshots, kb_articles, passages, and policies (the knowledge base and policies tables).
+- `db/migrations/20260929_1500_kb-schema.sql`: Vector extension, `snapshots`, `kb_articles`, `passages`, `policies`, `accounts`, and `tickets`.
 - `db/migrations/20260930_1000_agent-runtime.sql`: Operational tables for persistent conversation state, messages, non-blocking approvals, execution traces, and simulated side effects.
 
-The unified database connects the ingested Knowledge Base with live operational state:
+The unified database connects the ingested Knowledge Base and seeded customer/ticket records with live operational state:
 
 ```mermaid
 erDiagram
     snapshots ||--o{ kb_articles : pins
     kb_articles ||--o{ passages : contains
+    accounts ||--o{ tickets : owns
     conversations ||--o{ messages : contains
     conversations ||--o{ approvals : tracks
     conversations ||--o{ traces : records
@@ -267,6 +268,32 @@ erDiagram
         text content_hash
         text file_path
         text body
+    }
+
+    accounts {
+        text customer_id PK
+        text company
+        text tier
+        text email_domain UK
+        text registered_admin_contact UK
+        text country
+    }
+
+    tickets {
+        text ticket_id PK
+        timestamptz created_at
+        text channel
+        text customer_id FK
+        text customer_name
+        text requester_email
+        text company
+        text tier
+        text site_id
+        text product_area
+        text priority
+        text subject
+        text body
+        text status
     }
 
     conversations {
@@ -326,6 +353,8 @@ erDiagram
 ### Key Table Responsibilities
 - **`passages`**: Lexical index (`GIN` on `search_vector`, `simple` configuration) + Vector column (`vector(384)`, exact cosine distance scan).
 - **`policies`**: Read-only store for the 6 internal governance policies.
+- **`accounts`**: Ground-truth customer account records (`ACC-1001`..`ACC-1012`) enriched with primary `-01` site `country` codes for SLA timezone resolution.
+- **`tickets`**: Historical and live support tickets (`TCK-*`), indexed on `(customer_id, created_at)` and `(customer_id, site_id)` for repeat-contact detection and live status updates.
 - **`conversations`**: Maintains persistent session lifecycle across process restarts.
 - **`approvals`**: Decoupled HITL table. Enables non-blocking workflow: status values are `pending`, `approved`, `edited`, `rejected`.
 - **`traces`**: Complete execution traces ensuring reproducible end-to-end replay.
@@ -405,7 +434,7 @@ sequenceDiagram
 
 | Home Task Deliverable | Architectural Component / File | Verification Criteria |
 |---|---|---|
-| **A. Git Repository & Docker** | `Dockerfile`, `docker-compose.yml`, `db/kb.dump` | Reviewer runs `docker compose up` and accesses chat in < 10 min without external downloads. |
+| **A. Git Repository & Docker** | `Dockerfile`, `docker-compose.yml`, `db/seed.dump` | Reviewer runs `docker compose up` and accesses chat in < 10 min without external downloads. |
 | **B. Working Chat UI** | `ui/customer_app.py` & `ui/reviewer_app.py` | Customer view with citations & evidence; Reviewer view with context, traces, and Approve/Edit/Reject. |
 | **C. `answers.md`** | `eval/run_questions.py`, `eval/retrieval_metrics.py` | 35 questions answered with citations, top chunks, scores, latency, token costs, Recall@k, and MRR. |
 | **D. Architecture Diagrams** | Logical & Deployment views in `docs/architecture/` | Diagrams match implemented PydanticAI agents, Postgres schema, and Docker topology. |
@@ -436,14 +465,18 @@ Following the **Functional over Unit Testing** standard:
 
 ## 12. Directory Structure & Module Layout
 
-The codebase is organized into clean, single-responsibility packages separating offline ingestion from online retrieval, business tools, multi-agent logic, and database migrations:
+The codebase is organized into clean, single-responsibility packages separating offline ingestion from database initialization, online retrieval, business tools, and multi-agent logic:
 
 ```
 ├── db/                                # Unified database management
-│   ├── kb.dump                        # Seed database dump (articles, passages, embeddings)
+│   ├── seed.dump                      # Seed database dump (KB articles, passages, policies, accounts, tickets)
 │   ├── connection.py                  # Database connection pooling
+│   ├── init/                          # Cross-domain DB seeding, startup checks, and dump build
+│   │   ├── seed.py                    # Schema runner + stdlib loaders & batch upserts for policies, accounts, tickets
+│   │   ├── startup.py                 # Container startup entrypoint (seeds, verifies hashes & embedding width)
+│   │   └── build.py                   # Offline operator build entrypoint (loads KB + seed tables, writes db/seed.dump)
 │   └── migrations/
-│       ├── 20260929_1500_kb-schema.sql        # Vector extension + snapshots, kb_articles, passages, policies
+│       ├── 20260929_1500_kb-schema.sql        # Vector extension + snapshots, kb_articles, passages, policies, accounts, tickets
 │       └── 20260930_1000_agent-runtime.sql    # conversations, messages, approvals, traces, simulated_actions
 │
 ├── docs/                              # Project documentation, plans & evaluation reports
@@ -463,7 +496,7 @@ The codebase is organized into clean, single-responsibility packages separating 
 │   ├── chunk.py                       # Markdown slicing (max 400 tokens)
 │   ├── embed.py                       # BAAI/bge-small-en-v1.5 embeddings
 │   ├── hashing.py                     # SHA-256 integrity verifier
-│   └── store.py                       # Loads articles & passages into Postgres
+│   └── store.py                       # Loads KB articles & passages into Postgres
 │
 ├── retrieval/                         # Online RAG & search pipeline
 │   ├── search.py                      # Hybrid lexical (tsvector) + vector (pgvector) + RRF fusion
@@ -526,9 +559,10 @@ The codebase is organized into clean, single-responsibility packages separating 
 ## 13. Cleanup & Deprecation
 
 - All code files are structured strictly under the packages defined above.
-- Offline indexing code (`kbindex/`) contains zero online query-time logic.
+- Offline indexing code (`kbindex/`) contains zero online query-time logic and zero non-KB seed logic.
+- Cross-domain database initialization, seed loading (`policies`, `accounts`, `tickets`), startup checks, and dump generation live under `db/init/`.
 - Online RAG search and cross-encoder reranking live cleanly under `retrieval/`.
-- Database schema definitions are organized into versioned migrations under `db/migrations/`, and seed dump lives in `db/kb.dump`.
+- Database schema definitions are organized into versioned migrations under `db/migrations/`, and the unified seed dump lives in `db/seed.dump`.
 - Implementation plans are located directly under `docs/plans/`.
 - No scratch scripts or temporary test files will remain in production trees.
 - Pinned revisions and hashes ensure 100% reproducible execution.

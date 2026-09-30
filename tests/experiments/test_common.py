@@ -64,7 +64,7 @@ def test_pool_reports_failures_and_keeps_going() -> None:
 
 def test_model_defaults_to_cheap_openai_and_env_overrides(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("EXPERIMENT_LLM_MODEL", raising=False)
-    assert common.model_name("EXPERIMENT_LLM_MODEL") == "openai:gpt-4.1-mini"
+    assert common.model_name("EXPERIMENT_LLM_MODEL") == "openai:gpt-5-nano"
     monkeypatch.setenv("EXPERIMENT_LLM_MODEL", "google-gla:other")
     assert common.model_name("EXPERIMENT_LLM_MODEL") == "google-gla:other"
 

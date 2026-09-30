@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     passage_token_cap: int = 400
     slice_new_tokens: int = 350
     slice_overlap_tokens: int = 50
-    llm_model: str = "google-gla:gemini-3.8-flash"
+    llm_model: str = "openai:gpt-5-nano"
 
 
 settings: Settings = Settings()

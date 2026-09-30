@@ -21,7 +21,7 @@ EXPERIMENTS_DIR: Path = Path(__file__).resolve().parents[1]
 CACHE_DIR: Path = EXPERIMENTS_DIR / "cache"
 QUERIES_PATH: Path = EXPERIMENTS_DIR / "data" / "queries.jsonl"
 
-DEFAULT_MODEL: str = "openai:gpt-4.1-mini"
+DEFAULT_MODEL: str = "openai:gpt-5-nano"
 # Model-id prefix -> env vars of which one must be set for a real (non-dry) run.
 API_KEY_VARS: dict[str, tuple[str, ...]] = {
     "openai": ("OPENAI_API_KEY",),

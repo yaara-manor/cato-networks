@@ -6,19 +6,17 @@ from typing import Any, cast
 from zoneinfo import ZoneInfo
 
 import psycopg
-from pydantic import BaseModel
 from pydantic_ai import Agent
 
 from core.clock import SimulationClock
 from core.config import settings
 from core.models import (
     AccountTier,
-    CallerIdentity,
     CustomerAccount,
-    SLADeadlines,
     TicketPriority,
     TicketStatus,
 )
+from services.models import CallerIdentity, CountryCodeOutput, SLADeadlines
 
 logger = logging.getLogger(__name__)
 
@@ -49,10 +47,6 @@ _SLA_TARGETS: dict[TicketPriority, tuple[dict[AccountTier, float], float, str]] 
         "on every state change",
     ),
 }
-
-
-class CountryCodeOutput(BaseModel):
-    country_code: str | None = None
 
 
 _DEFAULT_COUNTRY_AGENT: Agent[None, CountryCodeOutput] = Agent(

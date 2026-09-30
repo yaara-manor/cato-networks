@@ -18,3 +18,7 @@ def test_simulation_clock_ticking_frozen_and_window() -> None:
     assert frozen.is_within(DEFAULT_ANCHOR - timedelta(hours=24), 24)
     assert not frozen.is_within(DEFAULT_ANCHOR - timedelta(hours=24, seconds=1), 24)
     assert not frozen.is_within(DEFAULT_ANCHOR + timedelta(seconds=1), 24)
+    assert frozen.is_within(DEFAULT_ANCHOR - timedelta(days=100), float("inf"))
+    assert not frozen.is_within(DEFAULT_ANCHOR + timedelta(seconds=1), float("inf"))
+    assert frozen.is_within(DEFAULT_ANCHOR - timedelta(hours=1, minutes=30), 1.5)
+    assert not frozen.is_within(DEFAULT_ANCHOR - timedelta(hours=1, minutes=31), 1.5)

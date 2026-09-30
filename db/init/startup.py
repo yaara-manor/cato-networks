@@ -7,7 +7,7 @@ import psycopg
 
 from core.config import REPO_ROOT
 from db.init.seed import seed_all
-from kbindex.embed import embed_passages, probe_width
+from encoders.embed import embed_passages, probe_width
 from kbindex.store import HashMismatch, StartupError, verify_hashes
 
 __all__ = [

@@ -3,7 +3,7 @@ from pathlib import Path
 
 from kbindex.chunk import chunk_article, heading_anchor, strip_doc_banner
 from core.config import PASSAGE_TOKEN_CAP, SLICE_NEW_TOKENS
-from kbindex.embed import load_embedder
+from encoders.embed import load_embedder
 
 REPO = Path(__file__).resolve().parents[2]
 ROOT = REPO / "data" / "kb_ingestion"

@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import TypedDict
 
 from core.config import PASSAGE_TOKEN_CAP, SLICE_NEW_TOKENS, SLICE_OVERLAP_TOKENS
-from kbindex.embed import load_embedder
+from encoders.embed import load_embedder
 
 
 class Passage(TypedDict):

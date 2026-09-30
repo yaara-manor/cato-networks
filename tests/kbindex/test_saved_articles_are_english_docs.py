@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from kbindex.config import USER_AGENT
+from core.config import USER_AGENT
 from kbindex.discover import classify_url, robots_allows
 
 REPO = Path(__file__).resolve().parents[2]

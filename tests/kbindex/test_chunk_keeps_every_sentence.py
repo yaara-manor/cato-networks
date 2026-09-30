@@ -4,7 +4,7 @@ import warnings
 from pathlib import Path
 
 from kbindex.chunk import chunk_article, strip_doc_banner
-from kbindex.config import PASSAGE_TOKEN_CAP
+from core.config import PASSAGE_TOKEN_CAP
 from kbindex.embed import load_embedder
 
 REPO = Path(__file__).resolve().parents[2]

@@ -6,7 +6,7 @@ from typing import Any
 
 import psycopg
 
-from kbindex.config import REPO_ROOT
+from core.config import REPO_ROOT
 from kbindex.embed import embed_passages, probe_width
 from kbindex.policies import load_policies
 from kbindex.store import HashMismatch, StartupError, upsert_policies, verify_hashes

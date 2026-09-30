@@ -1,6 +1,6 @@
 from sentence_transformers import CrossEncoder
 
-from kbindex.config import RERANKER_MODEL, RERANKER_REVISION
+from core.config import RERANKER_MODEL, RERANKER_REVISION
 
 _reranker: CrossEncoder | None = None
 

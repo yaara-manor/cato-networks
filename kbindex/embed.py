@@ -2,7 +2,7 @@ from typing import Any
 
 from sentence_transformers import SentenceTransformer
 
-from kbindex.config import EMBEDDING_MODEL, EMBEDDING_REVISION, QUERY_PREFIX
+from core.config import EMBEDDING_MODEL, EMBEDDING_REVISION, QUERY_PREFIX
 
 BGP_PASSAGE = "BGP route limits cap the number of routes a Socket accepts from a neighbor."
 SLA_PASSAGE = "SLA credits refund a share of the fee after a qualifying service outage."

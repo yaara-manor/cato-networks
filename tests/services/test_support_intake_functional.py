@@ -343,3 +343,141 @@ def test_live_ticket_creation_and_status_lifecycle(db_conn: psycopg.Connection) 
     )
     assert repeat_after_close.is_repeat_contact is True
     assert [t.ticket_id for t in repeat_after_close.prior_closed_tickets] == ["TCK-20264254"]
+
+
+def test_short_technical_terms_and_inflections_mark_repeat_contact(
+    db_conn: psycopg.Connection,
+) -> None:
+    clock = SimulationClock.frozen(DEFAULT_ANCHOR)
+    ticket_svc = TicketService(db_conn, clock)
+
+    ticket_svc.create_ticket(
+        customer_id="ACC-1001",
+        customer_name="Erik Iyer",
+        requester_email="erik.iyer@northwind-logistics.com",
+        company="Northwind Logistics",
+        tier="Premium",
+        priority="P3",
+        product_area="connectivity",
+        subject="VPN DNS failing",
+        body="",
+        site_id="S-1001-99",
+    )
+    ticket_svc.create_ticket(
+        customer_id="ACC-1001",
+        customer_name="Erik Iyer",
+        requester_email="erik.iyer@northwind-logistics.com",
+        company="Northwind Logistics",
+        tier="Premium",
+        priority="P3",
+        product_area="voice",
+        subject="DNS over VPN broken",
+        body="",
+        site_id="S-1001-99",
+    )
+    first_pair = ticket_svc.detect_repeat_contact(account_id="ACC-1001", site_id="S-1001-99")
+    assert first_pair.is_repeat_contact is True
+
+    ticket_svc.create_ticket(
+        customer_id="ACC-1001",
+        customer_name="Erik Iyer",
+        requester_email="erik.iyer@northwind-logistics.com",
+        company="Northwind Logistics",
+        tier="Premium",
+        priority="P3",
+        product_area="connectivity",
+        subject="tunnels dropping hourly",
+        body="",
+        site_id="S-1001-98",
+    )
+    ticket_svc.create_ticket(
+        customer_id="ACC-1001",
+        customer_name="Erik Iyer",
+        requester_email="erik.iyer@northwind-logistics.com",
+        company="Northwind Logistics",
+        tier="Premium",
+        priority="P3",
+        product_area="voice",
+        subject="tunnel drops again",
+        body="",
+        site_id="S-1001-98",
+    )
+    second_pair = ticket_svc.detect_repeat_contact(account_id="ACC-1001", site_id="S-1001-98")
+    assert second_pair.is_repeat_contact is True
+
+
+def test_noise_words_alone_do_not_mark_repeat_contact(db_conn: psycopg.Connection) -> None:
+    clock = SimulationClock.frozen(DEFAULT_ANCHOR)
+    ticket_svc = TicketService(db_conn, clock)
+
+    ticket_svc.create_ticket(
+        customer_id="ACC-1001",
+        customer_name="Erik Iyer",
+        requester_email="erik.iyer@northwind-logistics.com",
+        company="Northwind Logistics",
+        tier="Premium",
+        priority="P3",
+        product_area="connectivity",
+        subject="please escalate power issue today near this site",
+        body="",
+        site_id="S-1001-99",
+    )
+    ticket_svc.create_ticket(
+        customer_id="ACC-1001",
+        customer_name="Erik Iyer",
+        requester_email="erik.iyer@northwind-logistics.com",
+        company="Northwind Logistics",
+        tier="Premium",
+        priority="P3",
+        product_area="voice",
+        subject="issue is still unresolved please contact site support today",
+        body="",
+        site_id="S-1001-99",
+    )
+    noise_only = ticket_svc.detect_repeat_contact(account_id="ACC-1001", site_id="S-1001-99")
+    assert noise_only.is_repeat_contact is False
+
+    noise_symptom = ticket_svc.detect_repeat_contact(
+        account_id="ACC-1001",
+        site_id="S-1001-99",
+        symptom_text="please, still the same issue today",
+    )
+    assert noise_symptom.is_repeat_contact is False
+
+
+def test_symptom_text_with_sql_and_tsquery_characters_is_safe(
+    db_conn: psycopg.Connection,
+) -> None:
+    clock = SimulationClock.frozen(DEFAULT_ANCHOR)
+    ticket_svc = TicketService(db_conn, clock)
+
+    ticket_svc.create_ticket(
+        customer_id="ACC-1001",
+        customer_name="Erik Iyer",
+        requester_email="erik.iyer@northwind-logistics.com",
+        company="Northwind Logistics",
+        tier="Premium",
+        priority="P3",
+        product_area="connectivity",
+        subject="VPN DNS failing",
+        body="",
+        site_id="S-1001-99",
+    )
+    ticket_svc.create_ticket(
+        customer_id="ACC-1001",
+        customer_name="Erik Iyer",
+        requester_email="erik.iyer@northwind-logistics.com",
+        company="Northwind Logistics",
+        tier="Premium",
+        priority="P3",
+        product_area="voice",
+        subject="DNS over VPN broken",
+        body="",
+        site_id="S-1001-99",
+    )
+    result = ticket_svc.detect_repeat_contact(
+        account_id="ACC-1001",
+        site_id="S-1001-99",
+        symptom_text="O'Brien a & b | !c :*",
+    )
+    assert result.is_repeat_contact in (True, False)

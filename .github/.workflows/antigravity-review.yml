@@ -23,4 +23,4 @@ jobs:
           api-key: '${{ secrets.ANTIGRAVITY_API_KEY }}'
           github-token: '${{ secrets.PERSONAL_GITHUB_TOKEN }}'
           mode: 'review'
-          prompt: '/antigravity-review'
+          prompt: './.github/prompts/review-code.prompt.md'

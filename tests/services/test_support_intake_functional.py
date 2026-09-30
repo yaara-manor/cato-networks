@@ -401,6 +401,17 @@ def test_noise_words_alone_do_not_mark_repeat_contact(db_conn: psycopg.Connectio
     assert noise_symptom.is_repeat_contact is False
 
 
+def test_domain_terms_mark_repeat_contact(db_conn: psycopg.Connection) -> None:
+    clock = SimulationClock.frozen(DEFAULT_ANCHOR)
+    ticket_svc = TicketService(db_conn, clock)
+
+    # bill + call are general-English stopwords but support-domain terms: they must still match.
+    _open_ticket(ticket_svc, "S-1001-97", "billing", "billing call failed")
+    _open_ticket(ticket_svc, "S-1001-97", "voice", "call billing wrong")
+    result = ticket_svc.detect_repeat_contact(account_id="ACC-1001", site_id="S-1001-97")
+    assert result.is_repeat_contact is True
+
+
 def test_symptom_text_with_sql_and_tsquery_characters_is_safe(
     db_conn: psycopg.Connection,
 ) -> None:

@@ -39,6 +39,9 @@ def test_startup_rejects_a_hash_or_width_mismatch() -> None:
         bad_embedder = lambda texts: [[0.0] * 128]
         with pytest.raises(StartupError):
             run_startup(connection, embed=bad_embedder, policies_dir=policies_dir)
+        # an embedder returning no vectors is a width mismatch, not an IndexError
+        with pytest.raises(StartupError):
+            run_startup(connection, embed=lambda texts: [], policies_dir=policies_dir)
 
         # real probe_width equals 384 and equals the snapshot row
         row = connection.execute(

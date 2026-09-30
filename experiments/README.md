@@ -9,7 +9,7 @@ and the Postgres KB; nothing under `experiments/` is imported by production code
 - `data/queries.jsonl` — 89 queries (35 ANS, 12 SCN, 12 ADJ, 10 OOD, 20 TKT); regenerate with `build_queries.py`.
   `data/adj_notes.md` explains why each ADJ query is unanswerable from the KB.
 - `lab/retrieve.py` — lexical/dense/fusion/rerank/`clean_query`/`search_current`; `lab/metrics.py` — hit@k, MRR, nDCG@5, answer/refuse P/R/F1.
-- `llm/` — Gemini runners via pydantic-ai: `prompts.py`, `rewrite.py` (Direction B), `agent_d.py` (Direction D), `judge.py`, shared `common.py`.
+- `llm/` — LLM runners (default `openai:gpt-4.1-mini`) via pydantic-ai: `prompts.py`, `rewrite.py` (Direction B), `agent_d.py` (Direction D), `judge.py`, shared `common.py`.
 - `run_variants.py` (retrieval variants, no LLM), `build_pools.py` (judging pools), `run_all.sh` (the whole pipeline in order).
 - `cache/` — LLM-produced and run outputs (see below).
 
@@ -36,8 +36,8 @@ Do not edit `pyproject.toml`/`uv.lock`. In notebooks, put `experiments/` and the
 Override the DB with env `KB_DSN`.
 
 ## Running the LLM steps (locally, needs your key)
-The runners use Gemini through pydantic-ai; nothing here runs in CI and tests never call a real model.
-Put `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) in your local `.env`, then from the repo root:
+The runners use an LLM through pydantic-ai (default `openai:gpt-4.1-mini`; any pydantic-ai model id works via `EXPERIMENT_LLM_MODEL` / `EXPERIMENT_JUDGE_MODEL`); nothing here runs in CI and tests never call a real model.
+Put `OPENAI_API_KEY` (or `GEMINI_API_KEY` for google models) in your local `.env`, then from the repo root:
 
     uv run --env-file .env python -m experiments.llm.rewrite --dry-run     # counts only, no key needed
     uv run --env-file .env python -m experiments.llm.rewrite --limit 3     # try 3 queries first
@@ -83,3 +83,8 @@ Tests: `uv run pytest tests/experiments` (offline: pydantic-ai `TestModel`/`Func
   `judge --dry-run` prints the pending calls.
 - Total order of magnitude: ~5-6k calls, ~7-10M input tokens. On a Flash-class model that is likely single-digit dollars, but
   check the current price of your model; I did not verify it. Wall-clock at concurrency 4 is roughly 1-2 hours, dominated by the judge.
+
+## Committed retrieval runs
+`cache/runs/` (non-LLM variants, 89 queries) is committed so notebooks 01-03 work without the ~40 min recompute.
+Its `latency_ms` values were measured while other jobs competed for CPU, so they are inflated: rerun
+`uv run python -m experiments.run_variants` (after deleting `cache/runs/`) before trusting latency comparisons.

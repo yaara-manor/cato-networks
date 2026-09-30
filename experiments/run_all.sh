@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Full experiment pipeline. Run from the repo root with a local .env holding GEMINI_API_KEY:
+# Full experiment pipeline. Run from the repo root with a local .env holding OPENAI_API_KEY:
 #
 #     bash experiments/run_all.sh            # dry-run the LLM steps, then run everything
 #     bash experiments/run_all.sh --dry-run  # only print call counts, make no calls

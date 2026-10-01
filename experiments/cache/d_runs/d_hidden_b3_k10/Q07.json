@@ -1,0 +1,105 @@
+{
+  "query_id": "Q07",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "b96f38bd-47f3-4f85-adfc-bf0e30f8bcb6",
+    "7471433c-228e-4c4b-9042-86001568c566",
+    "a7ed8631-5def-446d-8a75-6395d4ff1cf6"
+  ],
+  "answer_text": "IPsec sites: default BFD timers are 1000 ms transmit, 1000 ms receive, with a multiplier of 5. Cloud Interconnect sites: default BFD timers are 500 ms transmit, 500 ms receive, with a multiplier of 3. BFD timers are negotiated when a BFD session is established. After changing BFD timer values, re-initiate/re-establish the BFD session so the new timers can be negotiated.",
+  "searches": [
+    {
+      "query": "BFD timers IPsec site Cloud Interconnect Cato",
+      "passage_ids": [
+        "9b73ca22-7412-4c49-8b88-39285e876c90",
+        "be13ccd7-46d1-4ebc-b002-5db5fa3b3c9d",
+        "8ea761a9-df39-423a-95a5-34ddeb8542a9",
+        "c7f4b045-2513-4848-9dc5-b21facb9e838",
+        "a7ed8631-5def-446d-8a75-6395d4ff1cf6",
+        "0330b60b-e915-4686-97fb-f9023cebc96d",
+        "eb3a4102-c161-47b6-ae43-6eff20523726",
+        "a58f4f6c-d4b6-41c2-8fe0-0e833f954951",
+        "b96f38bd-47f3-4f85-adfc-bf0e30f8bcb6",
+        "f89a9d18-2d14-41ba-8d16-683f80d1c1df"
+      ],
+      "scores": [
+        8.1317,
+        5.0054,
+        4.1722,
+        3.5018,
+        3.0865,
+        2.9063,
+        2.8839,
+        2.8417,
+        2.5098,
+        2.2709
+      ]
+    },
+    {
+      "query": "restart BFD session Cato",
+      "passage_ids": [
+        "a7ed8631-5def-446d-8a75-6395d4ff1cf6",
+        "9b73ca22-7412-4c49-8b88-39285e876c90",
+        "e34cd47b-f1f7-4cc0-a522-f67df1e442b1",
+        "c1e29158-3dde-407a-a1f1-c3dd6946a15b",
+        "e7f25ee5-3ee8-40ae-bee1-b9dd23e5a442",
+        "53b1c35c-11e8-4345-8346-921696fba3be",
+        "6ae77bf4-3226-4a6d-91d4-a1ffb92c0edd",
+        "655f9863-19fe-47c6-949f-bc820d0f60c4",
+        "da65f8f0-f22e-4c71-930f-07ee80bfa813",
+        "b9d27be3-ed2c-4024-a5a0-3e4f1d6c942a"
+      ],
+      "scores": [
+        5.6376,
+        4.8181,
+        2.3764,
+        1.7649,
+        1.3298,
+        0.5401,
+        -0.2292,
+        -0.5229,
+        -1.4259,
+        -3.4559
+      ]
+    },
+    {
+      "query": "default BFD values",
+      "passage_ids": [
+        "7471433c-228e-4c4b-9042-86001568c566",
+        "b96f38bd-47f3-4f85-adfc-bf0e30f8bcb6",
+        "9f98710d-96ef-4329-abb9-395b4f501557",
+        "9b73ca22-7412-4c49-8b88-39285e876c90",
+        "a7ed8631-5def-446d-8a75-6395d4ff1cf6",
+        "be13ccd7-46d1-4ebc-b002-5db5fa3b3c9d",
+        "9ee095cd-0549-401f-8b9b-74a77d58e6a0",
+        "75792ab9-13c0-4c95-8619-b2cf187918db",
+        "37fd3879-bf47-4cd7-a763-eea73d577be4",
+        "197664ff-77ef-416d-a219-c1950ac01123"
+      ],
+      "scores": [
+        9.1744,
+        8.5539,
+        5.9315,
+        3.4672,
+        1.9304,
+        0.6391,
+        -0.3325,
+        -0.489,
+        -1.3852,
+        -1.8179
+      ]
+    }
+  ],
+  "n_searches": 3,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 13795,
+    "output_tokens": 4585,
+    "requests": 4
+  },
+  "latency_s": 39.517,
+  "ts": "2026-09-30T21:55:07+00:00"
+}

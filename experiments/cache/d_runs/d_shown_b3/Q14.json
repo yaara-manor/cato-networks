@@ -1,0 +1,74 @@
+{
+  "query_id": "Q14",
+  "variant": "d_shown_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "2de2e303-2729-42a7-879d-238c8cb06c11",
+    "48f5d8e4-814b-4440-a69a-25d90fdc5543"
+  ],
+  "answer_text": "IPsec pre-shared keys can be up to 64 characters in length for IPsec tunnels. If you change a site's Connection Type from IKEv1 to IKEv2, the site's Native Range and other networks are lost.",
+  "searches": [
+    {
+      "query": "IPsec pre-shared key maximum length",
+      "passage_ids": [
+        "2de2e303-2729-42a7-879d-238c8cb06c11",
+        "c325a228-618c-429a-8c3c-b05680bf59a6",
+        "02091d62-7c83-4acf-a6ed-525053ac7a02",
+        "8eeb7363-5669-4892-8b38-a9ed04a47fe2",
+        "41cb79a4-67f8-4068-ace8-c07b864d4e97"
+      ],
+      "scores": [
+        1.9172,
+        1.6796,
+        1.2902,
+        0.4843,
+        -1.8593
+      ]
+    },
+    {
+      "query": "IKEv2 loss when changing connection type IPsec site Cato",
+      "passage_ids": [
+        "8fb3b323-91df-4c8f-832d-bc458407d37e",
+        "6b87d78d-9206-4df8-ac08-ce75e4890209",
+        "2df8a7a3-95f2-4e5a-9e37-ac25c22c6fa8",
+        "c7f1bcb3-6b76-41bc-b1ee-95985aa77236",
+        "224bc295-5313-433e-b3b2-4f2feae378d8"
+      ],
+      "scores": [
+        6.1221,
+        5.8846,
+        5.6033,
+        4.903,
+        4.7114
+      ]
+    },
+    {
+      "query": "loss when changing IKEv1 to IKEv2 connection type",
+      "passage_ids": [
+        "48f5d8e4-814b-4440-a69a-25d90fdc5543",
+        "a0d5d524-90bc-48fc-98e8-a7882e4a1dc9",
+        "2df8a7a3-95f2-4e5a-9e37-ac25c22c6fa8",
+        "6b87d78d-9206-4df8-ac08-ce75e4890209",
+        "c7f1bcb3-6b76-41bc-b1ee-95985aa77236"
+      ],
+      "scores": [
+        6.4554,
+        4.6836,
+        3.6845,
+        3.5963,
+        3.2517
+      ]
+    }
+  ],
+  "n_searches": 3,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 9567,
+    "output_tokens": 2522,
+    "requests": 4
+  },
+  "latency_s": 26.465,
+  "ts": "2026-09-30T21:34:06+00:00"
+}

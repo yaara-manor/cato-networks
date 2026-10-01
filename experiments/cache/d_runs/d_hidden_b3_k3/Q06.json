@@ -1,0 +1,37 @@
+{
+  "query_id": "Q06",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "98253723-f995-4b9d-8b47-41d06a32cae8",
+    "43147e05-d8ac-4606-b1d3-e7371300573c",
+    "2bfc4c5d-a149-40c4-9e40-8c35d33c260d"
+  ],
+  "answer_text": "Prerequisites: Socket sites must be on Sockets v19.x or higher to use BGP summary routes, and the summary CIDR must be between /8 and /30. BGP summary routing is supported for Socket sites running v19.0 and higher. Limits/behavior: a summary route is advertised only if at least one of its more-specific routes exists in the Socket or PoP’s routing table; otherwise the summary route is withdrawn. You can aggregate multiple individual routes into a single summary and you may attach BGP communities to the summary routes as an option.",
+  "searches": [
+    {
+      "query": "BGP summary routes prerequisites Socket sites",
+      "passage_ids": [
+        "98253723-f995-4b9d-8b47-41d06a32cae8",
+        "2bfc4c5d-a149-40c4-9e40-8c35d33c260d",
+        "43147e05-d8ac-4606-b1d3-e7371300573c"
+      ],
+      "scores": [
+        6.7365,
+        5.9225,
+        5.777
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1606,
+    "output_tokens": 2012,
+    "requests": 2
+  },
+  "latency_s": 14.92,
+  "ts": "2026-09-30T21:47:35+00:00"
+}

@@ -1,0 +1,33 @@
+{
+  "query_id": "SC-07-multisite-outage-tier-claim",
+  "variant": "d_hidden_b3_k3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn't locate any knowledge base article about Frankfurt PoP outages or Premium escalation procedures. The KB does not contain guidance for this scenario. Please provide your incident ID (if available), the affected services (German stores/Frankfurt PoP), and your account/tenant ID so we can route this for urgent escalation with a human agent.",
+  "searches": [
+    {
+      "query": "Frankfurt PoP outage",
+      "passage_ids": [
+        "bef83579-b1c6-486d-859e-861b3007f0a5",
+        "44c239cb-437b-40e0-9254-e04c6e002fc2",
+        "04de7fde-e533-4d3a-ba56-0ba05435edc1"
+      ],
+      "scores": [
+        3.4603,
+        1.0554,
+        -1.0105
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2026,
+    "output_tokens": 1974,
+    "requests": 2
+  },
+  "latency_s": 16.752,
+  "ts": "2026-09-30T21:50:44+00:00"
+}

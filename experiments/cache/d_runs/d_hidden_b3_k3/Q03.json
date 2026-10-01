@@ -1,0 +1,35 @@
+{
+  "query_id": "Q03",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "c582d80b-e93a-4540-8bee-02b52b069a4e"
+  ],
+  "answer_text": "Downstream MTU is the lowest MTU discovered across all downstream tunnels. In your example with 1450 and 1383, the downstream MTU used will be 1383 bytes. Passive links are part of the downstream tunnel set, so if a passive link’s discovered MTU is lower, it would set the downstream MTU accordingly.",
+  "searches": [
+    {
+      "query": "MTU downstream passive links Cato",
+      "passage_ids": [
+        "c582d80b-e93a-4540-8bee-02b52b069a4e",
+        "d317377a-4779-46cc-9498-c128371bd0ca",
+        "bcca3baa-ee5b-487f-9921-bc57406f85f6"
+      ],
+      "scores": [
+        4.4238,
+        3.0558,
+        2.4617
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1981,
+    "output_tokens": 2772,
+    "requests": 2
+  },
+  "latency_s": 23.039,
+  "ts": "2026-09-30T21:47:23+00:00"
+}

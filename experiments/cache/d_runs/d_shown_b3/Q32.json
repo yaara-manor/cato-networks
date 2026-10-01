@@ -1,0 +1,40 @@
+{
+  "query_id": "Q32",
+  "variant": "d_shown_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "28ef0908-9689-440c-a1e6-96c17bdeb515",
+    "9678f2cf-e4dd-4c09-9ca5-d4223d2fbedf"
+  ],
+  "answer_text": "- IPS allowlist rules differ from firewall rules in how matching is performed: IPS allowlist rules are all evaluated and every matching rule is applied (each can generate an event), whereas the firewall rulebase is ordered and only the first matching rule is applied. \n- You can create an IPS allowlist rule directly from a block event: open the block event and choose the option to create an IPS allowlist rule, then click Save to add it to the IPS allowlist rulebase. You can view the result under Security > IPS > Allow List.",
+  "searches": [
+    {
+      "query": "IPS allowlist rules",
+      "passage_ids": [
+        "28ef0908-9689-440c-a1e6-96c17bdeb515",
+        "c745ea6f-23f8-472c-939c-10b1594de55c",
+        "7ec43836-d635-4fdf-bd7f-92497e192213",
+        "9678f2cf-e4dd-4c09-9ca5-d4223d2fbedf",
+        "08935f45-4ef3-4de2-8d2a-3e3c8aed3ba8"
+      ],
+      "scores": [
+        9.5542,
+        8.5435,
+        8.0737,
+        7.6509,
+        7.4286
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2226,
+    "output_tokens": 1967,
+    "requests": 2
+  },
+  "latency_s": 14.15,
+  "ts": "2026-09-30T21:35:22+00:00"
+}

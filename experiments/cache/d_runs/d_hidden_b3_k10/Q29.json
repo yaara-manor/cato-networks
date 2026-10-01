@@ -1,0 +1,104 @@
+{
+  "query_id": "Q29",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "79d612fa-113f-4dd3-9e73-5422779a5604",
+    "1d37c57f-95f5-4904-9741-52ee7ad02787"
+  ],
+  "answer_text": "- Upstream TLS inspection: The Socket upgrade process requires connectivity to the Cato Cloud, and HTTPS traffic from the Socket's WAN IP address must be excluded from upstream TLS inspection. \n- Gradual upgrade ports on an X1700: Port 1 is WAN1 (to Cato). If you have a second WAN (WAN2) enabled, it uses Port 2 (or Port 3, depending on the LAN/WAN configuration). Ensure the appropriate WAN ports (and their mappings) are connected to the internet/ISP during a gradual upgrade.",
+  "searches": [
+    {
+      "query": "upstream TLS inspection Socket upgrades",
+      "passage_ids": [
+        "9494ed83-2424-49d4-b006-99082f81218e",
+        "5364a7b9-ccd9-49ab-96a9-3241808eabe6",
+        "9f9f8062-e314-4ce6-9272-b6ec6dfe1ded",
+        "5a8a3cc6-6574-487d-9be5-ae41b6e88f9b",
+        "65cea6ae-3d2a-4044-9135-cd52c14706ed",
+        "48376fa7-aa5e-44c9-905d-5a1a371281d8",
+        "e75946a4-d1ee-4200-9c2f-1ee60e5635c7",
+        "f8553380-a51e-4f0b-8c1f-fbde62d5d54b",
+        "5b2ef819-3f8d-4af0-8c63-4d8d76427dfc",
+        "0d58dbb1-4034-442e-a77a-5d9565897e61"
+      ],
+      "scores": [
+        2.979,
+        1.3339,
+        1.2906,
+        1.1857,
+        -0.1502,
+        -0.3272,
+        -0.6131,
+        -0.6544,
+        -0.8169,
+        -0.9724
+      ]
+    },
+    {
+      "query": "X1700 ports gradual upgrade",
+      "passage_ids": [
+        "79d612fa-113f-4dd3-9e73-5422779a5604",
+        "5976d28a-5f11-4a76-a0f9-a17c0a629528",
+        "1d37c57f-95f5-4904-9741-52ee7ad02787",
+        "6977d190-7f46-4595-a99d-4e44dece37ee",
+        "739879a8-5798-4174-bf36-eab5958b5303",
+        "b040c41d-41ba-44a7-b85a-fd5dc20c0718",
+        "117ee775-aad0-488e-9701-95e3efab2dd1",
+        "5915021a-ac52-4351-b113-8a91ca4f85dc",
+        "7197fb63-e61b-41be-9dbf-7b3400d8763f",
+        "1e9f4aea-e966-4946-87af-20692987921c"
+      ],
+      "scores": [
+        6.2799,
+        0.2166,
+        -0.0638,
+        -0.535,
+        -0.6411,
+        -0.7955,
+        -0.9385,
+        -0.9757,
+        -1.0448,
+        -1.5098
+      ]
+    },
+    {
+      "query": "Connectivity Requirements for Socket Upgrades",
+      "passage_ids": [
+        "79d612fa-113f-4dd3-9e73-5422779a5604",
+        "b773ac7a-d078-489d-bdfb-e27af5320965",
+        "63363e02-152a-4105-8892-0048b409864e",
+        "5b2ef819-3f8d-4af0-8c63-4d8d76427dfc",
+        "2ab0006c-11c6-41f5-8500-25c4e09aa6cf",
+        "0d58dbb1-4034-442e-a77a-5d9565897e61",
+        "1cd08d59-88d9-4793-9992-9fd135d74b51",
+        "f914cbd9-c360-4b49-b700-0db55e8a68fd",
+        "53c4e920-ef27-477e-b69c-e2cd71cf5f37",
+        "c4680935-9916-4fac-ae44-eb0ef4594245"
+      ],
+      "scores": [
+        8.4379,
+        7.3726,
+        7.2416,
+        2.3361,
+        2.2991,
+        1.0152,
+        0.6485,
+        -1.4906,
+        -1.966,
+        -2.069
+      ]
+    }
+  ],
+  "n_searches": 3,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 15057,
+    "output_tokens": 5737,
+    "requests": 4
+  },
+  "latency_s": 48.838,
+  "ts": "2026-09-30T21:57:31+00:00"
+}

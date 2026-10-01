@@ -1,0 +1,40 @@
+{
+  "query_id": "TCK-20264211",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "123dc701-b3d3-4226-a326-f4bce6fdc2db",
+    "f74c7c57-6e72-4685-bdd2-23e698a9418e"
+  ],
+  "answer_text": "Configure the guest Wi‑Fi as its own VLAN on the Socket. The Socket can act as the default gateway and DHCP server for that VLAN, and you can isolate it quickly from management (e.g., via a WAN firewall rule or by removing the VLAN’s default gateway). For guests, you can also use an Internet‑only SSID on the Socket to ensure access is restricted to the Internet and internal resources are blocked. ",
+  "searches": [
+    {
+      "query": "Guest Wi-Fi isolation VLAN Socket",
+      "passage_ids": [
+        "123dc701-b3d3-4226-a326-f4bce6fdc2db",
+        "f74c7c57-6e72-4685-bdd2-23e698a9418e",
+        "db67089e-501c-4a96-b382-5f7d78416c70",
+        "b74094fe-de13-4d4c-8d8d-d597bbaa13aa",
+        "2c0904ee-08c9-45db-96ce-baf1a5b3b30e"
+      ],
+      "scores": [
+        5.0721,
+        3.6711,
+        2.3748,
+        0.3908,
+        0.1379
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2219,
+    "output_tokens": 3034,
+    "requests": 2
+  },
+  "latency_s": 22.537,
+  "ts": "2026-09-30T21:30:27+00:00"
+}

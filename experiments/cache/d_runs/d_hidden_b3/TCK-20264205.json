@@ -1,0 +1,39 @@
+{
+  "query_id": "TCK-20264205",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "cdf8a2d7-8180-426a-9e20-1859fd622156"
+  ],
+  "answer_text": "Per our CMA troubleshooting guide, when traffic won’t reach a non-native subnet (such as your new 10.61.0.0/16 AKS subnet), first verify that the non-native subnet exists in CMA. Then ensure the VPN gateway is configured to the first available IP address of the native LAN subnet. If you still have no traffic, follow the troubleshooting steps linked in the article for Traffic Not Reaching Internal Resources.",
+  "searches": [
+    {
+      "query": "Azure VPN CMA traffic not passing new address space 10.61.0.0/16",
+      "passage_ids": [
+        "cdf8a2d7-8180-426a-9e20-1859fd622156",
+        "e0f0c072-7cf4-4575-972f-1226ddddb4c8",
+        "eadc498a-eafb-492e-9af9-d2856523af43",
+        "cdb2ea1b-aa78-4e50-9f79-d1b78fbf3ff4",
+        "9fe593bc-abe3-414a-a334-3f52a6978130"
+      ],
+      "scores": [
+        1.184,
+        -2.2744,
+        -2.6184,
+        -3.5276,
+        -4.0934
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2305,
+    "output_tokens": 1675,
+    "requests": 2
+  },
+  "latency_s": 14.749,
+  "ts": "2026-09-30T21:30:42+00:00"
+}

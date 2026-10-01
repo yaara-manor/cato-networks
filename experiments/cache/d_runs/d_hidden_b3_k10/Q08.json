@@ -1,0 +1,76 @@
+{
+  "query_id": "Q08",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "9b73ca22-7412-4c49-8b88-39285e876c90"
+  ],
+  "answer_text": "Cato supports active BFD for BGP neighbors on IPsec and Cloud Interconnect sites. Passive BFD is supported on all sites (including Sockets and vSockets). The KB does not specify the UDP port used by multi-hop BFD.",
+  "searches": [
+    {
+      "query": "Active BFD BGP site types",
+      "passage_ids": [
+        "9b73ca22-7412-4c49-8b88-39285e876c90",
+        "197664ff-77ef-416d-a219-c1950ac01123",
+        "c920ba0d-eae5-4bf4-8f60-cee441358548",
+        "be13ccd7-46d1-4ebc-b002-5db5fa3b3c9d",
+        "2ba8d00d-418b-4fcd-95c8-90816405af82",
+        "2bd21f74-7503-47db-a9bc-c335c28b782c",
+        "d92eeed8-a754-499d-b979-de41d0059c41",
+        "37fd3879-bf47-4cd7-a763-eea73d577be4",
+        "ba152384-be56-498e-bf94-822533094b22",
+        "fdbf5e23-5a23-4e42-a18b-621999e81151"
+      ],
+      "scores": [
+        4.6055,
+        3.7083,
+        2.5708,
+        2.1517,
+        2.1115,
+        1.4735,
+        1.3906,
+        1.3829,
+        -0.834,
+        -0.9317
+      ]
+    },
+    {
+      "query": "multi-hop BFD UDP port",
+      "passage_ids": [
+        "9b73ca22-7412-4c49-8b88-39285e876c90",
+        "37fd3879-bf47-4cd7-a763-eea73d577be4",
+        "7471433c-228e-4c4b-9042-86001568c566",
+        "a7ed8631-5def-446d-8a75-6395d4ff1cf6",
+        "fdd69291-6733-4446-b9cf-fb16c13dae67",
+        "5adb2297-8adc-4288-88e1-9232a0c98c18",
+        "129aaa37-5a3b-4f13-b47e-74e29770701e",
+        "2bd21f74-7503-47db-a9bc-c335c28b782c",
+        "9f98710d-96ef-4329-abb9-395b4f501557",
+        "5c836020-4016-48bd-ae27-cdfe87db5746"
+      ],
+      "scores": [
+        6.7256,
+        2.0254,
+        -1.5089,
+        -2.1775,
+        -3.4092,
+        -3.8724,
+        -4.8027,
+        -4.8103,
+        -5.0516,
+        -5.6909
+      ]
+    }
+  ],
+  "n_searches": 2,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 7574,
+    "output_tokens": 3402,
+    "requests": 3
+  },
+  "latency_s": 28.375,
+  "ts": "2026-09-30T21:54:56+00:00"
+}

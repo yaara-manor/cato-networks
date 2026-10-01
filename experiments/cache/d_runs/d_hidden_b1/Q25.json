@@ -1,0 +1,39 @@
+{
+  "query_id": "Q25",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "6a50933d-0d00-4abc-9216-ba0b8280a25e"
+  ],
+  "answer_text": "When the Socket detects that all active links have unacceptable SLA and decides to move to a different PoP, it starts an initial connectivity SLA evaluation period. This evaluation is up to 40–50 seconds long, with SLA checks performed every 10 seconds during the window.",
+  "searches": [
+    {
+      "query": "Socket PoP SLA evaluation",
+      "passage_ids": [
+        "6a50933d-0d00-4abc-9216-ba0b8280a25e",
+        "64033488-5c2f-43be-8a8e-63cea68a53ae",
+        "ce6af09e-3e89-496c-8af0-ec47f617e91f",
+        "103ecc02-1b7e-46df-b238-1e0136df283a",
+        "f557cc19-febc-4aee-ba53-da128fd09df5"
+      ],
+      "scores": [
+        7.7615,
+        6.8039,
+        6.4945,
+        6.1462,
+        5.7771
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2183,
+    "output_tokens": 2211,
+    "requests": 2
+  },
+  "latency_s": 18.219,
+  "ts": "2026-09-30T21:42:06+00:00"
+}

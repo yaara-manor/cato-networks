@@ -1,0 +1,77 @@
+{
+  "query_id": "Q12",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "cfb2f235-35b9-472b-9494-5e3b8a9db343",
+    "bfb99778-27bd-4cc9-9f8b-6e206f9b7257"
+  ],
+  "answer_text": "Cato recommends using AES-128-GCM-16 or AES-256-GCM-16 for IPsec sites with 100 Mbps or more bandwidth. AES CBC should be used only on sites with bandwidth below 100 Mbps. This is because GCM encryption is more efficient and scalable than CBC, delivering better performance and reliability for high-throughput encrypted traffic in the Cato Cloud.",
+  "searches": [
+    {
+      "query": "IPSec encryption algorithms 100 Mbps Cato",
+      "passage_ids": [
+        "cfb2f235-35b9-472b-9494-5e3b8a9db343",
+        "f89a9d18-2d14-41ba-8d16-683f80d1c1df",
+        "bfb99778-27bd-4cc9-9f8b-6e206f9b7257",
+        "d72b5a43-16e9-4eb9-bb54-471efdc8d033",
+        "eb3a4102-c161-47b6-ae43-6eff20523726",
+        "370b7550-4bda-4b61-826a-8d0ee1aaa40a",
+        "a58f4f6c-d4b6-41c2-8fe0-0e833f954951",
+        "6d0705c9-590e-428e-a6ba-a6aa057de7ee",
+        "0330b60b-e915-4686-97fb-f9023cebc96d",
+        "e93ebd2f-c364-4f90-aff8-c31e1225d054"
+      ],
+      "scores": [
+        8.288,
+        6.7106,
+        6.5791,
+        6.0426,
+        2.4932,
+        2.0167,
+        0.2868,
+        0.1925,
+        0.0651,
+        -0.3567
+      ]
+    },
+    {
+      "query": "AES 128 GCM-16 256 GCM-16 100Mbps Cato",
+      "passage_ids": [
+        "cfb2f235-35b9-472b-9494-5e3b8a9db343",
+        "f89a9d18-2d14-41ba-8d16-683f80d1c1df",
+        "bfb99778-27bd-4cc9-9f8b-6e206f9b7257",
+        "d72b5a43-16e9-4eb9-bb54-471efdc8d033",
+        "a9e49ac6-eb1b-4a64-9e1b-4b4d658da762",
+        "2fac0b50-fe7f-49ae-829f-ba2fcfb05847",
+        "639e842b-2b7a-454d-b5b7-2bc2103404ea",
+        "fb4dc08d-2fbd-42d1-9224-28d485f6c576",
+        "54dd1c95-7f64-4321-85c8-dc19036d9db3",
+        "eb3a4102-c161-47b6-ae43-6eff20523726"
+      ],
+      "scores": [
+        8.4868,
+        7.2156,
+        6.4644,
+        6.4551,
+        -2.5662,
+        -3.3791,
+        -4.4913,
+        -4.8004,
+        -4.8153,
+        -5.1804
+      ]
+    }
+  ],
+  "n_searches": 2,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 7521,
+    "output_tokens": 1758,
+    "requests": 3
+  },
+  "latency_s": 16.728,
+  "ts": "2026-09-30T21:55:13+00:00"
+}

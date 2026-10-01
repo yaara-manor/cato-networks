@@ -1,0 +1,40 @@
+{
+  "query_id": "TCK-20264202",
+  "variant": "d_shown_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "5d32c955-9f10-46e3-9186-115bde4c3d2b",
+    "2a29c140-cdf3-4771-9aad-34427ae0d709"
+  ],
+  "answer_text": "Enable the Preferred IP for SIP Traffic so VoIP/SIP traffic always uses the same egress IP even with two IPs configured. This prevents mid-call IP changes from dropping calls. To enable it: for the account, go to Resources > Advanced Configuration; for a site, go to Network > Sites, select the site and Site Configuration, and enable Preferred IP for SIP Traffic. Note that existing SIP sessions may still use the old IP—reboot the affected VoIP device to trigger a new SIP flow that uses the preferred IP.",
+  "searches": [
+    {
+      "query": "VoIP egress IP",
+      "passage_ids": [
+        "1eaa75dc-d399-4b24-bf39-e26f09bef596",
+        "7c5c2f83-e204-4868-874a-df323f457735",
+        "5d32c955-9f10-46e3-9186-115bde4c3d2b",
+        "2a29c140-cdf3-4771-9aad-34427ae0d709",
+        "0dc08062-2806-4d8c-b641-35a388073ceb"
+      ],
+      "scores": [
+        6.9112,
+        6.5391,
+        6.3298,
+        6.2927,
+        6.2625
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2303,
+    "output_tokens": 2432,
+    "requests": 2
+  },
+  "latency_s": 18.154,
+  "ts": "2026-09-30T21:38:11+00:00"
+}

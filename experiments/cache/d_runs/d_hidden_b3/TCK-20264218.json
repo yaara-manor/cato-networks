@@ -1,0 +1,41 @@
+{
+  "query_id": "TCK-20264218",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "0c2f7a7e-5b78-416d-8ed9-2a9fb7521057",
+    "3048b10d-13a0-4b6a-af1c-849b9d4b0a45",
+    "6a813c5f-8995-4db1-b175-3bee9e2dd112"
+  ],
+  "answer_text": "Geo Restriction in IPS is based on IP geolocation, not the domain name, so allowing the partner's domain will not override a Geo Restriction block. To fix this, adjust the IPS Geo Restriction policy (inbound direction) to permit traffic from Brazil, or create an IPS allowlist rule with the partner's IP range in the Destination field if you’re applying allowlists for Geo Restriction traffic. If you need a quick workaround, you can disable the Geo Restriction rule and re-enable it later. (See: Managing Geo Restriction Rules; Defining Geo Restriction Rules; Disabling Geo Restriction Rules.)",
+  "searches": [
+    {
+      "query": "Geo Restriction Brazil allowlist",
+      "passage_ids": [
+        "3048b10d-13a0-4b6a-af1c-849b9d4b0a45",
+        "5b376429-830c-4afa-9206-7752addcd149",
+        "0c2f7a7e-5b78-416d-8ed9-2a9fb7521057",
+        "bea3b2ad-dde4-46a0-befc-c31f56b8338b",
+        "6a813c5f-8995-4db1-b175-3bee9e2dd112"
+      ],
+      "scores": [
+        1.7035,
+        0.9511,
+        -0.8703,
+        -2.212,
+        -2.3011
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2044,
+    "output_tokens": 2628,
+    "requests": 2
+  },
+  "latency_s": 18.109,
+  "ts": "2026-09-30T21:30:04+00:00"
+}

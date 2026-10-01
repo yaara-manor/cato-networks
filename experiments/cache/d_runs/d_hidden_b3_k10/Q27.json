@@ -1,0 +1,49 @@
+{
+  "query_id": "Q27",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "2eff1c0b-ea80-4bfa-9a96-2ef7360b6d82"
+  ],
+  "answer_text": "Link Quality rules monitor these KPIs: packet loss, jitter, and latency. The KB does not specify what to export from a Link Quality SLA story to raise a case with the ISP.",
+  "searches": [
+    {
+      "query": "Link Quality KPIs",
+      "passage_ids": [
+        "607828c0-82f3-4fcf-9f1a-6439a24992aa",
+        "a290f0ac-7d21-417d-b3dc-8ed9875d546a",
+        "2eff1c0b-ea80-4bfa-9a96-2ef7360b6d82",
+        "26865461-1135-482b-88a9-b6bd1c26d4c3",
+        "2ccf7b63-7888-4cfc-99d1-fa352464ba79",
+        "d3727424-d4c8-4174-a2f3-5dd5e8c31185",
+        "f07ff185-31af-4a59-8c7b-30655191a4b1",
+        "dec88cb4-5078-499e-8885-c6f0e4e5b5f3",
+        "5cde9bcc-76a1-4d72-959c-c12b9bf1e2a4",
+        "58fa1c35-3772-4709-afad-320a0362af2e"
+      ],
+      "scores": [
+        6.6322,
+        4.7092,
+        1.0657,
+        0.7295,
+        0.4526,
+        -1.9795,
+        -2.8141,
+        -3.4347,
+        -5.8017,
+        -6.6072
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 3036,
+    "output_tokens": 3369,
+    "requests": 2
+  },
+  "latency_s": 29.729,
+  "ts": "2026-09-30T21:57:02+00:00"
+}

@@ -1,0 +1,37 @@
+{
+  "query_id": "OOD01",
+  "variant": "d_hidden_b3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "The Cato knowledge base does not include VLAN configuration steps for Cisco Catalyst 9300 switches.",
+  "searches": [
+    {
+      "query": "Cisco Catalyst 9300 VLAN configuration",
+      "passage_ids": [
+        "5d86fe59-b0fd-40c8-be49-49336365e422",
+        "9a3c3735-39c9-49f6-bc4f-21b2179d3ee1",
+        "86bb36e3-4011-4887-b90b-dfd1eac9847a",
+        "1ebb27bd-76b3-4236-b8eb-968b295854bf",
+        "34411f17-7d7f-4168-8b2c-4f0dfadf5c76"
+      ],
+      "scores": [
+        -0.7574,
+        -1.9803,
+        -2.0705,
+        -2.3625,
+        -2.9991
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2441,
+    "output_tokens": 1871,
+    "requests": 2
+  },
+  "latency_s": 15.222,
+  "ts": "2026-09-30T21:30:58+00:00"
+}

@@ -1,0 +1,49 @@
+{
+  "query_id": "Q23",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "dd9c5fe4-fd09-4b81-933f-76ef12070b02",
+    "25018bf7-7d83-4e4e-a40e-c3c630189d58"
+  ],
+  "answer_text": "The KB lists these conditions that can cause an HA Not Ready (Socket HA Status Not Ready) state: one of the HA pair member sockets is offline; HA status not ready due to Keepalive; and HA status not ready due to Compatible Version. The KB does not specify the exact timing for when HA Ready is generated after Not Ready; it only points to the XOps Network Playbook as the remediation path to resolve Not Ready and restore HA functionality.",
+  "searches": [
+    {
+      "query": "HA Not Ready",
+      "passage_ids": [
+        "25018bf7-7d83-4e4e-a40e-c3c630189d58",
+        "dd9c5fe4-fd09-4b81-933f-76ef12070b02",
+        "b683c7e2-fab8-471a-9179-b61f5a2c8f1e"
+      ],
+      "scores": [
+        9.158,
+        7.8119,
+        7.6568
+      ]
+    },
+    {
+      "query": "HA Ready",
+      "passage_ids": [
+        "25018bf7-7d83-4e4e-a40e-c3c630189d58",
+        "b683c7e2-fab8-471a-9179-b61f5a2c8f1e",
+        "dd9c5fe4-fd09-4b81-933f-76ef12070b02"
+      ],
+      "scores": [
+        7.4578,
+        6.1462,
+        5.8379
+      ]
+    }
+  ],
+  "n_searches": 2,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 3916,
+    "output_tokens": 2795,
+    "requests": 3
+  },
+  "latency_s": 24.126,
+  "ts": "2026-09-30T21:49:16+00:00"
+}

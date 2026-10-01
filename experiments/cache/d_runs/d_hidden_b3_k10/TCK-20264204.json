@@ -1,0 +1,51 @@
+{
+  "query_id": "TCK-20264204",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "251b5bc6-643c-4cb7-a5c9-5d4a9c8a2d68",
+    "b96f38bd-47f3-4f85-adfc-bf0e30f8bcb6",
+    "6fc04087-0fed-4714-a6eb-f796f88366e1"
+  ],
+  "answer_text": "IPsec tunnels use DPD/keepalive to detect and recover from disruptions. The Keepalive interval can be configured (maximum value is 35 seconds), and you can enable the option to Restart connection on no DPD reply so the tunnel automatically restarts if no DPD reply is received within that window. To potentially improve stability, consider enabling BFD for IPsec neighbors, which can dramatically improve convergence time. For ongoing investigation, monitor tunnel health via Network Analytics in Network > Site Monitoring to check for PoP health changes that could affect the tunnel.",
+  "searches": [
+    {
+      "query": "IPsec tunnel drops every 8 hours",
+      "passage_ids": [
+        "239ea939-1388-4482-9481-4225d9f6bb8a",
+        "f89a9d18-2d14-41ba-8d16-683f80d1c1df",
+        "b96f38bd-47f3-4f85-adfc-bf0e30f8bcb6",
+        "5b61d5af-ee11-4a0a-9562-c79cab5a6c7c",
+        "da28349c-2819-4b16-b609-6c8ff22609ec",
+        "a58f4f6c-d4b6-41c2-8fe0-0e833f954951",
+        "251b5bc6-643c-4cb7-a5c9-5d4a9c8a2d68",
+        "dc690e82-1dd1-4389-9576-ddb17d7c60f0",
+        "6fc04087-0fed-4714-a6eb-f796f88366e1",
+        "034e883f-904c-4fd4-b5c3-0d1c319d68a1"
+      ],
+      "scores": [
+        0.5899,
+        -0.2448,
+        -0.7371,
+        -1.1384,
+        -1.3307,
+        -1.9805,
+        -2.2062,
+        -2.2393,
+        -2.6797,
+        -3.0228
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 3041,
+    "output_tokens": 4576,
+    "requests": 2
+  },
+  "latency_s": 31.447,
+  "ts": "2026-09-30T22:00:17+00:00"
+}

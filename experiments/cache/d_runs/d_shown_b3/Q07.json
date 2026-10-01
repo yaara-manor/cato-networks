@@ -1,0 +1,40 @@
+{
+  "query_id": "Q07",
+  "variant": "d_shown_b3",
+  "decision": "ASK_CUSTOMER",
+  "final_decision": "ASK_CUSTOMER",
+  "invalid_citations": [],
+  "citations": [
+    "b96f38bd-47f3-4f85-adfc-bf0e30f8bcb6",
+    "a7ed8631-5def-446d-8a75-6395d4ff1cf6"
+  ],
+  "answer_text": "IPsec sites: the default BFD values are 1000 ms transmit, 1000 ms receive, with a multiplier of 5. The KB does not specify default BFD timers for Cloud Interconnect sites. The KB indicates that BFD timers are negotiated when a BFD session is established, but it does not provide a required action after changing BFD timers.",
+  "searches": [
+    {
+      "query": "BFD timers",
+      "passage_ids": [
+        "9b73ca22-7412-4c49-8b88-39285e876c90",
+        "a7ed8631-5def-446d-8a75-6395d4ff1cf6",
+        "b96f38bd-47f3-4f85-adfc-bf0e30f8bcb6",
+        "9f98710d-96ef-4329-abb9-395b4f501557",
+        "af2c63f2-b496-456d-b3a9-0dab5a7dfb16"
+      ],
+      "scores": [
+        6.9563,
+        6.7231,
+        5.6397,
+        4.1965,
+        3.9553
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2239,
+    "output_tokens": 2615,
+    "requests": 2
+  },
+  "latency_s": 18.545,
+  "ts": "2026-09-30T21:33:23+00:00"
+}

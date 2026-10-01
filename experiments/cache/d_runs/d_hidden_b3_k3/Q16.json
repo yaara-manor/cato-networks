@@ -1,0 +1,37 @@
+{
+  "query_id": "Q16",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "48595747-d893-4c4b-8ffe-74354da12d51",
+    "034ae7a1-f684-426e-87d1-8e1f0a3a129c",
+    "57719b0b-01b2-4517-b1d2-c87bab0bbba5"
+  ],
+  "answer_text": "IP Overlapping can be enabled only if: (1) the account is not using Static Range Translation; (2) one IP range is smaller and fully contained within the other; (3) all sockets in the account are version 6.1 or higher; and (4) each site has a unique native IP range (no duplicates across sites). The default Cato VPN range is 10.41.0.0/16, and you can change it under Resources > IP Ranges in the management app. Important: after enabling IP Overlapping, you can’t disable it.",
+  "searches": [
+    {
+      "query": "IP Overlapping between sites default Cato system range",
+      "passage_ids": [
+        "48595747-d893-4c4b-8ffe-74354da12d51",
+        "57719b0b-01b2-4517-b1d2-c87bab0bbba5",
+        "034ae7a1-f684-426e-87d1-8e1f0a3a129c"
+      ],
+      "scores": [
+        8.7454,
+        6.3704,
+        6.2116
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1741,
+    "output_tokens": 2237,
+    "requests": 2
+  },
+  "latency_s": 16.73,
+  "ts": "2026-09-30T21:48:28+00:00"
+}

@@ -1,0 +1,37 @@
+{
+  "query_id": "ADJ03",
+  "variant": "d_hidden_b1",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "There is no information in the knowledge base about a Cato Socket X1900 release date or 100G WAN port support. The KB only covers existing Socket models (X1500, X1600, X1700) and related updates. If you’d like, I can provide details on current X1500/X1600/X1700 capabilities or escalate to product management for release plans.",
+  "searches": [
+    {
+      "query": "Cato Socket X1900 release date 100G WAN",
+      "passage_ids": [
+        "95d2c7df-0a7d-4552-a57a-e1ef5e8b96b9",
+        "dfa8182e-3fbc-49d4-a271-2bc393228117",
+        "639e842b-2b7a-454d-b5b7-2bc2103404ea",
+        "fb4dc08d-2fbd-42d1-9224-28d485f6c576",
+        "a43a5aab-1efc-4482-a6e7-6169fd280ff6"
+      ],
+      "scores": [
+        3.3685,
+        3.2451,
+        2.6931,
+        2.5748,
+        2.1711
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2117,
+    "output_tokens": 1166,
+    "requests": 2
+  },
+  "latency_s": 11.622,
+  "ts": "2026-09-30T21:46:18+00:00"
+}

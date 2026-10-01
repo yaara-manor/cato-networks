@@ -1,0 +1,40 @@
+{
+  "query_id": "Q14",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "2de2e303-2729-42a7-879d-238c8cb06c11",
+    "c325a228-618c-429a-8c3c-b05680bf59a6"
+  ],
+  "answer_text": "IPsec pre-shared keys (PSKs) for IPsec sites can be up to 64 characters in length. The knowledge base does not specify what is lost when changing a site's Connection Type from IKEv1 to IKEv2.",
+  "searches": [
+    {
+      "query": "IPsec pre-shared key maximum length",
+      "passage_ids": [
+        "2de2e303-2729-42a7-879d-238c8cb06c11",
+        "c325a228-618c-429a-8c3c-b05680bf59a6",
+        "02091d62-7c83-4acf-a6ed-525053ac7a02",
+        "8eeb7363-5669-4892-8b38-a9ed04a47fe2",
+        "41cb79a4-67f8-4068-ace8-c07b864d4e97"
+      ],
+      "scores": [
+        1.9172,
+        1.6796,
+        1.2902,
+        0.4843,
+        -1.8593
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2265,
+    "output_tokens": 3698,
+    "requests": 2
+  },
+  "latency_s": 28.937,
+  "ts": "2026-09-30T21:41:24+00:00"
+}

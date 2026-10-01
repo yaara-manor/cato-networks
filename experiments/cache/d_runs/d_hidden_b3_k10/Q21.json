@@ -1,0 +1,49 @@
+{
+  "query_id": "Q21",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "541abf81-6362-4154-b32f-d32e96dc039b"
+  ],
+  "answer_text": "No. HA requires both sockets to be the same Socket type, so an X1600 and an X1600 LTE Socket cannot form an HA pair. Yes for X1500 and X1500B: any two X1500 A/B/C models can be used in the same HA site. ",
+  "searches": [
+    {
+      "query": "X1600 HA",
+      "passage_ids": [
+        "a4fb5836-870f-4605-8a01-b070ba3288f6",
+        "541abf81-6362-4154-b32f-d32e96dc039b",
+        "b5981eaf-f994-4a5f-9156-511d116d687b",
+        "670fb5b3-8ed3-4220-bc51-cd7c13b7aedc",
+        "4e60bc59-ff2f-46e5-8ec4-4b6ae53bf12d",
+        "985d94cb-5c2a-446c-88c8-3ef0a532145d",
+        "fbcc645f-7a95-4e1e-a5e2-126668f3e83f",
+        "511905c5-adea-4d26-91b7-94eff7fb08b6",
+        "7362c5a8-e8ef-4f0d-90bb-81a342a44707",
+        "7e8b6d77-e8cb-46b0-b596-48fb7eb1af32"
+      ],
+      "scores": [
+        7.6475,
+        7.4357,
+        5.3939,
+        4.9114,
+        3.3903,
+        2.9827,
+        2.8946,
+        2.5819,
+        1.7948,
+        1.6485
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2957,
+    "output_tokens": 2478,
+    "requests": 2
+  },
+  "latency_s": 20.082,
+  "ts": "2026-09-30T21:56:09+00:00"
+}

@@ -1,0 +1,50 @@
+{
+  "query_id": "Q22",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "5b5cee94-f126-4dc0-9844-182db2f07df1",
+    "a890dbe5-c6a6-4f14-bc69-c7b1afa61c89"
+  ],
+  "answer_text": "Prerequisites: both Sockets must be running Socket version 24 or higher, and the CMA HA state must be Ready before you trigger the manual failover. About two minutes later, CMA will display Not Ready (In HA Failover) and both Sockets will appear as Master (split-brain), indicating the Secondary has taken ownership.",
+  "searches": [
+    {
+      "query": "manual HA failover CMA prerequisites",
+      "passage_ids": [
+        "69ca7470-06c4-498d-a142-55d42f9b51e3",
+        "a890dbe5-c6a6-4f14-bc69-c7b1afa61c89",
+        "5b5cee94-f126-4dc0-9844-182db2f07df1",
+        "e769d707-561d-49df-90db-92b4d6c7624a",
+        "f8322bd3-bb6b-4c66-967d-98de4b52f08d",
+        "11a8e9ce-64e9-4d28-979c-9e98279ee12c",
+        "df460be8-3e19-4ae8-a6ff-4e1c9d1c2771",
+        "cf535ef4-3b8b-4105-9bb5-c665013096f0",
+        "0330d61a-3248-498e-80d8-b7b039ab1b1e",
+        "2f5fc597-9fb9-4b90-935b-244e019e5da1"
+      ],
+      "scores": [
+        6.8931,
+        5.8948,
+        5.7483,
+        3.9873,
+        3.458,
+        3.1388,
+        2.8579,
+        2.5974,
+        2.5046,
+        2.4247
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2754,
+    "output_tokens": 1777,
+    "requests": 2
+  },
+  "latency_s": 15.646,
+  "ts": "2026-09-30T21:56:21+00:00"
+}

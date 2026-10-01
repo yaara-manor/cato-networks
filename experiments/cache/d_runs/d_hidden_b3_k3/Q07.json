@@ -1,0 +1,50 @@
+{
+  "query_id": "Q07",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "b96f38bd-47f3-4f85-adfc-bf0e30f8bcb6",
+    "7471433c-228e-4c4b-9042-86001568c566",
+    "a7ed8631-5def-446d-8a75-6395d4ff1cf6"
+  ],
+  "answer_text": "Default BFD timers: IPsec sites use 1000 ms transmit, 1000 ms receive with a multiplier of 5. Cloud Interconnect sites use 500 ms transmit, 500 ms receive with a multiplier of 3. After you change BFD timers, you should re-establish the BFD session to apply the new values, since BFD timers are negotiated when a BFD session is established (enable/configure BFD in the Cato Management Application and on the remote peer to establish the session).",
+  "searches": [
+    {
+      "query": "BFD timers IPsec Cloud Interconnect default",
+      "passage_ids": [
+        "9b73ca22-7412-4c49-8b88-39285e876c90",
+        "b96f38bd-47f3-4f85-adfc-bf0e30f8bcb6",
+        "7471433c-228e-4c4b-9042-86001568c566"
+      ],
+      "scores": [
+        7.4958,
+        5.4926,
+        4.981
+      ]
+    },
+    {
+      "query": "after changing BFD timers",
+      "passage_ids": [
+        "b96f38bd-47f3-4f85-adfc-bf0e30f8bcb6",
+        "9b73ca22-7412-4c49-8b88-39285e876c90",
+        "a7ed8631-5def-446d-8a75-6395d4ff1cf6"
+      ],
+      "scores": [
+        6.2155,
+        3.7807,
+        2.4731
+      ]
+    }
+  ],
+  "n_searches": 2,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 4319,
+    "output_tokens": 3194,
+    "requests": 3
+  },
+  "latency_s": 23.666,
+  "ts": "2026-09-30T21:47:47+00:00"
+}

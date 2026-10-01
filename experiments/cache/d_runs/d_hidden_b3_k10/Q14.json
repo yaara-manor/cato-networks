@@ -1,0 +1,105 @@
+{
+  "query_id": "Q14",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "2de2e303-2729-42a7-879d-238c8cb06c11",
+    "c7f1bcb3-6b76-41bc-b1ee-95985aa77236",
+    "2df8a7a3-95f2-4e5a-9e37-ac25c22c6fa8"
+  ],
+  "answer_text": "The maximum length of the IPsec Pre-Shared Key (PSK) for IPsec tunnels is up to 64 characters. When changing a site's Connection Type from IKEv1 to IKEv2, you may lose compatibility with devices that do not support IKEv2; some devices cannot use the same IKEv2 parameters, so IKEv1 may be required, and Azure policy-based VPN gateways, for example, only support IKEv1. In general, IKEv2 is recommended when available for better efficiency and reliability, but you may need to stay on IKEv1 for compatibility.",
+  "searches": [
+    {
+      "query": "IPsec pre-shared key maximum length",
+      "passage_ids": [
+        "2de2e303-2729-42a7-879d-238c8cb06c11",
+        "c325a228-618c-429a-8c3c-b05680bf59a6",
+        "02091d62-7c83-4acf-a6ed-525053ac7a02",
+        "8eeb7363-5669-4892-8b38-a9ed04a47fe2",
+        "41cb79a4-67f8-4068-ace8-c07b864d4e97",
+        "d72b5a43-16e9-4eb9-bb54-471efdc8d033",
+        "8e79700c-6022-4a8f-9663-44d7d2c0bf4d",
+        "e93ebd2f-c364-4f90-aff8-c31e1225d054",
+        "eb3a4102-c161-47b6-ae43-6eff20523726",
+        "cfb2f235-35b9-472b-9494-5e3b8a9db343"
+      ],
+      "scores": [
+        1.9172,
+        1.6796,
+        1.2902,
+        0.4843,
+        -1.8593,
+        -2.3759,
+        -4.926,
+        -5.8151,
+        -8.0873,
+        -8.2661
+      ]
+    },
+    {
+      "query": "IKEv1 vs IKEv2 limitations",
+      "passage_ids": [
+        "c7f1bcb3-6b76-41bc-b1ee-95985aa77236",
+        "b26ddf59-96cb-48b5-bb4b-08e7fa91bf63",
+        "d085ffce-0961-41b2-ab21-99471f9ece16",
+        "a0d5d524-90bc-48fc-98e8-a7882e4a1dc9",
+        "843f1e13-9da0-428c-81fc-3130b2a5f76f",
+        "b379c3e8-72bc-4535-9e68-a8e8e5ca7c3a",
+        "ed8050cc-ebe6-4e7c-825b-40888ed80d68",
+        "4ea5200f-f143-42b9-be25-b4813e4eb5df",
+        "2df8a7a3-95f2-4e5a-9e37-ac25c22c6fa8",
+        "c7f4b045-2513-4848-9dc5-b21facb9e838"
+      ],
+      "scores": [
+        5.1999,
+        4.8841,
+        4.7185,
+        3.9688,
+        3.7191,
+        2.7131,
+        2.5457,
+        2.4232,
+        1.8821,
+        1.4177
+      ]
+    },
+    {
+      "query": "IPsec PSK length",
+      "passage_ids": [
+        "2de2e303-2729-42a7-879d-238c8cb06c11",
+        "02091d62-7c83-4acf-a6ed-525053ac7a02",
+        "c325a228-618c-429a-8c3c-b05680bf59a6",
+        "fbc08c9a-7f44-4144-af48-8d14f7c7a309",
+        "0fc73da6-fc3e-4d5e-babd-5d4fa09cba49",
+        "8eeb7363-5669-4892-8b38-a9ed04a47fe2",
+        "4002a49f-58e7-4c6b-9c92-1ec4edf14d56",
+        "da693a4c-984b-4fd3-8606-773f2557a424",
+        "843f1e13-9da0-428c-81fc-3130b2a5f76f",
+        "765a650e-16ff-40f5-b2bb-1b1b4a003e85"
+      ],
+      "scores": [
+        2.6317,
+        2.3941,
+        2.2556,
+        -0.2247,
+        -0.2986,
+        -0.5975,
+        -0.8298,
+        -0.848,
+        -1.6602,
+        -1.7
+      ]
+    }
+  ],
+  "n_searches": 3,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 16582,
+    "output_tokens": 3895,
+    "requests": 4
+  },
+  "latency_s": 33.17,
+  "ts": "2026-09-30T21:55:42+00:00"
+}

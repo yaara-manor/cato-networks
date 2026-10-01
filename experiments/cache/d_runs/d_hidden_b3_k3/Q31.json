@@ -1,0 +1,35 @@
+{
+  "query_id": "Q31",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "d496bea0-753c-498d-a675-50b026917fae"
+  ],
+  "answer_text": "This happens when the HTTPS site presents a certificate that is signed by an untrusted CA or is self-signed; Cato will block access to such sites even if TLS inspection is disabled. The fix is to ensure the site’s certificate chain is trusted by the endpoints (install/trust the certificate authority on all devices, or use a certificate from a publicly trusted CA).",
+  "searches": [
+    {
+      "query": "certificate warnings TLS inspection disabled",
+      "passage_ids": [
+        "10bb542a-ab9c-406e-a221-7cac97084651",
+        "195b7910-765d-483d-a1da-1119a26ec9fb",
+        "d496bea0-753c-498d-a675-50b026917fae"
+      ],
+      "scores": [
+        6.4562,
+        6.1977,
+        5.7402
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1626,
+    "output_tokens": 2325,
+    "requests": 2
+  },
+  "latency_s": 18.297,
+  "ts": "2026-09-30T21:49:53+00:00"
+}

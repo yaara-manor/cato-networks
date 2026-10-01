@@ -1,0 +1,41 @@
+{
+  "query_id": "TCK-20264218",
+  "variant": "d_shown_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "3048b10d-13a0-4b6a-af1c-849b9d4b0a45",
+    "0c2f7a7e-5b78-416d-8ed9-2a9fb7521057",
+    "5b376429-830c-4afa-9206-7752addcd149"
+  ],
+  "answer_text": "Domain-based allowlists will not influence IPS Geo Restriction, because Geo Restriction is based on IP geolocation, not domain. To allow the Brazil partner, create an IPS Allowlist rule that uses the partner's IP ranges in the Destination field (not just the domain). If you’re dealing with client devices (Cato SDP), note that IPS Geo Restriction rules don’t apply to SDP clients; you’ll need to configure the appropriate rules in the Client Connectivity Policy to allow those regional client connections.",
+  "searches": [
+    {
+      "query": "Geo Restriction Brazil domain allowlist IPS",
+      "passage_ids": [
+        "3048b10d-13a0-4b6a-af1c-849b9d4b0a45",
+        "0c2f7a7e-5b78-416d-8ed9-2a9fb7521057",
+        "5b376429-830c-4afa-9206-7752addcd149",
+        "bea3b2ad-dde4-46a0-befc-c31f56b8338b",
+        "fccd11e0-c824-4a2d-b87a-1c55bc71bb08"
+      ],
+      "scores": [
+        3.9631,
+        3.5003,
+        3.338,
+        0.9936,
+        0.5236
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2216,
+    "output_tokens": 2582,
+    "requests": 2
+  },
+  "latency_s": 17.917,
+  "ts": "2026-09-30T21:37:28+00:00"
+}

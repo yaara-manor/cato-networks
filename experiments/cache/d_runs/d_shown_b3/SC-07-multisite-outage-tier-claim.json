@@ -1,0 +1,57 @@
+{
+  "query_id": "SC-07-multisite-outage-tier-claim",
+  "variant": "d_shown_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "ea645c6c-47a7-4bb7-b0f7-732b64ca9e4a",
+    "bef83579-b1c6-486d-859e-861b3007f0a5"
+  ],
+  "answer_text": "Please escalate this by raising a Cato Support ticket now (see Raising Cases to Cato Support). To speed root-cause analysis, include: description of your internal topology, screenshots of subnet routing tables, screenshots of effective routes, Network Security Group inbound/outbound rules, IP forwarding status on the vSocket LAN, and packet captures from the vSocket and affected devices. You can also check the Cato Status Page for any active incidents related to the Frankfurt PoP.",
+  "searches": [
+    {
+      "query": "Frankfurt PoP outage",
+      "passage_ids": [
+        "bef83579-b1c6-486d-859e-861b3007f0a5",
+        "44c239cb-437b-40e0-9254-e04c6e002fc2",
+        "04de7fde-e533-4d3a-ba56-0ba05435edc1",
+        "2811961e-2538-47fb-8b2a-2e585c1c63b7",
+        "41f56dac-0785-42ec-838f-1cd2970dd72a"
+      ],
+      "scores": [
+        3.4603,
+        1.0554,
+        -1.0105,
+        -3.2268,
+        -5.1033
+      ]
+    },
+    {
+      "query": "outage escalation",
+      "passage_ids": [
+        "ea645c6c-47a7-4bb7-b0f7-732b64ca9e4a",
+        "149bbd78-f327-4f96-8f68-a8691c54fcb1",
+        "feda1436-069b-4b67-841b-890d43630063",
+        "ac343ee9-cdbd-4e4f-b841-3921dc137f68",
+        "50e16668-06c1-44c1-868b-0131edbc9dea"
+      ],
+      "scores": [
+        -0.9838,
+        -4.1463,
+        -4.8053,
+        -5.3092,
+        -11.0244
+      ]
+    }
+  ],
+  "n_searches": 2,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 5634,
+    "output_tokens": 3334,
+    "requests": 3
+  },
+  "latency_s": 25.163,
+  "ts": "2026-09-30T21:36:24+00:00"
+}

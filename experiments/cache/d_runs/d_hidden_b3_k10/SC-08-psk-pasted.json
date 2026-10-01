@@ -1,0 +1,51 @@
+{
+  "query_id": "SC-08-psk-pasted",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "35466795-7812-41bf-b374-008f1a575f39",
+    "01cd1b12-67c0-40ae-85a0-d0a1df37c864",
+    "4002a49f-58e7-4c6b-9c92-1ec4edf14d56"
+  ],
+  "answer_text": "AUTHENTICATION_FAILED in IPsec is usually caused by an authentication/configuration mismatch between peers (often the PSK or related auth payloads). Our guidance emphasizes that the PSK must be identical on both sides and that IKE/auth payloads must match for the tunnel to establish. To investigate, review the IPsec site connection history for any auth-payload mismatch messages and ensure your IPsec settings are identical on both peers (PSK, IKE phase 1/2, etc.).",
+  "searches": [
+    {
+      "query": "IPsec AUTHENTICATION_FAILED",
+      "passage_ids": [
+        "5b61d5af-ee11-4a0a-9562-c79cab5a6c7c",
+        "da28349c-2819-4b16-b609-6c8ff22609ec",
+        "7f5d3d54-2370-4eaf-92d2-0fa0f86db45a",
+        "35466795-7812-41bf-b374-008f1a575f39",
+        "cf2f1729-8804-4fc2-855c-60223d59c403",
+        "4002a49f-58e7-4c6b-9c92-1ec4edf14d56",
+        "b38f40ab-4a3d-4d75-bf6a-e7b6ebec99eb",
+        "01cd1b12-67c0-40ae-85a0-d0a1df37c864",
+        "6aef3dd1-5b35-4853-85c9-933187b9cdc5",
+        "286685a9-1fc4-4518-a49d-46e4a8da4f6e"
+      ],
+      "scores": [
+        5.7061,
+        4.8547,
+        4.8279,
+        4.531,
+        4.4707,
+        3.2459,
+        2.2285,
+        -0.2055,
+        -0.5851,
+        -1.6943
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2929,
+    "output_tokens": 3869,
+    "requests": 2
+  },
+  "latency_s": 28.113,
+  "ts": "2026-09-30T21:58:36+00:00"
+}

@@ -1,0 +1,40 @@
+{
+  "query_id": "Q20",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "ad4774c3-630c-43d9-9559-8483fae1305c",
+    "6b03a05f-e2bf-4b4f-bbd9-5eb2b16b9b34"
+  ],
+  "answer_text": "HA split-brain occurs when both Sockets have the Master role at the same time. In CMA you identify it on the Socket page: both the primary and secondary Sockets will be shown as Master, and the Keepalive status will indicate the issue. Since both Sockets are Masters, there isn’t a single primary carrying all traffic during the split-brain; traffic may be handled by both Sockets. (Note: in GCP HA deployments, existing traffic can continue through both vSockets during a split-brain.)",
+  "searches": [
+    {
+      "query": "split-brain CMA",
+      "passage_ids": [
+        "1d66a8c2-3f4a-412a-b688-347763f880c9",
+        "0d6c07a1-7614-40bb-8bf5-5f47f805a099",
+        "ad4774c3-630c-43d9-9559-8483fae1305c",
+        "a890dbe5-c6a6-4f14-bc69-c7b1afa61c89",
+        "6b03a05f-e2bf-4b4f-bbd9-5eb2b16b9b34"
+      ],
+      "scores": [
+        6.2582,
+        6.0671,
+        4.8432,
+        4.4333,
+        0.947
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2280,
+    "output_tokens": 2519,
+    "requests": 2
+  },
+  "latency_s": 17.482,
+  "ts": "2026-09-30T21:26:46+00:00"
+}

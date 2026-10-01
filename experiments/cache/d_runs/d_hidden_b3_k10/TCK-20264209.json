@@ -1,0 +1,101 @@
+{
+  "query_id": "TCK-20264209",
+  "variant": "d_hidden_b3_k10",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I can’t confirm an SLA credit for INC-4471 from the knowledge base. Contract terms and service-credit decisions are managed outside the KB. If you’d like, I can escalate this to the Billing/Accounts team—please share your account number, the INC-4471 details (outage date/time, affected sites), and your confirmation to escalate, and I’ll initiate the review and follow up this week.",
+  "searches": [
+    {
+      "query": "SLA credit outage",
+      "passage_ids": [
+        "d8334539-fb96-4f89-bfb9-0fb81bd9c6ce",
+        "aff45b2d-54f6-4384-8ce0-014da05ae13c",
+        "ce6af09e-3e89-496c-8af0-ec47f617e91f",
+        "d9c4dad6-4232-40ce-8866-579e0151083f",
+        "ad56aba0-5a8d-4a80-a443-bf1fff110900",
+        "40f72ecf-3ff3-4f8c-a690-8f8eb6ce0f36",
+        "60005c04-eb5a-43de-8021-c073e8611341",
+        "75051713-b2a0-4c2a-a426-f7440f8515e5",
+        "28b0164d-0572-41b5-ae88-1bd9c938f000",
+        "64033488-5c2f-43be-8a8e-63cea68a53ae"
+      ],
+      "scores": [
+        2.0455,
+        -2.4296,
+        -3.0082,
+        -3.009,
+        -3.061,
+        -3.1115,
+        -3.1893,
+        -3.3196,
+        -3.6038,
+        -3.8118
+      ]
+    },
+    {
+      "query": "service credits",
+      "passage_ids": [
+        "0996c6ed-d63c-4d18-9c90-c370945c029f",
+        "2627d260-66ec-4417-801c-b61e32a69af7",
+        "b9e41d72-623a-4fd9-b12a-73c09c30ad43",
+        "37b9f85d-63f9-43d0-8fab-40ef95228659",
+        "d8334539-fb96-4f89-bfb9-0fb81bd9c6ce",
+        "0be0752c-a0d9-4179-9045-672697fefb17",
+        "1a9d3332-fd8c-43b4-a217-801fc67e559a",
+        "5b77493d-4059-41fe-9b5f-fff1db76e8bf",
+        "963cdad7-b77e-4a32-9ad9-6ef148c94eee",
+        "5e6c1aa0-69f5-4d2d-93bc-d5673cff4d85"
+      ],
+      "scores": [
+        3.4353,
+        3.197,
+        0.8868,
+        0.5239,
+        0.366,
+        -4.205,
+        -4.9788,
+        -5.1014,
+        -5.6037,
+        -6.0381
+      ]
+    },
+    {
+      "query": "SLA credits policy",
+      "passage_ids": [
+        "d8334539-fb96-4f89-bfb9-0fb81bd9c6ce",
+        "4bf3278c-57a6-49a4-9c58-16cdfc9d9fdf",
+        "ce6af09e-3e89-496c-8af0-ec47f617e91f",
+        "167de8fe-5db7-4679-9d06-623166fe84a2",
+        "63cc9304-71d6-46fc-b37c-746c7ae24588",
+        "64033488-5c2f-43be-8a8e-63cea68a53ae",
+        "40f72ecf-3ff3-4f8c-a690-8f8eb6ce0f36",
+        "88774491-6de0-4dd4-9a92-771c083db32a",
+        "c499f790-943f-4267-960f-7aa4ce197a75",
+        "a471b3b6-28ae-4e6a-9ae6-0d24c1e558af"
+      ],
+      "scores": [
+        1.3123,
+        -1.6322,
+        -2.0904,
+        -2.5811,
+        -2.6055,
+        -2.7058,
+        -3.0411,
+        -3.1563,
+        -3.5086,
+        -3.5841
+      ]
+    }
+  ],
+  "n_searches": 3,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 16491,
+    "output_tokens": 3857,
+    "requests": 4
+  },
+  "latency_s": 36.931,
+  "ts": "2026-09-30T21:59:13+00:00"
+}

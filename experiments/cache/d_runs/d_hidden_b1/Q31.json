@@ -1,0 +1,42 @@
+{
+  "query_id": "Q31",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "195b7910-765d-483d-a1da-1119a26ec9fb",
+    "d496bea0-753c-498d-a675-50b026917fae",
+    "cc9acccf-a047-42ad-aecb-e4c1b670528e",
+    "f236b283-b2b8-4fda-bc3d-038b3a01c8ea"
+  ],
+  "answer_text": "Certificate warnings when TLS inspection is off can happen if a site uses an untrusted or self-signed certificate, which Cato may block even with TLS inspection disabled. It can also occur if the Cato TLS Inspection root certificate isn’t trusted on endpoints, since browsers must trust the Cato-issued chain. Fixes: install and trust the Cato TLS Inspection root certificate on all endpoints (deploy via GPO/MDM and verify the full certificate chain). If you truly need access to an untrusted site with TLS inspection off, adjust the policy or allowlist the site, or ensure the site uses a certificate from a trusted CA.",
+  "searches": [
+    {
+      "query": "certificate warnings TLS inspection disabled",
+      "passage_ids": [
+        "10bb542a-ab9c-406e-a221-7cac97084651",
+        "195b7910-765d-483d-a1da-1119a26ec9fb",
+        "d496bea0-753c-498d-a675-50b026917fae",
+        "cc9acccf-a047-42ad-aecb-e4c1b670528e",
+        "f236b283-b2b8-4fda-bc3d-038b3a01c8ea"
+      ],
+      "scores": [
+        6.4562,
+        6.1977,
+        5.7402,
+        5.5033,
+        5.0268
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1917,
+    "output_tokens": 3142,
+    "requests": 2
+  },
+  "latency_s": 22.64,
+  "ts": "2026-09-30T21:42:45+00:00"
+}

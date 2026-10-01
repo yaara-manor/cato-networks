@@ -1,0 +1,50 @@
+{
+  "query_id": "SC-12-socket-offline-after-upgrade",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "5f1025f2-23bf-463b-9b2a-e74de7883c50",
+    "634d86bb-43d8-45d0-bb3c-4fb8b8aa1266"
+  ],
+  "answer_text": "Have the on-site technician start by verifying the socket’s Internet connectivity and CMA reachability. If CMA does not show an upgraded/activated notification, follow the Failed Initial Firmware Upgrade guidance to troubleshoot connectivity for socket upgrades, including checking the socket connectivity steps. Also in CMA, check Account > License > Bandwidth to ensure the license status isn’t Scheduled, as that can cause the socket to appear disconnected.",
+  "searches": [
+    {
+      "query": "Socket upgrade disconnected CMA",
+      "passage_ids": [
+        "5f1025f2-23bf-463b-9b2a-e74de7883c50",
+        "df460be8-3e19-4ae8-a6ff-4e1c9d1c2771",
+        "634d86bb-43d8-45d0-bb3c-4fb8b8aa1266",
+        "8e61b584-ccab-4337-80e9-c2434d319e88",
+        "51976e21-c0d8-474f-ac02-1ab9fbdb4430",
+        "ff4198c5-167c-482f-84f4-c81ab5778c06",
+        "39a11d8e-7a57-4d0b-8389-5f938437fad0",
+        "e34f498c-fecc-4812-802e-8c9d26deead1",
+        "66a01e63-a908-4325-bfca-0d215cb12007",
+        "ac74854b-8577-4e24-ad61-25a9b0dc3fe2"
+      ],
+      "scores": [
+        5.8508,
+        5.3992,
+        4.9854,
+        4.8116,
+        4.5791,
+        4.4153,
+        4.3603,
+        4.0912,
+        3.9939,
+        3.6582
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2890,
+    "output_tokens": 2767,
+    "requests": 2
+  },
+  "latency_s": 18.878,
+  "ts": "2026-09-30T21:58:53+00:00"
+}

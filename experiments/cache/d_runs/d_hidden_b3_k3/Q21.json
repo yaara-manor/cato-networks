@@ -1,0 +1,35 @@
+{
+  "query_id": "Q21",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "541abf81-6362-4154-b32f-d32e96dc039b"
+  ],
+  "answer_text": "HA pairs must use the same Socket type. An X1600 cannot form an HA pair with an X1600 LTE Socket (or any other different Socket type) in the same HA site. For the X1500 family, you can pair two X1500 models (e.g., X1500 with X1500B) in an HA configuration.",
+  "searches": [
+    {
+      "query": "X1600 HA pair",
+      "passage_ids": [
+        "541abf81-6362-4154-b32f-d32e96dc039b",
+        "a4fb5836-870f-4605-8a01-b070ba3288f6",
+        "b5981eaf-f994-4a5f-9156-511d116d687b"
+      ],
+      "scores": [
+        6.5747,
+        6.4036,
+        5.0273
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1973,
+    "output_tokens": 1564,
+    "requests": 2
+  },
+  "latency_s": 13.156,
+  "ts": "2026-09-30T21:48:55+00:00"
+}

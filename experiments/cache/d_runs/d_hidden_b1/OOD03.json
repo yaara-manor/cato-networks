@@ -1,0 +1,37 @@
+{
+  "query_id": "OOD03",
+  "variant": "d_hidden_b1",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "Sorry, the Cato knowledge base does not include a documented procedure for setting up a Kubernetes Ingress Controller on AWS EKS. The available KB content covers deploying Cato vSockets and creating AWS sites, not Kubernetes ingress configurations. If you can share the specific Cato feature you’re using or the exact goal, I can help determine the closest KB guidance or next steps.",
+  "searches": [
+    {
+      "query": "Kubernetes ingress controller AWS EKS",
+      "passage_ids": [
+        "7fe0fc59-aa90-42e8-acc2-f5296d4dc09b",
+        "97ce1e12-1dff-435c-99b8-968478956006",
+        "1a15e250-6c9e-42e5-a536-c0ec1db99085",
+        "2945877a-6a0a-49af-9030-5592fdb44daa",
+        "1e01bf56-fafa-476f-a009-77ec350d9151"
+      ],
+      "scores": [
+        -4.7016,
+        -5.7504,
+        -7.5118,
+        -8.2691,
+        -8.3173
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2247,
+    "output_tokens": 1364,
+    "requests": 2
+  },
+  "latency_s": 12.354,
+  "ts": "2026-09-30T21:45:46+00:00"
+}

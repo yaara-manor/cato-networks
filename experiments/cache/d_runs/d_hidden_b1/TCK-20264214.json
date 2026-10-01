@@ -1,0 +1,40 @@
+{
+  "query_id": "TCK-20264214",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "0142c3f4-e2dc-4f35-b301-10e11248c307",
+    "3477d5a7-682d-458a-8747-9d34d4c3ca47"
+  ],
+  "answer_text": "Slow internet can be caused by sub-optimal routing or poor Wi‑Fi signal. To diagnose, run a ping test and a traceroute to compare latency when traffic passes through Cato versus bypassing Cato. If you’re on Wi‑Fi and the signal is weak (for example around -75 dBm or lower), that can also cause slow performance; improving the wireless signal or using a wired connection may help.",
+  "searches": [
+    {
+      "query": "slow internet",
+      "passage_ids": [
+        "0142c3f4-e2dc-4f35-b301-10e11248c307",
+        "3477d5a7-682d-458a-8747-9d34d4c3ca47",
+        "ac6b188c-51f2-45f9-9c19-98012df60ee2",
+        "1b1974f8-e221-4494-bd72-5ecaaef4b9da",
+        "3a0479cc-208e-4181-939f-30800d306cc6"
+      ],
+      "scores": [
+        1.3508,
+        0.1272,
+        -6.1732,
+        -6.3074,
+        -7.0524
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2328,
+    "output_tokens": 2398,
+    "requests": 2
+  },
+  "latency_s": 16.32,
+  "ts": "2026-09-30T21:44:46+00:00"
+}

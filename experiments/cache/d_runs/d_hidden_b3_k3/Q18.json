@@ -1,0 +1,49 @@
+{
+  "query_id": "Q18",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "797eff0e-151a-408b-8b7a-9222937a93ad",
+    "5a77fbfe-a971-40fb-ac69-28714f5ede90"
+  ],
+  "answer_text": "Throughput can drop when a third‑party firewall has UDP Flooding protection enabled, which can throttle traffic that traverses the Cato DTLS tunnels. The recommended fix is to disable the UDP Flooding protection on the firewall and then run a quick speed test to compare throughput with and without the protection.",
+  "searches": [
+    {
+      "query": "throughput third-party firewall Socket Cato",
+      "passage_ids": [
+        "797eff0e-151a-408b-8b7a-9222937a93ad",
+        "85d6e8b6-8041-4e3a-ae5e-79e28ae5aba0",
+        "ca8f4067-da0b-4ec5-ba9d-35bb6440c323"
+      ],
+      "scores": [
+        7.7117,
+        7.0654,
+        5.61
+      ]
+    },
+    {
+      "query": "disable UDP Flooding protection Cato",
+      "passage_ids": [
+        "5a77fbfe-a971-40fb-ac69-28714f5ede90",
+        "797eff0e-151a-408b-8b7a-9222937a93ad",
+        "85d6e8b6-8041-4e3a-ae5e-79e28ae5aba0"
+      ],
+      "scores": [
+        8.4429,
+        6.2995,
+        4.0501
+      ]
+    }
+  ],
+  "n_searches": 2,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 4453,
+    "output_tokens": 2763,
+    "requests": 3
+  },
+  "latency_s": 24.106,
+  "ts": "2026-09-30T21:48:52+00:00"
+}

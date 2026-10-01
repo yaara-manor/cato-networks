@@ -1,0 +1,40 @@
+{
+  "query_id": "SC-06-repeat-contact-churn",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "2d6cdb2d-9056-4b08-a533-57992ddc9f79",
+    "258b80e8-e3d1-43f9-bda8-c8eb1b37e6f4"
+  ],
+  "answer_text": "There’s a known issue in v23.x where hub-and-spoke configurations can cause Socket disconnects and restarts. If your Chicago site uses a hub-and-spoke topology, this may be related to the random disconnections. To move forward, please share details per our support form: describe the service impact, possible trigger, and whether the issue persists after power-cycling the Socket (and the results of any reflashing).",
+  "searches": [
+    {
+      "query": "Chicago disconnections Socket power cycle",
+      "passage_ids": [
+        "258b80e8-e3d1-43f9-bda8-c8eb1b37e6f4",
+        "2d6cdb2d-9056-4b08-a533-57992ddc9f79",
+        "db3f3edd-26ba-49f2-8751-ec2a3da00fbe",
+        "7316025a-1d65-442f-bd8b-d24f5c774342",
+        "2c245a2f-092e-44c1-8bd3-f2d26c4f79dd"
+      ],
+      "scores": [
+        -3.8468,
+        -4.2143,
+        -6.5102,
+        -8.6056,
+        -8.8422
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2177,
+    "output_tokens": 3648,
+    "requests": 2
+  },
+  "latency_s": 25.311,
+  "ts": "2026-09-30T21:28:53+00:00"
+}

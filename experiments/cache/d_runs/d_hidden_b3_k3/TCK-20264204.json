@@ -1,0 +1,36 @@
+{
+  "query_id": "TCK-20264204",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ASK_CUSTOMER",
+  "final_decision": "ASK_CUSTOMER",
+  "invalid_citations": [],
+  "citations": [
+    "5b61d5af-ee11-4a0a-9562-c79cab5a6c7c",
+    "b96f38bd-47f3-4f85-adfc-bf0e30f8bcb6"
+  ],
+  "answer_text": "IPsec tunnels can drop for several reasons—misconfigurations, routing issues, or hardware problems. Our Troubleshooting IPsec Connectivity article covers these common causes and how to diagnose them. For faster reconvergence, enabling BFD for IPsec sites can dramatically reduce tunnel re-sequence time. Could you confirm whether BFD is enabled on both ends and share the current IKE/ESP lifetimes or any recent changes?",
+  "searches": [
+    {
+      "query": "IPsec tunnel drop 8 hours",
+      "passage_ids": [
+        "239ea939-1388-4482-9481-4225d9f6bb8a",
+        "5b61d5af-ee11-4a0a-9562-c79cab5a6c7c",
+        "b96f38bd-47f3-4f85-adfc-bf0e30f8bcb6"
+      ],
+      "scores": [
+        0.9249,
+        -0.5379,
+        -1.0157
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1947,
+    "output_tokens": 3622,
+    "requests": 2
+  },
+  "latency_s": 24.668,
+  "ts": "2026-09-30T21:52:14+00:00"
+}

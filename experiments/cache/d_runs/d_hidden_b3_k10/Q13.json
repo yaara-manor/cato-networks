@@ -1,0 +1,77 @@
+{
+  "query_id": "Q13",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "2723b477-6178-4676-8da4-f1e2a8d319da",
+    "2df8a7a3-95f2-4e5a-9e37-ac25c22c6fa8"
+  ],
+  "answer_text": "Cato recommends using Initiate connection by Cato for IPsec IKEv2 sites because edge devices often have long delays between reconnect attempts. When the remote device initiates, the VPN negotiation can take a long time; having Cato initiate the connection makes the negotiation occur much faster. By default, this feature is enabled to minimize downtime.",
+  "searches": [
+    {
+      "query": "IKEv2 Initiate connection by Cato",
+      "passage_ids": [
+        "2723b477-6178-4676-8da4-f1e2a8d319da",
+        "f6594197-dbf9-4f97-a75e-a2c2ab717a49",
+        "75375d13-2430-4389-885e-51c5de087149",
+        "7f8b412f-d8e2-4686-990a-603be4a7c823",
+        "2df8a7a3-95f2-4e5a-9e37-ac25c22c6fa8",
+        "6b87d78d-9206-4df8-ac08-ce75e4890209",
+        "1931e61d-5b07-446c-b6ef-2eab61a77bf4",
+        "1137dec9-d096-4ad5-b910-5eef65431b4a",
+        "8fb3b323-91df-4c8f-832d-bc458407d37e",
+        "a065018f-4396-44b9-a794-383384df32cb"
+      ],
+      "scores": [
+        9.3647,
+        8.6348,
+        8.1303,
+        7.9916,
+        7.5992,
+        7.281,
+        7.1686,
+        7.0653,
+        6.9681,
+        6.6034
+      ]
+    },
+    {
+      "query": "Initiate connection by Cato",
+      "passage_ids": [
+        "2723b477-6178-4676-8da4-f1e2a8d319da",
+        "75375d13-2430-4389-885e-51c5de087149",
+        "c9c47b38-73ac-4c16-8a9b-277eaaec205d",
+        "d0f69550-cdff-4645-8286-be4f8fff498f",
+        "d766659a-0f8c-46e4-82e7-8325fec2b0f0",
+        "1b31c333-5814-4b85-8e24-75f222a6aebc",
+        "5fcbf697-a80a-4726-89e3-5451013579bc",
+        "360c8f3f-98ba-4135-b02c-b217da3e745c",
+        "7cbff33c-4153-4c04-8709-4898c6333685",
+        "2da11a8b-8b22-48da-8288-c20372f0dedb"
+      ],
+      "scores": [
+        8.5125,
+        6.9317,
+        5.9497,
+        5.7481,
+        5.6115,
+        3.6242,
+        3.3467,
+        0.149,
+        0.0153,
+        -0.1335
+      ]
+    }
+  ],
+  "n_searches": 2,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 7530,
+    "output_tokens": 1975,
+    "requests": 3
+  },
+  "latency_s": 17.32,
+  "ts": "2026-09-30T21:55:25+00:00"
+}

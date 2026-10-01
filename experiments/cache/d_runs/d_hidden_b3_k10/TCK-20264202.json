@@ -1,0 +1,53 @@
+{
+  "query_id": "TCK-20264202",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "b3b40211-d100-4751-a7d4-6a98bbe5d428",
+    "2a29c140-cdf3-4771-9aad-34427ae0d709",
+    "5d32c955-9f10-46e3-9186-115bde4c3d2b",
+    "a26a369f-4837-4d32-80dc-501ebb7771a5",
+    "7c5c2f83-e204-4868-874a-df323f457735"
+  ],
+  "answer_text": "To prevent VoIP calls from dropping when the egress IP changes, ensure SIP/VoIP traffic uses a single, stable egress IP. Enable the Preferred IP for SIP Traffic so VoIP traffic consistently uses the same egress IP, or configure your network rule to egress to a single IP. If you truly need a fixed IP, allocate a fixed public IP to your account and bind it to the rule. Also be aware that egress IPs can change if the PoP becomes unavailable, which may cause mid-call IP changes without this configuration.",
+  "searches": [
+    {
+      "query": "VoIP egress IP change Cato",
+      "passage_ids": [
+        "7c5c2f83-e204-4868-874a-df323f457735",
+        "91319e53-ccea-45c4-8b74-a0afbacad435",
+        "a26a369f-4837-4d32-80dc-501ebb7771a5",
+        "17a4d64d-7571-45c4-a82c-da99cf247e4c",
+        "592156ab-29c0-4d74-b369-82e9be5e1022",
+        "2a29c140-cdf3-4771-9aad-34427ae0d709",
+        "5d32c955-9f10-46e3-9186-115bde4c3d2b",
+        "b3b40211-d100-4751-a7d4-6a98bbe5d428",
+        "908555c6-6b73-4ea7-b5d7-2b920d95cd4a",
+        "23325e27-d672-4e56-b3e1-aa93ef2b98fb"
+      ],
+      "scores": [
+        7.87,
+        5.3802,
+        5.2623,
+        5.1076,
+        4.354,
+        3.7212,
+        3.5673,
+        2.9664,
+        2.7978,
+        2.5511
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 3038,
+    "output_tokens": 3007,
+    "requests": 2
+  },
+  "latency_s": 25.858,
+  "ts": "2026-09-30T22:00:51+00:00"
+}

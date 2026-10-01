@@ -1,0 +1,33 @@
+{
+  "query_id": "ADJ11",
+  "variant": "d_hidden_b3_k3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "Not in KB: I couldn't locate Barracuda CloudGen F-Series IPsec to Cato PoP configuration steps. The available articles discuss IPsec site connections to the Cato Cloud in general (and VMware Edge examples), but there are no Barracuda-specific instructions. If you'd like, I can re-run a search with alternative keywords to try to find Barracuda documentation in our KB.",
+  "searches": [
+    {
+      "query": "Barracuda CloudGen F-Series IPsec to Cato PoP",
+      "passage_ids": [
+        "94c79749-9ad6-455d-b87b-220f42902322",
+        "02d90311-17ae-4a13-b5ce-95ef0e2e0a3c",
+        "bca98d5f-7213-41a6-96e9-d27cc6e665d7"
+      ],
+      "scores": [
+        2.0974,
+        2.0893,
+        1.908
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1828,
+    "output_tokens": 1691,
+    "requests": 2
+  },
+  "latency_s": 12.796,
+  "ts": "2026-09-30T21:53:54+00:00"
+}

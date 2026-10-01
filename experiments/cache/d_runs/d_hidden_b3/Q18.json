@@ -1,0 +1,57 @@
+{
+  "query_id": "Q18",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "797eff0e-151a-408b-8b7a-9222937a93ad",
+    "5a77fbfe-a971-40fb-ac69-28714f5ede90"
+  ],
+  "answer_text": "Throughput reduction for a Cato Socket behind a third‑party firewall is often due to UDP Flooding protection on the firewall, which can limit traffic that traverses the Cato DTLS tunnels (and is commonly enabled by default). The recommended fix is to disable the UDP Flooding protection on the firewall; after making this change, run a speed test to compare throughput and verify the improvement.",
+  "searches": [
+    {
+      "query": "Socket throughput third-party firewall",
+      "passage_ids": [
+        "797eff0e-151a-408b-8b7a-9222937a93ad",
+        "85d6e8b6-8041-4e3a-ae5e-79e28ae5aba0",
+        "34a79ace-b53a-4e6c-8616-d6c4dc6467cf",
+        "6cdde4ae-97b3-46d0-9ee4-20dac91b91cf",
+        "ca8f4067-da0b-4ec5-ba9d-35bb6440c323"
+      ],
+      "scores": [
+        6.7846,
+        6.4169,
+        5.0837,
+        4.857,
+        4.426
+      ]
+    },
+    {
+      "query": "UDP Flooding protection Cato Socket third-party firewall fix",
+      "passage_ids": [
+        "797eff0e-151a-408b-8b7a-9222937a93ad",
+        "85d6e8b6-8041-4e3a-ae5e-79e28ae5aba0",
+        "5a77fbfe-a971-40fb-ac69-28714f5ede90",
+        "e6ce816c-536b-42eb-8d3a-28aabab1aeb5",
+        "5855a811-7318-4b92-b72a-f8c177dfe0e4"
+      ],
+      "scores": [
+        8.0041,
+        6.7111,
+        5.1186,
+        0.9302,
+        -0.2338
+      ]
+    }
+  ],
+  "n_searches": 2,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 4747,
+    "output_tokens": 2021,
+    "requests": 3
+  },
+  "latency_s": 22.511,
+  "ts": "2026-09-30T21:26:34+00:00"
+}

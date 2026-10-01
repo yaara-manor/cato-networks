@@ -1,0 +1,40 @@
+{
+  "query_id": "TCK-20264208",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "6bc4f7c7-f97d-41f5-8656-901a1f698d9c",
+    "41621dfc-b666-4b42-9eff-733486c474dd"
+  ],
+  "answer_text": "To regain CMA admin access when MFA is tied to a device, reset MFA for the affected administrator. In CMA, go to Account > Administrators, select the admin, and choose Reset MFA. The next login will prompt the admin to scan a new QR code with an authenticator app to re-link MFA. Note: if you’re using SSO for CMA logins, MFA cannot be enforced in CMA logins; use the SSO path instead.",
+  "searches": [
+    {
+      "query": "CMA admin access transfer MFA",
+      "passage_ids": [
+        "41621dfc-b666-4b42-9eff-733486c474dd",
+        "75e9ca5f-5906-45e5-aa50-21b07fda6e58",
+        "6bc4f7c7-f97d-41f5-8656-901a1f698d9c",
+        "cd2f70c4-b519-44b2-a08b-43f4cd2483b7",
+        "8ae4b1ef-f5dd-4168-bf99-c7dbcbe34837"
+      ],
+      "scores": [
+        6.1634,
+        6.1092,
+        5.9475,
+        4.8809,
+        3.0279
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2174,
+    "output_tokens": 3258,
+    "requests": 2
+  },
+  "latency_s": 22.842,
+  "ts": "2026-09-30T21:45:40+00:00"
+}

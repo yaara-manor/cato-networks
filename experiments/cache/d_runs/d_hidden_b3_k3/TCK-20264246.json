@@ -1,0 +1,33 @@
+{
+  "query_id": "TCK-20264246",
+  "variant": "d_hidden_b3_k3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I can't complete requests to close all tickets for ACC-1005 or issue goodwill credits, as this is not covered in the knowledge base. This chat is limited to information in the Cato KB. For account-specific ticket actions or credits, please contact your account administrator or Cato Support through your normal support channels.",
+  "searches": [
+    {
+      "query": "close tickets policy",
+      "passage_ids": [
+        "ec2e62b2-eea9-4d38-9047-26e4268d1800",
+        "4fcae726-3c68-4a7c-8f04-9e2680239e27",
+        "a2445553-f22d-46eb-b2c4-d3461ab0a5d3"
+      ],
+      "scores": [
+        -3.8334,
+        -5.5624,
+        -7.692
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2239,
+    "output_tokens": 1806,
+    "requests": 2
+  },
+  "latency_s": 13.314,
+  "ts": "2026-09-30T21:51:21+00:00"
+}

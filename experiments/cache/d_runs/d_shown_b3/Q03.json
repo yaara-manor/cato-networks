@@ -1,0 +1,39 @@
+{
+  "query_id": "Q03",
+  "variant": "d_shown_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "c582d80b-e93a-4540-8bee-02b52b069a4e"
+  ],
+  "answer_text": "Downstream MTU used is 1383 bytes (the lowest MTU discovered across the WAN links you listed). Passive links affect the calculation, because the downstream MTU is the minimum MTU discovered across all downstream tunnels (i.e., across all WAN links). If a passive link has a lower discovered MTU, it will lower the downstream MTU accordingly.",
+  "searches": [
+    {
+      "query": "MTU downstream passive links",
+      "passage_ids": [
+        "c582d80b-e93a-4540-8bee-02b52b069a4e",
+        "778b60a3-757c-4db5-ab32-64eca250935d",
+        "e9157057-2af4-48d6-ac0e-264eebd5955d",
+        "b9bc816f-f58b-4d3f-9282-52e253fcb42e",
+        "26865461-1135-482b-88a9-b6bd1c26d4c3"
+      ],
+      "scores": [
+        6.9492,
+        1.3755,
+        -1.0473,
+        -1.0731,
+        -1.653
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2246,
+    "output_tokens": 3656,
+    "requests": 2
+  },
+  "latency_s": 27.705,
+  "ts": "2026-09-30T21:33:04+00:00"
+}

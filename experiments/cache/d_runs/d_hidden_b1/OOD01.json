@@ -1,0 +1,37 @@
+{
+  "query_id": "OOD01",
+  "variant": "d_hidden_b1",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn’t locate Cisco Catalyst 9300 VLAN configuration guidance in the Cato knowledge base. This topic isn’t covered by Cato documentation. Please refer to Cisco’s official documentation for configuring VLANs on the Catalyst 9300.",
+  "searches": [
+    {
+      "query": "Cisco Catalyst 9300 VLAN",
+      "passage_ids": [
+        "86bb36e3-4011-4887-b90b-dfd1eac9847a",
+        "58510935-9d78-4357-b9d7-9fb428bf4f40",
+        "2c0904ee-08c9-45db-96ce-baf1a5b3b30e",
+        "98c64ffb-6253-4fdf-8095-1e32516e3665",
+        "9a3c3735-39c9-49f6-bc4f-21b2179d3ee1"
+      ],
+      "scores": [
+        -4.1114,
+        -4.5441,
+        -4.5497,
+        -4.7826,
+        -4.8234
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2163,
+    "output_tokens": 1543,
+    "requests": 2
+  },
+  "latency_s": 12.978,
+  "ts": "2026-09-30T21:45:34+00:00"
+}

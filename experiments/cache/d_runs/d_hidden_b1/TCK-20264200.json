@@ -1,0 +1,41 @@
+{
+  "query_id": "TCK-20264200",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "3319d96f-4ccd-415c-aa8f-4cb17e293e09",
+    "37f826bd-d527-4a55-909d-44e8dbfb2792",
+    "d4b17bb0-0bc4-451b-bbc8-e0d30baa9868"
+  ],
+  "answer_text": "From the KB, this pattern matches a CMA view where the Chicago site is reported as disconnected in CMA because the tunnel to the Cato Cloud is down, while traffic continues over the Alt WAN. To restore visibility and normal operation, troubleshoot and re-establish the tunnel connection to the Cato Cloud. For detailed steps, see Socket-Site-Tunnel-Connectivity-Troubleshooting. You can also gather context from CMA events by going to Home > Events and filtering for Connectivity/Disconnected for the Chicago site to see when the drops occur.",
+  "searches": [
+    {
+      "query": "Chicago site drops CMA",
+      "passage_ids": [
+        "3319d96f-4ccd-415c-aa8f-4cb17e293e09",
+        "37f826bd-d527-4a55-909d-44e8dbfb2792",
+        "98464bb9-e080-4bcd-b7d7-6193b13f8069",
+        "d4b17bb0-0bc4-451b-bbc8-e0d30baa9868",
+        "bac50cb0-3e47-416b-8fe6-c7f3276a7ffc"
+      ],
+      "scores": [
+        -4.0929,
+        -4.0929,
+        -5.0723,
+        -5.3602,
+        -5.7599
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2121,
+    "output_tokens": 2088,
+    "requests": 2
+  },
+  "latency_s": 15.539,
+  "ts": "2026-09-30T21:44:30+00:00"
+}

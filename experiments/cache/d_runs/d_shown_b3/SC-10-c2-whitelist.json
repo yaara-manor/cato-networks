@@ -1,0 +1,37 @@
+{
+  "query_id": "SC-10-c2-whitelist",
+  "variant": "d_shown_b3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "The knowledge base does not document a method to whitelist a domain account-wide. It only documents IP-based whitelisting (Whitelist IP) and IPS signature whitelisting; domain-level allowlisting isn’t described.",
+  "searches": [
+    {
+      "query": "whitelist domain",
+      "passage_ids": [
+        "2ef981d2-9d2c-49c2-9159-2befaa286ae0",
+        "d7039b1b-4bf1-48f5-807b-d26f66369df4",
+        "2832e924-07dc-44f7-9e4d-441568e19a1e",
+        "f88a933a-0ecd-42e0-838e-09e37a9c7aa6",
+        "d2bc51dd-204b-49e9-a527-e8ad4b64b28d"
+      ],
+      "scores": [
+        0.5795,
+        -2.0834,
+        -7.15,
+        -7.6423,
+        -7.9612
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2439,
+    "output_tokens": 2532,
+    "requests": 2
+  },
+  "latency_s": 26.835,
+  "ts": "2026-09-30T21:36:42+00:00"
+}

@@ -1,0 +1,35 @@
+{
+  "query_id": "TCK-20264205",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "c2560d2e-351d-4b1e-a4cf-ee1d17c2aafb"
+  ],
+  "answer_text": "The KB notes that if you have a CMA on the IPSec tunnel, you must include the CMA IP in your VPN tunnel routing configuration so traffic to and from that CMA IP is routed via the Cato tunnel. If the Azure tunnel shows green but traffic to your new AKS subnet (10.61.0.0/16) isn’t flowing, verify that the CMA IP is included in the VPN tunnel routing for the Azure/VNet path and that the routes for the new subnet are advertised through the tunnel.",
+  "searches": [
+    {
+      "query": "Azure VPN CMA tunnel traffic AKS address space 10.61.0.0/16",
+      "passage_ids": [
+        "cdb2ea1b-aa78-4e50-9f79-d1b78fbf3ff4",
+        "2cb419e2-6bf2-45c8-8421-7e1784fae2bf",
+        "c2560d2e-351d-4b1e-a4cf-ee1d17c2aafb"
+      ],
+      "scores": [
+        -0.4828,
+        -1.0772,
+        -1.7177
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2036,
+    "output_tokens": 2658,
+    "requests": 2
+  },
+  "latency_s": 20.001,
+  "ts": "2026-09-30T21:52:33+00:00"
+}

@@ -1,0 +1,40 @@
+{
+  "query_id": "Q28",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "50e16668-06c1-44c1-868b-0131edbc9dea",
+    "1602c241-0b0b-4bcc-91d6-1fba472430d4"
+  ],
+  "answer_text": "The grace period is 17 minutes. Before rebooting the Socket, you should have on-site personnel present and follow the steps in the Resolving Inaccessible Socket after an Upgrade guide.",
+  "searches": [
+    {
+      "query": "Socket upgrade grace period No open tunnel after grace time",
+      "passage_ids": [
+        "50e16668-06c1-44c1-868b-0131edbc9dea",
+        "1602c241-0b0b-4bcc-91d6-1fba472430d4",
+        "ff4198c5-167c-482f-84f4-c81ab5778c06",
+        "eb6b9050-7bda-43c2-9d56-183d4c3c45f9",
+        "12dec2c9-2a4a-44bb-b851-9856f55d4cbb"
+      ],
+      "scores": [
+        8.3348,
+        7.4563,
+        3.7829,
+        2.0361,
+        1.6907
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2232,
+    "output_tokens": 1991,
+    "requests": 2
+  },
+  "latency_s": 16.386,
+  "ts": "2026-09-30T21:27:33+00:00"
+}

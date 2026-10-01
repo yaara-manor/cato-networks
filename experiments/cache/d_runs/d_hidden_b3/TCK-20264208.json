@@ -1,0 +1,41 @@
+{
+  "query_id": "TCK-20264208",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "6bc4f7c7-f97d-41f5-8656-901a1f698d9c",
+    "41621dfc-b666-4b42-9eff-733486c474dd",
+    "cd2f70c4-b519-44b2-a08b-43f4cd2483b7"
+  ],
+  "answer_text": "Yes. The CMA supports regaining admin access by resetting MFA for the administrator. In the CMA, go to Account > Administrators, select the affected admin, and reset their MFA permissions. After the reset, the admin will be redirected to a web page with a QR code to scan with an authenticator app to re-link CMA MFA to the new device. MFA is used for CMA when you authenticate with Cato credentials; if you want to avoid MFA for future admins, consider using SSO as the authentication method (SSO is supported).",
+  "searches": [
+    {
+      "query": "CMA admin access transfer MFA",
+      "passage_ids": [
+        "41621dfc-b666-4b42-9eff-733486c474dd",
+        "75e9ca5f-5906-45e5-aa50-21b07fda6e58",
+        "6bc4f7c7-f97d-41f5-8656-901a1f698d9c",
+        "cd2f70c4-b519-44b2-a08b-43f4cd2483b7",
+        "8ae4b1ef-f5dd-4168-bf99-c7dbcbe34837"
+      ],
+      "scores": [
+        6.1634,
+        6.1092,
+        5.9475,
+        4.8809,
+        3.0279
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2223,
+    "output_tokens": 4244,
+    "requests": 2
+  },
+  "latency_s": 33.664,
+  "ts": "2026-09-30T21:31:16+00:00"
+}

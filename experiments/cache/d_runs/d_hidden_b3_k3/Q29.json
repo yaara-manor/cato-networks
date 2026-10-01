@@ -1,0 +1,49 @@
+{
+  "query_id": "Q29",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "79d612fa-113f-4dd3-9e73-5422779a5604",
+    "1d37c57f-95f5-4904-9741-52ee7ad02787"
+  ],
+  "answer_text": "- Upstream TLS inspection requirement: HTTPS traffic from the Socket’s WAN IP must be excluded from TLS inspection during upgrades. \n- For a gradual upgrade on an X1700, the ports that must be connected are: Port 1 to Cato, and Ports 2–8 to the following destinations (Cato; LAN; LAN & VRRP; LAN LAG Master & VRRP; LAN LAG Master; LAN LAG Member; VRRP; Alternative WAN; Alternative WAN (Layer-2); Disabled). Add-on ports offer the same destinations. ",
+  "searches": [
+    {
+      "query": "upstream TLS inspection Socket upgrade",
+      "passage_ids": [
+        "79d612fa-113f-4dd3-9e73-5422779a5604",
+        "9494ed83-2424-49d4-b006-99082f81218e",
+        "9f9f8062-e314-4ce6-9272-b6ec6dfe1ded"
+      ],
+      "scores": [
+        6.1996,
+        3.1697,
+        1.6734
+      ]
+    },
+    {
+      "query": "X1700 gradual upgrade ports",
+      "passage_ids": [
+        "79d612fa-113f-4dd3-9e73-5422779a5604",
+        "1d37c57f-95f5-4904-9741-52ee7ad02787",
+        "b040c41d-41ba-44a7-b85a-fd5dc20c0718"
+      ],
+      "scores": [
+        5.9687,
+        1.4207,
+        0.7948
+      ]
+    }
+  ],
+  "n_searches": 2,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 4519,
+    "output_tokens": 3262,
+    "requests": 3
+  },
+  "latency_s": 26.637,
+  "ts": "2026-09-30T21:49:42+00:00"
+}

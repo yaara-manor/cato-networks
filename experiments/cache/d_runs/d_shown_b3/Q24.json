@@ -1,0 +1,39 @@
+{
+  "query_id": "Q24",
+  "variant": "d_shown_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "e7c5b96b-f7c8-4880-806b-8340f2768f27"
+  ],
+  "answer_text": "The KB indicates a Connectivity event is generated when a tunnel disconnects or connects to a Cato PoP, and these events typically appear as a Disconnected followed by a Connected pair. The only timing detail provided is that if the tunnel is disconnected for less than 2.5 minutes, a single Reconnected event is generated instead of the Disconnected/Connected pair. The KB does not specify exact delays for generating Disconnected or Connected events beyond that threshold.",
+  "searches": [
+    {
+      "query": "Disconnected event duration",
+      "passage_ids": [
+        "e7c5b96b-f7c8-4880-806b-8340f2768f27",
+        "ce9c31b8-aa15-4ef8-9bb9-8136e338dce0",
+        "c7bacae7-8bb0-4897-b668-e8c8f48df58c",
+        "844cf01e-62e9-4980-8fe0-58bf22dd3c83",
+        "dfe77cde-eb87-433f-9b23-1adf86f3d8f9"
+      ],
+      "scores": [
+        3.9467,
+        3.7591,
+        3.4752,
+        0.9995,
+        0.6061
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2315,
+    "output_tokens": 3115,
+    "requests": 2
+  },
+  "latency_s": 20.933,
+  "ts": "2026-09-30T21:34:46+00:00"
+}

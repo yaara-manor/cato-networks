@@ -1,0 +1,52 @@
+{
+  "query_id": "SC-01-bgp-flap",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "3381e933-8d27-431f-b950-83940c8fe6f7",
+    "0906c1d0-d1c9-44c2-9e2c-e684b1bd6746",
+    "9b73ca22-7412-4c49-8b88-39285e876c90",
+    "af2c63f2-b496-456d-b3a9-0dab5a7dfb16"
+  ],
+  "answer_text": "BGP sessions flapping after a Nexus 9k switch with a 10/30 timer is often caused by a Hold Time mismatch between the Socket and the peer. The Hold Time is the number of seconds to wait before declaring the neighbor down and you can configure it in the BGP Neighbor Advanced Settings; if peers differ, both sides converge to the lower value (e.g., 30s). To stabilize, ensure Hold Time is 30 seconds on both sides (with a 10-second keepalive). You can also enable Bidirectional Forwarding Detection (BFD) for BGP to detect failures faster; BFD is supported on Sockets/vSockets and recent releases optimize BGP timers this way.",
+  "searches": [
+    {
+      "query": "Nexus 9k BGP hold timer",
+      "passage_ids": [
+        "9b73ca22-7412-4c49-8b88-39285e876c90",
+        "3381e933-8d27-431f-b950-83940c8fe6f7",
+        "a06a67c7-3bf7-4236-94bd-86014a9ead8c",
+        "0906c1d0-d1c9-44c2-9e2c-e684b1bd6746",
+        "af2c63f2-b496-456d-b3a9-0dab5a7dfb16",
+        "f0ad7352-627f-48de-b3c5-70cf0e41089c",
+        "38aa2896-7538-4940-8f7f-eaff9435da85",
+        "033bb0ba-95ea-46ae-b8e8-0ddb66d03154",
+        "bc7aa841-d90e-4255-8b41-945ed3fad64a",
+        "1744d790-5820-4970-b7f7-b3448379bdd5"
+      ],
+      "scores": [
+        0.9083,
+        0.6116,
+        0.6116,
+        -1.0857,
+        -3.1707,
+        -7.1194,
+        -7.4727,
+        -7.9281,
+        -8.4158,
+        -8.4862
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2968,
+    "output_tokens": 5092,
+    "requests": 2
+  },
+  "latency_s": 36.933,
+  "ts": "2026-09-30T21:58:08+00:00"
+}

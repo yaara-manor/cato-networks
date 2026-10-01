@@ -1,0 +1,37 @@
+{
+  "query_id": "ADJ02",
+  "variant": "d_hidden_b3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "Pricing details are not available in the knowledge base. Please contact your Cato sales representative for current pricing on a 3-year term.",
+  "searches": [
+    {
+      "query": "price per Mbps Cato site license 500 Mbps",
+      "passage_ids": [
+        "270dd32e-498c-4914-b1a9-6c565acd2bab",
+        "137c45e2-063d-4297-a63a-09efbb148ee5",
+        "a4db4bc4-5e64-46c5-a037-b464540544cc",
+        "a845f256-2ea5-4076-bebf-21f6259cac9c",
+        "370b7550-4bda-4b61-826a-8d0ee1aaa40a"
+      ],
+      "scores": [
+        2.8196,
+        2.6564,
+        2.5596,
+        2.2439,
+        1.2004
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2187,
+    "output_tokens": 2119,
+    "requests": 2
+  },
+  "latency_s": 18.979,
+  "ts": "2026-09-30T21:31:54+00:00"
+}

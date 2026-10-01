@@ -1,0 +1,37 @@
+{
+  "query_id": "Q09",
+  "variant": "d_hidden_b1",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn’t locate the CMA views used by the playbook to identify the disconnect reason or to verify the route table in the knowledge base. If you can share the exact CMA version or a link to the specific playbook section, I can help extract the views referenced. ",
+  "searches": [
+    {
+      "query": "BGP Disconnected CMA views playbook",
+      "passage_ids": [
+        "e686414c-763a-4513-82a4-08be342ffce2",
+        "2ef7dbb3-fab7-4051-b804-fca40e146dcf",
+        "8b834779-80e3-4d82-8f21-990a4330d6b9",
+        "e57c5e1c-548d-42fa-961a-ffe8477a6858",
+        "914b40f0-5898-4055-b3f2-41db869cb279"
+      ],
+      "scores": [
+        4.8617,
+        4.7536,
+        4.0124,
+        3.9499,
+        1.2997
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2029,
+    "output_tokens": 1604,
+    "requests": 2
+  },
+  "latency_s": 12.977,
+  "ts": "2026-09-30T21:40:40+00:00"
+}

@@ -1,0 +1,37 @@
+{
+  "query_id": "Q04",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "3381e933-8d27-431f-b950-83940c8fe6f7",
+    "a06a67c7-3bf7-4236-94bd-86014a9ead8c",
+    "033bb0ba-95ea-46ae-b8e8-0ddb66d03154"
+  ],
+  "answer_text": "The KB does not publish numeric default values for BGP Hold Time or Keep-alive on a Cato site; it describes Hold Time as the period the site waits before declaring a neighbor down and shows that Hold Time and Keep-alive are configured in the Advanced BGP Settings. If two neighbors have different Hold Times, the lower Hold Time is used for both neighbors, and the Keep-alive interval is recalculated accordingly (for example, Hold Time 30 yields a Keep-alive of 10).",
+  "searches": [
+    {
+      "query": "Cato BGP hold time default",
+      "passage_ids": [
+        "3381e933-8d27-431f-b950-83940c8fe6f7",
+        "a06a67c7-3bf7-4236-94bd-86014a9ead8c",
+        "033bb0ba-95ea-46ae-b8e8-0ddb66d03154"
+      ],
+      "scores": [
+        7.7621,
+        7.7621,
+        4.5201
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1772,
+    "output_tokens": 3386,
+    "requests": 2
+  },
+  "latency_s": 26.781,
+  "ts": "2026-09-30T21:47:27+00:00"
+}

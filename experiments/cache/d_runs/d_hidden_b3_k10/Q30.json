@@ -1,0 +1,106 @@
+{
+  "query_id": "Q30",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "71d70dc8-5972-44a6-ac27-b73d2534ac9e",
+    "43499a3f-57dc-4453-9650-81f70282ca7e",
+    "815e4411-5c2e-401c-8b3e-424d36acd14d",
+    "987f8b10-a43b-4a3d-b988-a9eb2135d8fc"
+  ],
+  "answer_text": "Cato recommends using a targeted TLS Inspection bypass for apps that use certificate pinning. Add the pinned banking app to a bypass rule in your TLS Inspection policy so TLS inspection stays enabled for other traffic. Also note that some OSes are bypassed automatically by default: Android and Linux devices are bypassed by default (Unknown/Unidentified OS is treated as bypassed in some cases).",
+  "searches": [
+    {
+      "query": "pinned banking app TLS inspection Cato",
+      "passage_ids": [
+        "7a0e4d22-7e1f-4248-8a6c-b66103eed4d1",
+        "36d94fa6-bdd8-4d9d-bd5d-9ba16a2b1ccf",
+        "173509e5-d75c-449f-a6fa-593ce69324ba",
+        "d3e97261-c4b9-436c-88e6-436460b27b0d",
+        "61b52301-3cb8-4d67-98ab-07ca86a39871",
+        "f8746adb-42a2-489c-a57b-009d3a9ea001",
+        "bb504916-c20e-4b2f-804a-dbf27a770ccd",
+        "e8ca7958-0c4b-4f39-8a14-af985f520ddc",
+        "eff6e35a-2a3a-49a2-9587-11fd331249a4",
+        "29b519d9-2d93-41cb-8c37-9f32e1cf5182"
+      ],
+      "scores": [
+        6.0914,
+        5.1749,
+        5.108,
+        4.3093,
+        4.2692,
+        3.5288,
+        3.3434,
+        2.8128,
+        2.3899,
+        1.8887
+      ]
+    },
+    {
+      "query": "which OS bypass TLS inspection automatically",
+      "passage_ids": [
+        "a1fe4b67-8a4d-4378-ad74-570b7f917061",
+        "a3851f12-d7d2-4835-bf83-ca1c85f29d23",
+        "987f8b10-a43b-4a3d-b988-a9eb2135d8fc",
+        "6a728f2d-308b-40d0-975f-22ccc40cacf8",
+        "815e4411-5c2e-401c-8b3e-424d36acd14d",
+        "bcdfb904-bac6-47d5-a839-41d6f932ea42",
+        "0ab5712c-a88c-4af5-af2b-4402069e21cf",
+        "61b52301-3cb8-4d67-98ab-07ca86a39871",
+        "5bebdcf4-5ab0-4ee6-bf47-72b7bd4f84e6",
+        "e8ca7958-0c4b-4f39-8a14-af985f520ddc"
+      ],
+      "scores": [
+        7.1312,
+        7.0633,
+        6.8997,
+        6.8348,
+        6.4975,
+        5.1027,
+        5.0901,
+        4.9488,
+        4.5085,
+        4.1211
+      ]
+    },
+    {
+      "query": "pinned banking app TLS inspection",
+      "passage_ids": [
+        "71d70dc8-5972-44a6-ac27-b73d2534ac9e",
+        "7a0e4d22-7e1f-4248-8a6c-b66103eed4d1",
+        "61b52301-3cb8-4d67-98ab-07ca86a39871",
+        "43499a3f-57dc-4453-9650-81f70282ca7e",
+        "8ecaf454-5ba1-4a80-a4a7-4992fb9603e3",
+        "bb504916-c20e-4b2f-804a-dbf27a770ccd",
+        "815e4411-5c2e-401c-8b3e-424d36acd14d",
+        "5bebdcf4-5ab0-4ee6-bf47-72b7bd4f84e6",
+        "a5df336c-d21d-4863-ac76-7f332515566b",
+        "48376fa7-aa5e-44c9-905d-5a1a371281d8"
+      ],
+      "scores": [
+        5.6298,
+        5.4815,
+        3.8944,
+        3.2519,
+        2.9523,
+        1.0847,
+        0.8491,
+        -0.2721,
+        -0.4838,
+        -0.603
+      ]
+    }
+  ],
+  "n_searches": 3,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 13118,
+    "output_tokens": 3578,
+    "requests": 4
+  },
+  "latency_s": 32.009,
+  "ts": "2026-09-30T21:57:22+00:00"
+}

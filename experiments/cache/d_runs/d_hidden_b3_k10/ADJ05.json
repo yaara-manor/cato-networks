@@ -1,0 +1,74 @@
+{
+  "query_id": "ADJ05",
+  "variant": "d_hidden_b3_k10",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I can’t locate information about early termination fees for Cato subscriptions in the knowledge base. The KB provided doesn’t cover contract-term penalties or termination charges. Please refer to your customer contract or contact your Cato account representative or billing team for the exact early termination fee for your agreement.",
+  "searches": [
+    {
+      "query": "early termination fee",
+      "passage_ids": [
+        "216f2c15-366b-481b-a0ee-ba8049164b6e",
+        "6f0e87c2-b118-465a-9936-53a5e9e8422b",
+        "0032beeb-8efa-4ac5-8fba-d9bcca0a8653",
+        "0996c6ed-d63c-4d18-9c90-c370945c029f",
+        "74089d4d-bdc2-4123-a3e2-e28c4bb6f4e3",
+        "5950d1f2-6fa9-4bae-930f-b010cc30f136",
+        "1a9d3332-fd8c-43b4-a217-801fc67e559a",
+        "b6fcad80-29f6-41dc-8de6-bdb457d25e63",
+        "2627d260-66ec-4417-801c-b61e32a69af7",
+        "639e842b-2b7a-454d-b5b7-2bc2103404ea"
+      ],
+      "scores": [
+        -8.6267,
+        -8.7845,
+        -9.9825,
+        -10.7533,
+        -10.8041,
+        -10.8431,
+        -10.9098,
+        -11.0162,
+        -11.0286,
+        -11.0765
+      ]
+    },
+    {
+      "query": "early termination fee",
+      "passage_ids": [
+        "216f2c15-366b-481b-a0ee-ba8049164b6e",
+        "6f0e87c2-b118-465a-9936-53a5e9e8422b",
+        "0032beeb-8efa-4ac5-8fba-d9bcca0a8653",
+        "0996c6ed-d63c-4d18-9c90-c370945c029f",
+        "74089d4d-bdc2-4123-a3e2-e28c4bb6f4e3",
+        "5950d1f2-6fa9-4bae-930f-b010cc30f136",
+        "1a9d3332-fd8c-43b4-a217-801fc67e559a",
+        "b6fcad80-29f6-41dc-8de6-bdb457d25e63",
+        "2627d260-66ec-4417-801c-b61e32a69af7",
+        "639e842b-2b7a-454d-b5b7-2bc2103404ea"
+      ],
+      "scores": [
+        -8.6267,
+        -8.7845,
+        -9.9825,
+        -10.7533,
+        -10.8041,
+        -10.8431,
+        -10.9098,
+        -11.0162,
+        -11.0286,
+        -11.0765
+      ]
+    }
+  ],
+  "n_searches": 2,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 7580,
+    "output_tokens": 1935,
+    "requests": 3
+  },
+  "latency_s": 19.74,
+  "ts": "2026-09-30T22:01:49+00:00"
+}

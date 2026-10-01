@@ -1,0 +1,37 @@
+{
+  "query_id": "ADJ01",
+  "variant": "d_hidden_b1",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "Not in KB. We don’t have UniFi Dream Machine Pro–specific steps. The KB notes that Cato supports IKEv1 and IKEv2; when you create an IPsec site in the Cato Management Application, choose the IKE version that matches your edge device (prefer IKEv2 if supported; if your UDM Pro uses different IKEv2 parameters, use IKEv1). In general, you would create the IPsec site in the Cato MGMT App and configure it to connect to the UDM Pro, applying the site settings on both sides.",
+  "searches": [
+    {
+      "query": "UniFi Dream Machine Pro IKEv2 IPsec Cato",
+      "passage_ids": [
+        "c7f1bcb3-6b76-41bc-b1ee-95985aa77236",
+        "94c79749-9ad6-455d-b87b-220f42902322",
+        "6b87d78d-9206-4df8-ac08-ce75e4890209",
+        "90325d78-c496-4ec3-9b46-ad7b201c675f",
+        "a065018f-4396-44b9-a794-383384df32cb"
+      ],
+      "scores": [
+        2.2103,
+        2.0268,
+        1.8391,
+        1.7145,
+        1.5819
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2164,
+    "output_tokens": 3306,
+    "requests": 2
+  },
+  "latency_s": 25.465,
+  "ts": "2026-09-30T21:46:26+00:00"
+}

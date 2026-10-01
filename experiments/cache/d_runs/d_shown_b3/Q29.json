@@ -1,0 +1,54 @@
+{
+  "query_id": "Q29",
+  "variant": "d_shown_b3",
+  "decision": "ASK_CUSTOMER",
+  "final_decision": "ASK_CUSTOMER",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "The Connectivity Requirements for Socket Upgrades KB notes there are different connectivity requirements for gradual upgrades, and HTTPS traffic from the Socket's WAN IP address must be excluded. The X1700-specific upgrade ports aren’t enumerated in that excerpt; a separate article lists the X1700 port destinations, which would contain the exact port mappings. Please tell me if you’d like me to fetch that port list from the X1700 ports article.",
+  "searches": [
+    {
+      "query": "upstream TLS inspection Socket upgrade X1700 ports gradual upgrade",
+      "passage_ids": [
+        "79d612fa-113f-4dd3-9e73-5422779a5604",
+        "f914cbd9-c360-4b49-b700-0db55e8a68fd",
+        "cc030328-ae3a-4131-8ea8-b44df03680c6",
+        "1ef75699-333f-4e42-9b0b-26e804eae858",
+        "b2ff50ac-7719-43d3-9b5e-ef6d1a81e83b"
+      ],
+      "scores": [
+        7.149,
+        2.1811,
+        1.137,
+        0.253,
+        -0.8055
+      ]
+    },
+    {
+      "query": "X1700 gradual upgrade ports",
+      "passage_ids": [
+        "79d612fa-113f-4dd3-9e73-5422779a5604",
+        "1d37c57f-95f5-4904-9741-52ee7ad02787",
+        "b040c41d-41ba-44a7-b85a-fd5dc20c0718",
+        "6977d190-7f46-4595-a99d-4e44dece37ee",
+        "5915021a-ac52-4351-b113-8a91ca4f85dc"
+      ],
+      "scores": [
+        5.9687,
+        1.4207,
+        0.7948,
+        0.7473,
+        0.4855
+      ]
+    }
+  ],
+  "n_searches": 2,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 6670,
+    "output_tokens": 4632,
+    "requests": 3
+  },
+  "latency_s": 30.347,
+  "ts": "2026-09-30T21:35:17+00:00"
+}

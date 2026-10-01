@@ -1,0 +1,41 @@
+{
+  "query_id": "Q11",
+  "variant": "d_shown_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "47f5a4c0-8eb1-4626-b5c6-566fd61c879e",
+    "8e58b4b9-1fb9-43e1-96f6-f5baa2d29aea",
+    "4208a432-e59a-4da6-b822-e675d80e3ab1"
+  ],
+  "answer_text": "A Cisco ASA returns TS_UNACCEPTABLE because it can only handle a single Traffic Selector (TS) per IKEv2 child SA, while Cato currently sends multiple TS in one TS payload. To fix this, enable the IKEv2 option “Send Single TS per Payload” (set to On) so that only one TS is sent per child SA. You can also configure your account or a specific IPsec site to send each TS in a separate packet to maintain ASA interoperability.",
+  "searches": [
+    {
+      "query": "TS_UNACCEPTABLE Cisco ASA Cato IPsec",
+      "passage_ids": [
+        "47f5a4c0-8eb1-4626-b5c6-566fd61c879e",
+        "8e58b4b9-1fb9-43e1-96f6-f5baa2d29aea",
+        "db651f0c-4fcd-4a97-b63e-6034b7e8ecbd",
+        "4208a432-e59a-4da6-b822-e675d80e3ab1",
+        "7f5d3d54-2370-4eaf-92d2-0fa0f86db45a"
+      ],
+      "scores": [
+        7.7538,
+        7.7158,
+        7.5569,
+        6.604,
+        3.9336
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2414,
+    "output_tokens": 1485,
+    "requests": 2
+  },
+  "latency_s": 11.021,
+  "ts": "2026-09-30T21:33:40+00:00"
+}

@@ -1,0 +1,63 @@
+{
+  "query_id": "Q15",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "286685a9-1fc4-4518-a49d-46e4a8da4f6e",
+    "4c138e8d-1a5f-40bb-b60d-531f97837884",
+    "c625b423-e31e-495e-948b-6ed4881dbbde"
+  ],
+  "answer_text": "Azure’s behavior around PFS/DH groups is that the IKE SA DH group is the one configured in Init Message Parameters, and the first Child SA is created during IKE_AUTH using the same key material as the IKE SA. If the DH group on the two sides doesn’t match, the tunnel will fail to establish or fail at rekey. This explains rekey failures when Azure uses a different PFS/DH group than what you have configured on Cato; ensure the DH group matches on both sides.",
+  "searches": [
+    {
+      "query": "Azure PFS DH rekey",
+      "passage_ids": [
+        "286685a9-1fc4-4518-a49d-46e4a8da4f6e",
+        "4c138e8d-1a5f-40bb-b60d-531f97837884",
+        "db3109d2-f6c9-43eb-a2ce-212b973aeabb"
+      ],
+      "scores": [
+        2.4239,
+        0.5832,
+        -1.4118
+      ]
+    },
+    {
+      "query": "Azure handles PFS",
+      "passage_ids": [
+        "286685a9-1fc4-4518-a49d-46e4a8da4f6e",
+        "cdb2ea1b-aa78-4e50-9f79-d1b78fbf3ff4",
+        "adceb23a-2568-40d9-9265-9a991b170e67"
+      ],
+      "scores": [
+        6.2489,
+        2.6481,
+        -2.1845
+      ]
+    },
+    {
+      "query": "Azure rekey DH group",
+      "passage_ids": [
+        "286685a9-1fc4-4518-a49d-46e4a8da4f6e",
+        "c625b423-e31e-495e-948b-6ed4881dbbde",
+        "4c138e8d-1a5f-40bb-b60d-531f97837884"
+      ],
+      "scores": [
+        2.4625,
+        1.7624,
+        -0.2958
+      ]
+    }
+  ],
+  "n_searches": 3,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 8437,
+    "output_tokens": 3858,
+    "requests": 4
+  },
+  "latency_s": 34.393,
+  "ts": "2026-09-30T21:48:42+00:00"
+}

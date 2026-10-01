@@ -1,0 +1,47 @@
+{
+  "query_id": "OOD07",
+  "variant": "d_hidden_b3_k10",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn't find a sourdough bread recipe in the Cato knowledge base. This resources covers Cato Networks product and support content rather than cooking recipes. If you need help with a Cato-related topic (networking, configuration, or troubleshooting), I can assist.",
+  "searches": [
+    {
+      "query": "sourdough recipe",
+      "passage_ids": [
+        "7dc67f18-ca5f-4579-a1e7-c80ff8a1e830",
+        "7ec8ccd5-f3cd-4745-baea-476aa8f82a8f",
+        "7362c5a8-e8ef-4f0d-90bb-81a342a44707",
+        "511905c5-adea-4d26-91b7-94eff7fb08b6",
+        "e6e60aa9-3511-4204-b90b-324c07173ffe",
+        "0e02ea29-2117-4ea2-9c6d-3dfc09d51524",
+        "e814c492-a89b-472f-8874-1f0b58b66e8c",
+        "90cc2556-8cf6-4f23-9546-f11d4a015834",
+        "feb9c2cb-e3f7-4f88-998c-f203193fd089",
+        "f8dc4359-19d8-45f3-9932-a3e4ce987c23"
+      ],
+      "scores": [
+        -10.9552,
+        -11.08,
+        -11.1468,
+        -11.1748,
+        -11.2392,
+        -11.2528,
+        -11.253,
+        -11.2574,
+        -11.2623,
+        -11.2836
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 3795,
+    "output_tokens": 1226,
+    "requests": 2
+  },
+  "latency_s": 12.469,
+  "ts": "2026-09-30T22:01:15+00:00"
+}

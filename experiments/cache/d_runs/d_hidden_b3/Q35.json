@@ -1,0 +1,57 @@
+{
+  "query_id": "Q35",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "ed68f600-f45f-4c92-9a4f-2f4c1fa52014",
+    "5170f267-6401-4b61-b158-a0664f65ba7f"
+  ],
+  "answer_text": "Three troubleshooting moves from the SCIM provisioning playbook are: 1) Verify the IdP to CMA SCIM connectivity by testing the connection; 2) Check the CMA provisioning status and logs for the affected users to identify errors; 3) If the issue persists, raise a Cato Support ticket with the results, including an issue description and user impact, and the provisioning status to CMA.",
+  "searches": [
+    {
+      "query": "SCIM provisioning playbook",
+      "passage_ids": [
+        "7b96a961-d52f-46e2-b082-052541cee197",
+        "ee690f5f-0632-4d26-862e-e98048f0ac09",
+        "67699e14-a758-4c0c-9c36-68d62017b0d0",
+        "4877b072-607c-448b-b729-84bd1b64eb73",
+        "cb29bfb8-4f63-4060-b151-8b4dfb861c67"
+      ],
+      "scores": [
+        9.3542,
+        7.9253,
+        7.8454,
+        7.246,
+        6.8843
+      ]
+    },
+    {
+      "query": "SCIM Provisioning Failed three steps",
+      "passage_ids": [
+        "67699e14-a758-4c0c-9c36-68d62017b0d0",
+        "ed68f600-f45f-4c92-9a4f-2f4c1fa52014",
+        "5170f267-6401-4b61-b158-a0664f65ba7f",
+        "f89fc978-d19f-4db8-b57d-49c13a9e52d9",
+        "42436976-13f8-4e67-b3a7-4f3de727188f"
+      ],
+      "scores": [
+        5.876,
+        5.5643,
+        4.123,
+        3.605,
+        3.1868
+      ]
+    }
+  ],
+  "n_searches": 2,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 4819,
+    "output_tokens": 5217,
+    "requests": 3
+  },
+  "latency_s": 35.54,
+  "ts": "2026-09-30T21:28:28+00:00"
+}

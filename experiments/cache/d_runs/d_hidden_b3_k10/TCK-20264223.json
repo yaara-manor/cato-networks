@@ -1,0 +1,49 @@
+{
+  "query_id": "TCK-20264223",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "5089736e-a172-476c-acf6-1d2ed5fdeb85"
+  ],
+  "answer_text": "Yes. You can reset MFA for a user. To reset MFA for the CEO's account: go to Access > Users, select the user, choose Reset MFA from Actions, and confirm. The user will receive an email with a link to the Cato User Portal; after signing in, they will need to set up MFA again.",
+  "searches": [
+    {
+      "query": "MFA reset",
+      "passage_ids": [
+        "5089736e-a172-476c-acf6-1d2ed5fdeb85",
+        "6bc4f7c7-f97d-41f5-8656-901a1f698d9c",
+        "e7f25ee5-3ee8-40ae-bee1-b9dd23e5a442",
+        "75e9ca5f-5906-45e5-aa50-21b07fda6e58",
+        "8ce60069-794a-497f-a612-8bf5c86a636f",
+        "3ffdaeab-da87-4b1c-a5e6-0de4782b7e00",
+        "25acd733-f34a-409f-8933-746788983711",
+        "41621dfc-b666-4b42-9eff-733486c474dd",
+        "84901a8c-ec97-4bb8-afc2-353d8c363cde",
+        "1cbbd5a5-e0d0-4bbb-9be0-1147ed74482e"
+      ],
+      "scores": [
+        7.9199,
+        7.6547,
+        2.6366,
+        2.1303,
+        1.9808,
+        1.3116,
+        0.6941,
+        0.2651,
+        0.2187,
+        0.1551
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 3101,
+    "output_tokens": 1677,
+    "requests": 2
+  },
+  "latency_s": 13.673,
+  "ts": "2026-09-30T21:59:06+00:00"
+}

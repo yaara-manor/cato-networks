@@ -1,0 +1,104 @@
+{
+  "query_id": "Q18",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "5a77fbfe-a971-40fb-ac69-28714f5ede90",
+    "797eff0e-151a-408b-8b7a-9222937a93ad"
+  ],
+  "answer_text": "Throughput drop for a Cato Socket behind a third‑party firewall is often caused by UDP Flooding protection on that firewall, which can limit traffic over the Cato DTLS tunnels. The recommended fix is to disable the UDP Flooding protection in the firewall, then run a speed test to compare throughput with the protection enabled vs. disabled.",
+  "searches": [
+    {
+      "query": "Socket behind third-party firewall throughput drop",
+      "passage_ids": [
+        "797eff0e-151a-408b-8b7a-9222937a93ad",
+        "85d6e8b6-8041-4e3a-ae5e-79e28ae5aba0",
+        "6cdde4ae-97b3-46d0-9ee4-20dac91b91cf",
+        "34a79ace-b53a-4e6c-8616-d6c4dc6467cf",
+        "ca8f4067-da0b-4ec5-ba9d-35bb6440c323",
+        "1f479ea7-9726-4d5d-bd33-9b55c62b429b",
+        "380a773f-de66-4b16-896e-adbb80b7aa2c",
+        "1ea3f83a-1704-49c9-a975-a60696591156",
+        "ad13491b-ebb8-4c3c-a9d8-524ae65487bf",
+        "6ce95c52-719f-4398-8747-74ed58245cb5"
+      ],
+      "scores": [
+        4.8415,
+        4.5288,
+        4.3318,
+        3.8682,
+        1.1167,
+        0.3854,
+        -0.0041,
+        -4.4388,
+        -8.7641,
+        -9.3206
+      ]
+    },
+    {
+      "query": "Performance Troubleshooting: Socket Behind a Third-Party Firewall",
+      "passage_ids": [
+        "6cdde4ae-97b3-46d0-9ee4-20dac91b91cf",
+        "34a79ace-b53a-4e6c-8616-d6c4dc6467cf",
+        "161e0660-20e2-4ad6-9ebc-3730fc622f90",
+        "85d6e8b6-8041-4e3a-ae5e-79e28ae5aba0",
+        "9debaa25-4474-4207-a4ce-f936faf7db7b",
+        "304c8861-476e-45f7-b06a-376fd0dee9d5",
+        "1f479ea7-9726-4d5d-bd33-9b55c62b429b",
+        "80711e12-d10b-4aa1-8ed7-fdd640438124",
+        "0ec327fd-0e70-4678-b878-595b34a257b4",
+        "0d58dbb1-4034-442e-a77a-5d9565897e61"
+      ],
+      "scores": [
+        9.0655,
+        3.1618,
+        0.5581,
+        0.1893,
+        -1.4178,
+        -1.4203,
+        -3.8407,
+        -4.1877,
+        -8.1468,
+        -8.4183
+      ]
+    },
+    {
+      "query": "UDP Flooding protection disable Cato",
+      "passage_ids": [
+        "5a77fbfe-a971-40fb-ac69-28714f5ede90",
+        "797eff0e-151a-408b-8b7a-9222937a93ad",
+        "85d6e8b6-8041-4e3a-ae5e-79e28ae5aba0",
+        "ead32a31-a8aa-4e50-9128-5169d762489d",
+        "f2290b57-0dd7-4b6e-94d6-9aa5299cdcf4",
+        "52cf48f5-90f6-423f-95de-8bb3d0e6218f",
+        "5855a811-7318-4b92-b72a-f8c177dfe0e4",
+        "786e6753-0b54-4e50-b818-6ca03426aa9a",
+        "e8e3666b-0e13-4b0f-88af-b1947a4cebda",
+        "9ab12e1a-5d6d-4f3c-8d67-7afa587ee970"
+      ],
+      "scores": [
+        8.2323,
+        7.1406,
+        5.1071,
+        1.9662,
+        1.198,
+        0.854,
+        0.8459,
+        0.7006,
+        0.1573,
+        -1.0306
+      ]
+    }
+  ],
+  "n_searches": 3,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 19205,
+    "output_tokens": 3181,
+    "requests": 5
+  },
+  "latency_s": 31.58,
+  "ts": "2026-09-30T21:56:05+00:00"
+}

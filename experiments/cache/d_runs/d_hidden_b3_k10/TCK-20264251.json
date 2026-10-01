@@ -1,0 +1,49 @@
+{
+  "query_id": "TCK-20264251",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "e7d9043e-d5ee-4c30-90c3-c897c0278bea"
+  ],
+  "answer_text": "No—Cato Socket LAN ports do not support jumbo frames. Jumbo frames (such as 9000-byte frames) cannot be enabled on the Socket LAN. If a LAN packet exceeds 1500 bytes, the Socket will fragment it to 1500 bytes when the DF bit is not set, or drop the packet and send an ICMP Fragmentation Needed message when the DF bit is set.",
+  "searches": [
+    {
+      "query": "jumbo frames Socket LAN",
+      "passage_ids": [
+        "e7d9043e-d5ee-4c30-90c3-c897c0278bea",
+        "e63e0b70-9334-4d96-bb41-413436a00e3a",
+        "b9d5682e-275e-4058-9da6-383d4a83837d",
+        "bd95b275-97d3-41de-a9b5-f0fb1d1efe32",
+        "dbaf23f6-6aa1-4d8a-97fa-a661395b36d8",
+        "a8d50099-7e93-4df7-b24b-6f3d08e1727e",
+        "9c222dce-3441-429d-b2ab-256a3d219748",
+        "c4680935-9916-4fac-ae44-eb0ef4594245",
+        "380a773f-de66-4b16-896e-adbb80b7aa2c",
+        "ee8f8017-085d-4ab9-a820-a352038ce6ff"
+      ],
+      "scores": [
+        7.1888,
+        -3.1569,
+        -4.4852,
+        -4.8377,
+        -5.2008,
+        -5.2536,
+        -5.3177,
+        -5.4078,
+        -5.8998,
+        -5.9981
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 3096,
+    "output_tokens": 1645,
+    "requests": 2
+  },
+  "latency_s": 14.566,
+  "ts": "2026-09-30T22:00:00+00:00"
+}

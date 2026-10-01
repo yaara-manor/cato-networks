@@ -1,0 +1,36 @@
+{
+  "query_id": "SC-02-vague-slow",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "0142c3f4-e2dc-4f35-b301-10e11248c307",
+    "3477d5a7-682d-458a-8747-9d34d4c3ca47"
+  ],
+  "answer_text": "To diagnose slow Internet, run a ping test and traceroute to compare latency for traffic that passes through Cato vs bypassing Cato. Sub-optimal routing is a common cause; if your results show higher latency through Cato, we’ll need to investigate the route. If you’re on Wi‑Fi, a weak client signal can also cause slow performance, so check signal strength (a reading around -75 dBm or lower can indicate trouble) and improve coverage or try a wired connection.",
+  "searches": [
+    {
+      "query": "slow internet",
+      "passage_ids": [
+        "0142c3f4-e2dc-4f35-b301-10e11248c307",
+        "3477d5a7-682d-458a-8747-9d34d4c3ca47",
+        "ac6b188c-51f2-45f9-9c19-98012df60ee2"
+      ],
+      "scores": [
+        1.3508,
+        0.1272,
+        -6.1732
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1754,
+    "output_tokens": 2109,
+    "requests": 2
+  },
+  "latency_s": 18.253,
+  "ts": "2026-09-30T21:50:19+00:00"
+}

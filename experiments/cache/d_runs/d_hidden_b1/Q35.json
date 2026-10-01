@@ -1,0 +1,39 @@
+{
+  "query_id": "Q35",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "67699e14-a758-4c0c-9c36-68d62017b0d0"
+  ],
+  "answer_text": "The XOps Network Playbook – SCIM Provisioning Failed describes three troubleshooting moves for scheduled SCIM provisioning failures: 1) Validate the SCIM connection between the IdP and CMA and ensure credentials are correct; 2) Verify CMA SCIM provisioning configuration and the user/attribute mappings; 3) Review the SCIM provisioning job history/logs and re-run the provisioning after addressing any issues.",
+  "searches": [
+    {
+      "query": "SCIM provisioning troubleshooting playbook",
+      "passage_ids": [
+        "7b96a961-d52f-46e2-b082-052541cee197",
+        "4515617a-4e63-433d-a164-6731674ff992",
+        "67699e14-a758-4c0c-9c36-68d62017b0d0",
+        "4877b072-607c-448b-b729-84bd1b64eb73",
+        "cb29bfb8-4f63-4060-b151-8b4dfb861c67"
+      ],
+      "scores": [
+        8.607,
+        7.3744,
+        6.4269,
+        6.0247,
+        5.6335
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1984,
+    "output_tokens": 3450,
+    "requests": 2
+  },
+  "latency_s": 25.748,
+  "ts": "2026-09-30T21:43:11+00:00"
+}

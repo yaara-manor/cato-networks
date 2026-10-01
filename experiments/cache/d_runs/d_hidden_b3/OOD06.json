@@ -1,0 +1,37 @@
+{
+  "query_id": "OOD06",
+  "variant": "d_hidden_b3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I don’t have information about the 2026 FIFA World Cup winner in the Cato knowledge base. My KB covers Cato products and policies, not sports results. Please check a reliable sports news source or FIFA’s official site for the latest winner.",
+  "searches": [
+    {
+      "query": "FIFA World Cup 2026 winner",
+      "passage_ids": [
+        "a4c8295c-66bb-415d-9e03-df9f9ffd3875",
+        "946a23d3-89db-4404-a17f-d18c1c97c800",
+        "4d000b39-545d-47dd-aa8f-80d0939949ea",
+        "fc5b9c24-d388-4331-be90-fa075a615d57",
+        "f2a77680-2824-4f1d-b499-e6087d551594"
+      ],
+      "scores": [
+        -4.3354,
+        -5.8821,
+        -6.7139,
+        -6.7397,
+        -6.8198
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2580,
+    "output_tokens": 1173,
+    "requests": 2
+  },
+  "latency_s": 10.944,
+  "ts": "2026-09-30T21:31:29+00:00"
+}

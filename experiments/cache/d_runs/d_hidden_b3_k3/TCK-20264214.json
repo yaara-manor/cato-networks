@@ -1,0 +1,35 @@
+{
+  "query_id": "TCK-20264214",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "0142c3f4-e2dc-4f35-b301-10e11248c307"
+  ],
+  "answer_text": "Slow performance can be caused by a sub-optimal routing path to the server. To diagnose, run a ping test and a traceroute to compare latency when the connection passes through the Cato Cloud versus when it bypasses Cato altogether. If the Cato path shows higher latency or instability, that indicates a sub-optimal route and you can take steps to optimize the path.",
+  "searches": [
+    {
+      "query": "slow internet",
+      "passage_ids": [
+        "0142c3f4-e2dc-4f35-b301-10e11248c307",
+        "3477d5a7-682d-458a-8747-9d34d4c3ca47",
+        "ac6b188c-51f2-45f9-9c19-98012df60ee2"
+      ],
+      "scores": [
+        1.3508,
+        0.1272,
+        -6.1732
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1839,
+    "output_tokens": 1733,
+    "requests": 2
+  },
+  "latency_s": 15.515,
+  "ts": "2026-09-30T21:51:42+00:00"
+}

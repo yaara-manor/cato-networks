@@ -1,0 +1,33 @@
+{
+  "query_id": "OOD01",
+  "variant": "d_hidden_b3_k3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "The knowledge base does not contain Cisco Catalyst 9300-specific VLAN configuration steps. Please consult Cisco's Catalyst 9300 documentation for VLAN and trunk configuration on Cisco IOS XE, or contact your network administrator for Cisco-specific guidance.",
+  "searches": [
+    {
+      "query": "Catalyst 9300 VLAN configuration",
+      "passage_ids": [
+        "5d86fe59-b0fd-40c8-be49-49336365e422",
+        "9a3c3735-39c9-49f6-bc4f-21b2179d3ee1",
+        "1ebb27bd-76b3-4236-b8eb-968b295854bf"
+      ],
+      "scores": [
+        -1.6357,
+        -2.1285,
+        -2.5108
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1840,
+    "output_tokens": 1982,
+    "requests": 2
+  },
+  "latency_s": 16.235,
+  "ts": "2026-09-30T21:52:40+00:00"
+}

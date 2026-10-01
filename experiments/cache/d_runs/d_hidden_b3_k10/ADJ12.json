@@ -1,0 +1,47 @@
+{
+  "query_id": "ADJ12",
+  "variant": "d_hidden_b3_k10",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn't find any KB entry about new Cato PoP openings scheduled for Q1 2027. The PoP announcements in the KB cover updates through 2026 (and earlier) and do not specify a Q1 2027 schedule. If you want, I can run a broader search for the latest PoP roadmap updates or provide links to the most recent announcements.",
+  "searches": [
+    {
+      "query": "Q1 2027 PoP locations",
+      "passage_ids": [
+        "17cf74d4-e08f-42b6-8c30-ea37d5145c8f",
+        "a253f83a-40bf-40d7-9d45-531ec64b9233",
+        "dbfc28ac-2b0d-44e0-82fd-19078327cb2b",
+        "918e9aed-518f-4e8a-9d43-7e02dd72f04f",
+        "cb010ba0-8f63-4410-be81-64ff351060b4",
+        "76695cc2-7944-45d1-82d5-b288dd1492de",
+        "e98e3cc2-4967-4e31-933e-e513dccb8ff4",
+        "ea34f74c-a1ac-4a73-be74-ca56f34d2ef8",
+        "d88a3af8-3a6c-4728-be29-6eafc9dd0b16",
+        "5ca8cd6e-5202-474e-bc5a-11ac8c1f8b97"
+      ],
+      "scores": [
+        2.2407,
+        0.7498,
+        0.0375,
+        -0.2432,
+        -0.3271,
+        -0.5706,
+        -0.7679,
+        -0.8914,
+        -1.1642,
+        -1.3399
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2832,
+    "output_tokens": 1654,
+    "requests": 2
+  },
+  "latency_s": 13.263,
+  "ts": "2026-09-30T22:02:32+00:00"
+}

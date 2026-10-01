@@ -1,0 +1,33 @@
+{
+  "query_id": "ADJ10",
+  "variant": "d_hidden_b3_k3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn't locate Windows Client version 9.2 release notes in the knowledge base. The available Windows Client entries in this KB cover v6.2 and v5.11.9.",
+  "searches": [
+    {
+      "query": "Windows Client 9.2 release notes",
+      "passage_ids": [
+        "c1d10b3b-8900-497f-963a-a14c6bafe5f4",
+        "9be3bbca-5214-4d49-bbcd-79288d047fce",
+        "4ecebdec-ccd6-49eb-8cfa-cea799e44797"
+      ],
+      "scores": [
+        -0.2518,
+        -0.7726,
+        -0.782
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1652,
+    "output_tokens": 1194,
+    "requests": 2
+  },
+  "latency_s": 11.662,
+  "ts": "2026-09-30T21:53:48+00:00"
+}

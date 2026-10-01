@@ -1,0 +1,101 @@
+{
+  "query_id": "ADJ08",
+  "variant": "d_hidden_b3_k10",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn’t locate the exact maximum EIRP transmit power or antenna gain (dBi) for the X1600 Wi‑Fi radios in the current KB. The X1600 Wi‑Fi models are described as having built‑in Wi‑Fi 6 radios and acting as the access point, but the RF specification values aren’t listed here. If you’d like, I can point you to the X1600 electrical specifications data sheet in the Deployment Guides and Data Sheets so you can pull the precise EIRP and antenna gain figures for your regulatory domain.",
+  "searches": [
+    {
+      "query": "X1600 EIRP antenna gain",
+      "passage_ids": [
+        "639e842b-2b7a-454d-b5b7-2bc2103404ea",
+        "fb4dc08d-2fbd-42d1-9224-28d485f6c576",
+        "4e60bc59-ff2f-46e5-8ec4-4b6ae53bf12d",
+        "ee44d56e-990f-4aa5-bbf8-70d44a539cf3",
+        "54dd1c95-7f64-4321-85c8-dc19036d9db3",
+        "670fb5b3-8ed3-4220-bc51-cd7c13b7aedc",
+        "4f5e6d88-2e25-4494-bc67-673c36256c44",
+        "b5981eaf-f994-4a5f-9156-511d116d687b",
+        "c36f03c6-c57d-4ecd-a9c2-027bd4223f2a",
+        "7e8b6d77-e8cb-46b0-b596-48fb7eb1af32"
+      ],
+      "scores": [
+        -0.649,
+        -0.7967,
+        -1.0094,
+        -1.3832,
+        -1.4641,
+        -1.6133,
+        -1.8793,
+        -2.0342,
+        -2.2777,
+        -2.7139
+      ]
+    },
+    {
+      "query": "X1600 data sheet EIRP",
+      "passage_ids": [
+        "fa6babae-97d1-46b9-83c7-e31f3fc4749e",
+        "5d21e669-d862-4a6f-94c6-7ede03895eba",
+        "893b0d70-d38e-4d4b-a823-937d4619fcaa",
+        "54dd1c95-7f64-4321-85c8-dc19036d9db3",
+        "670fb5b3-8ed3-4220-bc51-cd7c13b7aedc",
+        "b5981eaf-f994-4a5f-9156-511d116d687b",
+        "985d94cb-5c2a-446c-88c8-3ef0a532145d",
+        "7e8b6d77-e8cb-46b0-b596-48fb7eb1af32",
+        "649099dd-e804-494a-a845-479c55c58318",
+        "643f134c-0395-4503-b6eb-f15ca677dea7"
+      ],
+      "scores": [
+        4.4705,
+        3.5749,
+        3.1478,
+        2.7814,
+        2.1712,
+        -0.8362,
+        -1.0418,
+        -1.5076,
+        -2.4934,
+        -9.0082
+      ]
+    },
+    {
+      "query": "X1600 electrical specifications EIRP",
+      "passage_ids": [
+        "985d94cb-5c2a-446c-88c8-3ef0a532145d",
+        "ac4e8c79-2e33-46d2-a829-a510e4db131b",
+        "d9dfdace-0dcf-468b-b350-8163bcf476df",
+        "5994d49b-f537-4038-aa68-192c7a14e3e8",
+        "f567bcac-a16f-41bf-9193-ad8bb36cdb61",
+        "fa6babae-97d1-46b9-83c7-e31f3fc4749e",
+        "4f5e6d88-2e25-4494-bc67-673c36256c44",
+        "670fb5b3-8ed3-4220-bc51-cd7c13b7aedc",
+        "b5981eaf-f994-4a5f-9156-511d116d687b",
+        "54dd1c95-7f64-4321-85c8-dc19036d9db3"
+      ],
+      "scores": [
+        5.1333,
+        4.3978,
+        4.0521,
+        3.9795,
+        3.569,
+        3.3385,
+        2.7616,
+        0.9391,
+        0.2911,
+        0.0024
+      ]
+    }
+  ],
+  "n_searches": 3,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 20141,
+    "output_tokens": 3094,
+    "requests": 5
+  },
+  "latency_s": 30.371,
+  "ts": "2026-09-30T22:02:19+00:00"
+}

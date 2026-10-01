@@ -1,0 +1,103 @@
+{
+  "query_id": "Q26",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "b88f994c-f308-4312-9f55-f2a572f5bd5d"
+  ],
+  "answer_text": "By default, Last Mile Monitoring uses predefined probes to several destinations. You can configure as many probes as you would like, but only 5 probes can be assigned per rule. The knowledge base does not specify the default probe interval.",
+  "searches": [
+    {
+      "query": "Last Mile Monitoring probe default",
+      "passage_ids": [
+        "720b2633-710a-460f-be50-7d093d139581",
+        "83b0a66d-c4f0-4a8e-972e-e262ee8ea533",
+        "b88f994c-f308-4312-9f55-f2a572f5bd5d",
+        "4a1042b8-0956-4984-9832-26c282e2ca4f",
+        "87802d18-d8e9-4007-a3d8-7a0cabe99b69",
+        "688292bb-2299-47b6-9bb9-582e843f49ae",
+        "6a05faf6-0786-43ac-8249-5c08c1c55841",
+        "9f9bf613-e6db-4bab-ad1a-bcac7e5b2ead",
+        "a023aaa3-14e9-4c8d-9c59-9b3f2e4183ca",
+        "272d1e5b-c1b9-4e06-93ed-feee9bf82bea"
+      ],
+      "scores": [
+        7.3923,
+        7.0603,
+        6.6566,
+        5.677,
+        5.3508,
+        4.819,
+        4.5655,
+        4.2145,
+        4.174,
+        3.911
+      ]
+    },
+    {
+      "query": "Last Mile Monitoring interval",
+      "passage_ids": [
+        "87802d18-d8e9-4007-a3d8-7a0cabe99b69",
+        "272d1e5b-c1b9-4e06-93ed-feee9bf82bea",
+        "83b0a66d-c4f0-4a8e-972e-e262ee8ea533",
+        "1211d712-44d8-4326-87f3-550c1b441cbf",
+        "6a05faf6-0786-43ac-8249-5c08c1c55841",
+        "720b2633-710a-460f-be50-7d093d139581",
+        "9f9bf613-e6db-4bab-ad1a-bcac7e5b2ead",
+        "0aa66f5a-d749-43ce-b8b8-e02e22e22026",
+        "688292bb-2299-47b6-9bb9-582e843f49ae",
+        "4a1042b8-0956-4984-9832-26c282e2ca4f"
+      ],
+      "scores": [
+        5.7091,
+        4.8962,
+        4.6122,
+        4.5368,
+        4.4134,
+        3.9033,
+        3.386,
+        3.3015,
+        3.1948,
+        2.8679
+      ]
+    },
+    {
+      "query": "Last Mile Monitoring probes per rule default interval",
+      "passage_ids": [
+        "b88f994c-f308-4312-9f55-f2a572f5bd5d",
+        "83b0a66d-c4f0-4a8e-972e-e262ee8ea533",
+        "688292bb-2299-47b6-9bb9-582e843f49ae",
+        "87802d18-d8e9-4007-a3d8-7a0cabe99b69",
+        "720b2633-710a-460f-be50-7d093d139581",
+        "6a05faf6-0786-43ac-8249-5c08c1c55841",
+        "4a1042b8-0956-4984-9832-26c282e2ca4f",
+        "9f9bf613-e6db-4bab-ad1a-bcac7e5b2ead",
+        "2a5f7f16-87b2-46ea-8657-72382ff013c9",
+        "1794f1bf-b58b-4d24-bf85-66e4d0d86684"
+      ],
+      "scores": [
+        6.57,
+        4.2557,
+        3.4942,
+        3.4097,
+        2.4637,
+        1.1545,
+        0.9801,
+        0.3264,
+        -1.3917,
+        -2.6863
+      ]
+    }
+  ],
+  "n_searches": 3,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 14176,
+    "output_tokens": 3774,
+    "requests": 4
+  },
+  "latency_s": 33.772,
+  "ts": "2026-09-30T21:56:54+00:00"
+}

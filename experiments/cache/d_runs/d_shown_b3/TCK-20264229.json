@@ -1,0 +1,41 @@
+{
+  "query_id": "TCK-20264229",
+  "variant": "d_shown_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "e9157057-2af4-48d6-ac0e-264eebd5955d",
+    "4466ebcb-e8ae-4698-9b49-cf6beafc178f",
+    "8bea93d0-0242-43c5-8039-28618dbef953"
+  ],
+  "answer_text": "Large file transfers can stall on Cato when the tunnel MTU is reduced by DTLS overhead. The MTU is normally 1500, but DTLS reduces the effective MTU to about 1383 bytes, which can cause fragmentation or timeouts for big transfers. If your site uses PPPoE (such as Toronto), some connectivity issues can be helped by disabling Energy Efficient Ethernet (EEE). In short, review MTU settings to account for the 1383-byte tunnel MTU and consider the EEE option if PPPoE is in use.",
+  "searches": [
+    {
+      "query": "PPPoE MTU large transfers",
+      "passage_ids": [
+        "e9157057-2af4-48d6-ac0e-264eebd5955d",
+        "4466ebcb-e8ae-4698-9b49-cf6beafc178f",
+        "ffffac75-40fd-4248-99fa-92dc33cd0799",
+        "8bea93d0-0242-43c5-8039-28618dbef953",
+        "4513d968-3c0c-48f1-96a5-d3ec685d63ed"
+      ],
+      "scores": [
+        2.9429,
+        2.314,
+        -1.1342,
+        -1.5131,
+        -3.0054
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2355,
+    "output_tokens": 2588,
+    "requests": 2
+  },
+  "latency_s": 18.394,
+  "ts": "2026-09-30T21:37:13+00:00"
+}

@@ -1,0 +1,37 @@
+{
+  "query_id": "ADJ12",
+  "variant": "d_hidden_b3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn't locate any KB article listing PoP openings scheduled for Q1 2027. The available PoP announcements in the KB cover locations and ranges for earlier periods (for example, New Delhi in 2026), but do not specify Q1 2027 openings. For the most up-to-date PoP roadmap, please check the Cato Status Page.",
+  "searches": [
+    {
+      "query": "Q1 2027 PoP openings",
+      "passage_ids": [
+        "17cf74d4-e08f-42b6-8c30-ea37d5145c8f",
+        "eb6ffd4a-0489-446b-ac88-8afd59157cf2",
+        "1386fe40-7722-4b46-bbf7-1e4edc1c5f72",
+        "a253f83a-40bf-40d7-9d45-531ec64b9233",
+        "76695cc2-7944-45d1-82d5-b288dd1492de"
+      ],
+      "scores": [
+        -2.2288,
+        -2.4644,
+        -3.6561,
+        -4.547,
+        -4.95
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2281,
+    "output_tokens": 1395,
+    "requests": 2
+  },
+  "latency_s": 10.06,
+  "ts": "2026-09-30T21:32:30+00:00"
+}

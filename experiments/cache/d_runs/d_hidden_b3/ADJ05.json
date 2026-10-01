@@ -1,0 +1,37 @@
+{
+  "query_id": "ADJ05",
+  "variant": "d_hidden_b3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn't locate information about early termination fees or penalties in the knowledge base. Pricing and contract terms aren’t covered in the KB entries available here. Please consult your Cato account representative or review your signed contract/order for the exact early termination charges.",
+  "searches": [
+    {
+      "query": "early termination fee Cato contract term",
+      "passage_ids": [
+        "0032beeb-8efa-4ac5-8fba-d9bcca0a8653",
+        "8165e7ed-88ef-49b3-be40-755a6fb3e3ad",
+        "ee4c8707-64ba-4b4d-b284-67c0015b5884",
+        "1b877c02-3cc9-416f-898c-3febcd57ef6a",
+        "5b3d26b1-2a81-423e-bb7e-e9d55037e06d"
+      ],
+      "scores": [
+        -0.3018,
+        -1.3891,
+        -1.5597,
+        -2.3828,
+        -2.7458
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2159,
+    "output_tokens": 1623,
+    "requests": 2
+  },
+  "latency_s": 13.523,
+  "ts": "2026-09-30T21:32:08+00:00"
+}

@@ -1,0 +1,51 @@
+{
+  "query_id": "Q05",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "325d51a3-cb69-463e-bd32-b05e92441dd6",
+    "2bfc4c5d-a149-40c4-9e40-8c35d33c260d",
+    "6c07f060-8d09-489c-80d7-55e2fefb123a"
+  ],
+  "answer_text": "A Socket BGP session can accommodate up to 1024 routes from a neighbor before performance is affected. To reduce the number of advertised routes, use BGP summary routes (they consolidate prefixes; up to 256 summary routes per peer and up to 5 communities per summary route). If suitable, advertise a default route (0/0) instead of all specific prefixes to further limit the number of routes sent to the neighbor.",
+  "searches": [
+    {
+      "query": "BGP routes limit",
+      "passage_ids": [
+        "325d51a3-cb69-463e-bd32-b05e92441dd6",
+        "c4a868d0-f842-457b-bd31-6519eb4db531",
+        "12226386-7e34-4528-8415-8df9d696f5e5",
+        "98253723-f995-4b9d-8b47-41d06a32cae8",
+        "1e1aaa68-9684-40fd-9148-50453b00aa5f",
+        "2bfc4c5d-a149-40c4-9e40-8c35d33c260d",
+        "0ae5534d-ed82-4c05-b72e-3172673a1549",
+        "6c07f060-8d09-489c-80d7-55e2fefb123a",
+        "2e76d0ca-2c5f-4736-b0dd-49978bcf339a",
+        "29687bc4-f33a-483a-a26c-6b2711214ac8"
+      ],
+      "scores": [
+        7.2457,
+        7.1687,
+        5.8338,
+        4.6105,
+        2.0746,
+        2.0659,
+        1.1015,
+        0.9345,
+        0.7768,
+        0.658
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2923,
+    "output_tokens": 3340,
+    "requests": 2
+  },
+  "latency_s": 22.73,
+  "ts": "2026-09-30T21:54:42+00:00"
+}

@@ -1,0 +1,49 @@
+{
+  "query_id": "Q03",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "c582d80b-e93a-4540-8bee-02b52b069a4e"
+  ],
+  "answer_text": "Downstream MTU is the lowest MTU discovered across the active WAN links; in your example it will be 1383 bytes. The KB describes this behavior specifically for multiple active WAN links and does not mention passive links, so it does not indicate any effect from passive links on downstream MTU.",
+  "searches": [
+    {
+      "query": "MTU downstream multiple WAN links",
+      "passage_ids": [
+        "c582d80b-e93a-4540-8bee-02b52b069a4e",
+        "f3345e5b-046b-4595-9694-8270e40e523f",
+        "c60fde1d-4e00-4e01-b6b4-d5d791bdd895",
+        "778b60a3-757c-4db5-ab32-64eca250935d",
+        "c4103fd2-4031-4cdd-94a4-b1c0c830364c",
+        "dc339974-69ad-4803-a16d-3a9270bf2bf5",
+        "e9157057-2af4-48d6-ac0e-264eebd5955d",
+        "4466ebcb-e8ae-4698-9b49-cf6beafc178f",
+        "a290f0ac-7d21-417d-b3dc-8ed9875d546a",
+        "9d7ddcdc-18ba-48bb-b209-c8cd8e382c61"
+      ],
+      "scores": [
+        8.4983,
+        1.4619,
+        0.6405,
+        -0.7262,
+        -0.7391,
+        -0.9921,
+        -1.2199,
+        -3.1352,
+        -4.4794,
+        -4.7248
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 3051,
+    "output_tokens": 2243,
+    "requests": 2
+  },
+  "latency_s": 19.048,
+  "ts": "2026-09-30T21:54:24+00:00"
+}

@@ -1,0 +1,50 @@
+{
+  "query_id": "Q09",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "2420ddee-8d0d-4369-8ef5-c57c7cbc72bf",
+    "1e1aaa68-9684-40fd-9148-50453b00aa5f"
+  ],
+  "answer_text": "- Disconnect reason: Use the CMA Events page (Home > Events) and select the BGP peers disconnected view to see a history of BGP session disconnects and the associated BGP Disconnect Error Code. \n- Verify the route table: Use the BGP Analytics and Events workflow in CMA by going to Home > Events and filtering for BGP to show events related to the BGP routing table.",
+  "searches": [
+    {
+      "query": "BGP Disconnected CMA views",
+      "passage_ids": [
+        "e2d4430d-5c0e-40d6-b813-2a09fdf53323",
+        "06517cf1-ea25-4ccb-b58d-4be6d8787fcb",
+        "914b40f0-5898-4055-b3f2-41db869cb279",
+        "2420ddee-8d0d-4369-8ef5-c57c7cbc72bf",
+        "9f31ce06-8ec2-4cc2-835a-3f73c4eac3a6",
+        "e686414c-763a-4513-82a4-08be342ffce2",
+        "5ab8c97b-66a9-4207-9fce-2ac3b30bb3e4",
+        "3319d96f-4ccd-415c-aa8f-4cb17e293e09",
+        "37f826bd-d527-4a55-909d-44e8dbfb2792",
+        "1e1aaa68-9684-40fd-9148-50453b00aa5f"
+      ],
+      "scores": [
+        4.1626,
+        4.1626,
+        3.6734,
+        3.2676,
+        2.7036,
+        1.9173,
+        0.5736,
+        0.4784,
+        0.4784,
+        -0.4307
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2936,
+    "output_tokens": 2328,
+    "requests": 2
+  },
+  "latency_s": 17.994,
+  "ts": "2026-09-30T21:54:52+00:00"
+}

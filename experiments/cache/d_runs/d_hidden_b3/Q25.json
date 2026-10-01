@@ -1,0 +1,57 @@
+{
+  "query_id": "Q25",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "64033488-5c2f-43be-8a8e-63cea68a53ae",
+    "6a50933d-0d00-4abc-9216-ba0b8280a25e"
+  ],
+  "answer_text": "If all active links have unacceptable SLA, the Socket triggers a PoP failover evaluation. With Cato Smart SLA (active/passive), there is a 10-minute SLA evaluation period; if the SLA requirements are not met for 50% of that period, the Socket automatically moves the tunnels to a different PoP to restore connectivity SLA. If you are not using Smart SLA, the evaluation is the initial connectivity SLA evaluation period of up to 40–50 seconds, checked every 10 seconds, and, if still unmet, the Socket moves to a different PoP.",
+  "searches": [
+    {
+      "query": "PoP failover SLA evaluation time Socket",
+      "passage_ids": [
+        "6a50933d-0d00-4abc-9216-ba0b8280a25e",
+        "ce6af09e-3e89-496c-8af0-ec47f617e91f",
+        "64033488-5c2f-43be-8a8e-63cea68a53ae",
+        "40f72ecf-3ff3-4f8c-a690-8f8eb6ce0f36",
+        "80117de5-a546-457a-bbfa-0fbedef2aa4e"
+      ],
+      "scores": [
+        7.0048,
+        6.5015,
+        5.7148,
+        4.5546,
+        4.1445
+      ]
+    },
+    {
+      "query": "Smart SLA 10-minute evaluation period PoP move",
+      "passage_ids": [
+        "64033488-5c2f-43be-8a8e-63cea68a53ae",
+        "6a50933d-0d00-4abc-9216-ba0b8280a25e",
+        "40f72ecf-3ff3-4f8c-a690-8f8eb6ce0f36",
+        "80117de5-a546-457a-bbfa-0fbedef2aa4e",
+        "ce6af09e-3e89-496c-8af0-ec47f617e91f"
+      ],
+      "scores": [
+        8.7856,
+        6.0201,
+        3.9502,
+        2.6177,
+        2.3895
+      ]
+    }
+  ],
+  "n_searches": 2,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 6409,
+    "output_tokens": 2660,
+    "requests": 3
+  },
+  "latency_s": 24.468,
+  "ts": "2026-09-30T21:27:21+00:00"
+}

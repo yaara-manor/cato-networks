@@ -1,0 +1,42 @@
+{
+  "query_id": "SC-01-bgp-flap",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "3381e933-8d27-431f-b950-83940c8fe6f7",
+    "d41097db-20eb-44a9-b01d-c8d3290157f4",
+    "87c2da52-e2e0-408d-8893-a138cfb8040e",
+    "af2c63f2-b496-456d-b3a9-0dab5a7dfb16"
+  ],
+  "answer_text": "BGP hold time controls how long the neighbor is considered down. With a 10/30 timer (keep-alive 10s, hold time 30s), transient delays can cause the session to flap. The KB shows holding times of up to 90 seconds as an example, so increasing the hold time (e.g., to 90s) can help with flaps if the path to Austin occasionally delays keepalives. If you need to apply policy changes without dropping the session, BGP soft reset is supported for Socket sites and Route Refresh can re-advertise routes without tearing the session. If you’re on Socket v25 or newer, optimized BGP timers and BFD are supported and can further reduce failover time.",
+  "searches": [
+    {
+      "query": "BGP hold timer Nexus 9k Socket",
+      "passage_ids": [
+        "af2c63f2-b496-456d-b3a9-0dab5a7dfb16",
+        "3381e933-8d27-431f-b950-83940c8fe6f7",
+        "a06a67c7-3bf7-4236-94bd-86014a9ead8c",
+        "d41097db-20eb-44a9-b01d-c8d3290157f4",
+        "87c2da52-e2e0-408d-8893-a138cfb8040e"
+      ],
+      "scores": [
+        -0.6257,
+        -1.224,
+        -1.224,
+        -3.513,
+        -3.9223
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2128,
+    "output_tokens": 3720,
+    "requests": 2
+  },
+  "latency_s": 25.698,
+  "ts": "2026-09-30T21:28:28+00:00"
+}

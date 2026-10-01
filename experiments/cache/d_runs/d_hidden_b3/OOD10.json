@@ -1,0 +1,37 @@
+{
+  "query_id": "OOD10",
+  "variant": "d_hidden_b3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I’msorry, but this knowledge base article set doesn’t include information on US tax return extensions. For guidance on filing a US tax return extension, please consult the IRS website or a tax professional.",
+  "searches": [
+    {
+      "query": "tax extension",
+      "passage_ids": [
+        "1ec8d3be-233f-4eea-8dde-57e05bb39604",
+        "c33c74b3-2b3e-4f20-b482-35213edd2f82",
+        "00d82f51-5b15-4080-8b8b-15ee7704c88f",
+        "c5254355-bdce-4831-b31c-167c34393423",
+        "8160204e-07b2-407c-8077-7f142a25e4f6"
+      ],
+      "scores": [
+        -2.5533,
+        -6.188,
+        -8.3424,
+        -8.8675,
+        -8.9313
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2158,
+    "output_tokens": 706,
+    "requests": 2
+  },
+  "latency_s": 9.616,
+  "ts": "2026-09-30T21:31:40+00:00"
+}

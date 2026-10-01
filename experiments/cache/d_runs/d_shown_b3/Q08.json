@@ -1,0 +1,39 @@
+{
+  "query_id": "Q08",
+  "variant": "d_shown_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "9b73ca22-7412-4c49-8b88-39285e876c90"
+  ],
+  "answer_text": "Cato supports BFD for BGP neighbors on IPsec and Cloud Interconnect sites. Passive mode is supported for all sites (including Sockets and vSockets). The KB does not specify the UDP port used by multi-hop BFD; I can look this up if you’d like. ",
+  "searches": [
+    {
+      "query": "active BFD BGP neighbors site types UDP port multi-hop",
+      "passage_ids": [
+        "9b73ca22-7412-4c49-8b88-39285e876c90",
+        "37fd3879-bf47-4cd7-a763-eea73d577be4",
+        "197664ff-77ef-416d-a219-c1950ac01123",
+        "2ba8d00d-418b-4fcd-95c8-90816405af82",
+        "2bd21f74-7503-47db-a9bc-c335c28b782c"
+      ],
+      "scores": [
+        5.7159,
+        3.6842,
+        1.1133,
+        0.1033,
+        -0.0612
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2186,
+    "output_tokens": 3280,
+    "requests": 2
+  },
+  "latency_s": 22.968,
+  "ts": "2026-09-30T21:33:33+00:00"
+}

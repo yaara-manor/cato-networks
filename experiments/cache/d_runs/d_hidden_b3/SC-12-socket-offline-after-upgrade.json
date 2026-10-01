@@ -1,0 +1,42 @@
+{
+  "query_id": "SC-12-socket-offline-after-upgrade",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "5f1025f2-23bf-463b-9b2a-e74de7883c50",
+    "87d76f0e-ec41-41a8-9e91-2cb71eb501cd",
+    "60ea195e-f049-4122-ae0e-6650996bbfb7",
+    "51976e21-c0d8-474f-ac02-1ab9fbdb4430"
+  ],
+  "answer_text": "First, verify on-site network and CMA status: confirm the socket still has connectivity, then in CMA go to Account > License > Bandwidth and ensure the license shows Trial or Commercial (not Scheduled). A Site‑disconnected condition in CMA often points to a license or tunnel issue, so also review CMA’s Site/Tunnel status for any signs of instability. If the issue persists after those checks, gather the troubleshooting results and file a Cato Support ticket with details (affected sockets, related CMA events, any manual upgrade results) and attach console logs if the socket becomes inaccessible.",
+  "searches": [
+    {
+      "query": "Denver Clinic Socket upgrade disconnected CMA",
+      "passage_ids": [
+        "5f1025f2-23bf-463b-9b2a-e74de7883c50",
+        "87d76f0e-ec41-41a8-9e91-2cb71eb501cd",
+        "df460be8-3e19-4ae8-a6ff-4e1c9d1c2771",
+        "51976e21-c0d8-474f-ac02-1ab9fbdb4430",
+        "60ea195e-f049-4122-ae0e-6650996bbfb7"
+      ],
+      "scores": [
+        0.3568,
+        -0.1484,
+        -0.2308,
+        -0.5604,
+        -0.5604
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2004,
+    "output_tokens": 2723,
+    "requests": 2
+  },
+  "latency_s": 17.546,
+  "ts": "2026-09-30T21:29:24+00:00"
+}

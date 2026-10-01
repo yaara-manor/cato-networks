@@ -1,0 +1,40 @@
+{
+  "query_id": "Q06",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "98253723-f995-4b9d-8b47-41d06a32cae8",
+    "12226386-7e34-4528-8415-8df9d696f5e5"
+  ],
+  "answer_text": "Prerequisites: BGP summary routes are supported on Socket sites with Cato OS v19.x or higher. The CIDR range for a BGP summary route must be between /8 and /30. Limits: you can configure up to 256 summary routes per BGP peer, and up to 5 communities per summary route.",
+  "searches": [
+    {
+      "query": "BGP summary routes Socket Site prerequisites limits",
+      "passage_ids": [
+        "98253723-f995-4b9d-8b47-41d06a32cae8",
+        "2bfc4c5d-a149-40c4-9e40-8c35d33c260d",
+        "c4a868d0-f842-457b-bd31-6519eb4db531",
+        "12226386-7e34-4528-8415-8df9d696f5e5",
+        "43147e05-d8ac-4606-b1d3-e7371300573c"
+      ],
+      "scores": [
+        5.6283,
+        4.0707,
+        3.5632,
+        3.0844,
+        2.9675
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1959,
+    "output_tokens": 1039,
+    "requests": 2
+  },
+  "latency_s": 10.117,
+  "ts": "2026-09-30T21:40:27+00:00"
+}

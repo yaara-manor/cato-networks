@@ -1,0 +1,41 @@
+{
+  "query_id": "TCK-20264239",
+  "variant": "d_shown_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "ead32a31-a8aa-4e50-9128-5169d762489d",
+    "5c836020-4016-48bd-ae27-cdfe87db5746",
+    "f2290b57-0dd7-4b6e-94d6-9aa5299cdcf4"
+  ],
+  "answer_text": "Hotel networks (like at a hotel) often block UDP 443, which can prevent the Cato Client from establishing the VPN tunnel and leave you at Connecting. If UDP 443 is blocked, the client will fall back to a TCP tunnel automatically, but you can also configure the client to use an alternative UDP port (for example UDP 1337) to work around the block. See the Configuring a Different UDP Port for the Cato Client article for how to set this up; the Client TCP Fallback for UDP Tunnel article describes the automatic TCP fallback behavior.",
+  "searches": [
+    {
+      "query": "Connecting 408 Cato Client hotel",
+      "passage_ids": [
+        "ead32a31-a8aa-4e50-9128-5169d762489d",
+        "5c836020-4016-48bd-ae27-cdfe87db5746",
+        "786e6753-0b54-4e50-b818-6ca03426aa9a",
+        "f2290b57-0dd7-4b6e-94d6-9aa5299cdcf4",
+        "9f9fe203-4e14-4ba8-9a98-2b22768431a6"
+      ],
+      "scores": [
+        2.6633,
+        2.277,
+        2.0821,
+        1.8078,
+        -1.9475
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2175,
+    "output_tokens": 2413,
+    "requests": 2
+  },
+  "latency_s": 16.16,
+  "ts": "2026-09-30T21:36:54+00:00"
+}

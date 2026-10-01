@@ -1,0 +1,42 @@
+{
+  "query_id": "TCK-20264220",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [
+    "325d51a3-cb69-463b-bd32-b05e92441dd6"
+  ],
+  "citations": [
+    "325d51a3-cb69-463b-bd32-b05e92441dd6",
+    "12226386-7e34-4528-8415-8df9d696f5e5"
+  ],
+  "answer_text": "Yes. The KB notes a 1024-route limit for BGP on the Socket, which explains why about 1,100 prefixes may intermittently cause issues. To address this, you can configure BGP summary routes to reduce the number of advertised prefixes. The limits for BGP summary routes are up to 256 summary routes per BGP peer and up to 5 communities per summary route.",
+  "searches": [
+    {
+      "query": "BGP prefix limit",
+      "passage_ids": [
+        "c4a868d0-f842-457b-bd31-6519eb4db531",
+        "325d51a3-cb69-463e-bd32-b05e92441dd6",
+        "12226386-7e34-4528-8415-8df9d696f5e5",
+        "6ea15905-6d60-47a4-ad0c-af1bce8ec3d6",
+        "4e249fc0-a91a-4dd2-af7d-f743fa0de35f"
+      ],
+      "scores": [
+        6.2791,
+        3.7369,
+        1.4965,
+        1.1111,
+        0.3167
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2280,
+    "output_tokens": 1746,
+    "requests": 2
+  },
+  "latency_s": 12.769,
+  "ts": "2026-09-30T21:45:16+00:00"
+}

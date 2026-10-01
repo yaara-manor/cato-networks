@@ -1,0 +1,42 @@
+{
+  "query_id": "Q33",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "42bc7e6d-7428-44a5-9782-8ed623f256ec",
+    "a26a369f-4837-4d32-80dc-501ebb7771a5",
+    "2518a362-e036-4da9-8528-d01f69b6f71c",
+    "7c5c2f83-e204-4868-874a-df323f457735"
+  ],
+  "answer_text": "The default license includes 3 unique egress public IPs that can be used by any PoP. For VoIP egress, Cato recommends using a fixed public IP to egress so you have a stable address for ACLs; allocate a fixed IP via IP Allocation and bind it to your account. By default, Internet egress uses NAT to the PoP's egress IPs, which can change; if you need a specific IP for VoIP ACLs, use a fixed IP, but be aware that PoP availability can cause egress IPs to change during maintenance, which may impact VoIP.",
+  "searches": [
+    {
+      "query": "egress public IPs default license",
+      "passage_ids": [
+        "42bc7e6d-7428-44a5-9782-8ed623f256ec",
+        "a26a369f-4837-4d32-80dc-501ebb7771a5",
+        "2b5d3fed-f4ff-4ecf-8597-d5b03740fcd6",
+        "2518a362-e036-4da9-8528-d01f69b6f71c",
+        "7c5c2f83-e204-4868-874a-df323f457735"
+      ],
+      "scores": [
+        6.7018,
+        4.5043,
+        3.1851,
+        2.5714,
+        1.447
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2089,
+    "output_tokens": 3487,
+    "requests": 2
+  },
+  "latency_s": 25.735,
+  "ts": "2026-09-30T21:42:56+00:00"
+}

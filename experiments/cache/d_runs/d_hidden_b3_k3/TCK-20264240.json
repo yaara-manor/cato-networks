@@ -1,0 +1,33 @@
+{
+  "query_id": "TCK-20264240",
+  "variant": "d_hidden_b3_k3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn’t locate a Cato KB article that covers geo-location misreporting (for example Paris showing as Germany in Google) after migrating Paris to Cato. The KB items available discuss Paris PoP IP ranges (for example 159.117.224.0/24) but do not provide a fix for this issue. If you can share details about the traffic path (which PoP is being used) and affected users, I can help determine next steps or escalate.",
+  "searches": [
+    {
+      "query": "geolocation Paris Germany Cato",
+      "passage_ids": [
+        "75b52219-3f99-469b-9131-a704e8bf8a44",
+        "355143f6-9a6e-4344-86d4-f6ae7302ae87",
+        "52a803ad-42dd-4020-b573-99fc10f7d589"
+      ],
+      "scores": [
+        -2.2487,
+        -3.7136,
+        -3.8358
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2025,
+    "output_tokens": 3985,
+    "requests": 2
+  },
+  "latency_s": 28.847,
+  "ts": "2026-09-30T21:51:50+00:00"
+}

@@ -1,0 +1,37 @@
+{
+  "query_id": "TCK-20264204",
+  "variant": "d_shown_b3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "The knowledge base does not contain guidance for IPSec tunnels that drop on an exact 8-hour schedule (e.g., Palo Alto on-prem with Cato). It only covers general IPsec troubleshooting and mentions DPD intervals; there is no article addressing this timing issue. If you’d like, I can escalate this to a human agent for a targeted review.",
+  "searches": [
+    {
+      "query": "IPsec tunnel drops every 8 hours",
+      "passage_ids": [
+        "239ea939-1388-4482-9481-4225d9f6bb8a",
+        "f89a9d18-2d14-41ba-8d16-683f80d1c1df",
+        "b96f38bd-47f3-4f85-adfc-bf0e30f8bcb6",
+        "5b61d5af-ee11-4a0a-9562-c79cab5a6c7c",
+        "da28349c-2819-4b16-b609-6c8ff22609ec"
+      ],
+      "scores": [
+        0.5899,
+        -0.2448,
+        -0.7371,
+        -1.1384,
+        -1.3307
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2533,
+    "output_tokens": 3286,
+    "requests": 2
+  },
+  "latency_s": 24.083,
+  "ts": "2026-09-30T21:37:53+00:00"
+}

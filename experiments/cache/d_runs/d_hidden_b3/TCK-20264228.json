@@ -1,0 +1,39 @@
+{
+  "query_id": "TCK-20264228",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "541abf81-6362-4154-b32f-d32e96dc039b"
+  ],
+  "answer_text": "HA requires two sockets of the same Socket type. An X1600 and an X1600 LTE are different Socket types, so they cannot be paired in the same HA site. If you want HA at the Phoenix clinic, you’d need a second socket of the same type as your existing X1600 (e.g., two X1600 non-LTEs or two X1600 LTEs).",
+  "searches": [
+    {
+      "query": "X1600 LTE HA pairing",
+      "passage_ids": [
+        "541abf81-6362-4154-b32f-d32e96dc039b",
+        "a4fb5836-870f-4605-8a01-b070ba3288f6",
+        "9841ddd9-9727-4a89-81a9-4e3ad4ef764f",
+        "4e60bc59-ff2f-46e5-8ec4-4b6ae53bf12d",
+        "b5981eaf-f994-4a5f-9156-511d116d687b"
+      ],
+      "scores": [
+        6.6072,
+        5.3291,
+        4.9297,
+        4.6771,
+        3.5022
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2081,
+    "output_tokens": 2304,
+    "requests": 2
+  },
+  "latency_s": 16.073,
+  "ts": "2026-09-30T21:30:03+00:00"
+}

@@ -1,0 +1,50 @@
+{
+  "query_id": "Q24",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "e7c5b96b-f7c8-4880-806b-8340f2768f27",
+    "732cdda5-b953-45ed-8578-80b803adf828"
+  ],
+  "answer_text": "Disconnected: A Disconnect event is generated when a tunnel remains disconnected for 2.5 minutes or longer. If the disconnection lasts less than 2.5 minutes, the system emits a single Reconnected event instead of Disconnected (and Connected). Connected: A Connected event is generated after a tunnel has been connected to the PoP for 30 seconds, provided the Socket is Active.",
+  "searches": [
+    {
+      "query": "Disconnected connectivity event time active link Connected timing Cato",
+      "passage_ids": [
+        "ce9c31b8-aa15-4ef8-9bb9-8136e338dce0",
+        "e7c5b96b-f7c8-4880-806b-8340f2768f27",
+        "732cdda5-b953-45ed-8578-80b803adf828",
+        "dec88cb4-5078-499e-8885-c6f0e4e5b5f3",
+        "950d03e2-d6d7-4d4d-ab82-fbba0886fcfc",
+        "e0f41e7f-01d7-42f9-b388-6dbdb784e0a6",
+        "d4b17bb0-0bc4-451b-bbc8-e0d30baa9868",
+        "dfe77cde-eb87-433f-9b23-1adf86f3d8f9",
+        "824ba06b-5321-4ca7-87c7-89ff51eb5ce2",
+        "ce7c94cc-10b7-49f9-9402-0d5508b43212"
+      ],
+      "scores": [
+        5.2067,
+        4.7961,
+        3.9094,
+        3.4508,
+        1.9343,
+        1.6234,
+        0.651,
+        0.3028,
+        -0.7874,
+        -0.7981
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2744,
+    "output_tokens": 3268,
+    "requests": 2
+  },
+  "latency_s": 27.309,
+  "ts": "2026-09-30T21:56:37+00:00"
+}

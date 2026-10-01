@@ -1,0 +1,41 @@
+{
+  "query_id": "ADJ07",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "69ca7470-06c4-498d-a142-55d42f9b51e3",
+    "1692bd4f-0b55-4dac-959b-9479e02b4aca",
+    "30e8e4e4-de75-4410-b194-1f32edc534c7"
+  ],
+  "answer_text": "Use the Cato Management Application (CMA) to perform a manual HA failover for testing behind a Socket HA pair. On the Socket page, trigger a failover to the Secondary Socket to validate that HA is correctly configured and responsive. Be aware that there are automatic failover scenarios (for example, if the Secondary stops receiving keepalive messages from the Primary, it will become Master) and plan testing accordingly.",
+  "searches": [
+    {
+      "query": "Juniper SRX chassis cluster failover Cato Socket HA",
+      "passage_ids": [
+        "69ca7470-06c4-498d-a142-55d42f9b51e3",
+        "1692bd4f-0b55-4dac-959b-9479e02b4aca",
+        "30e8e4e4-de75-4410-b194-1f32edc534c7",
+        "78e5a66f-8871-4c1b-b7a0-185da4270838",
+        "0d58dbb1-4034-442e-a77a-5d9565897e61"
+      ],
+      "scores": [
+        2.3506,
+        1.3014,
+        1.0789,
+        0.0131,
+        -0.049
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1926,
+    "output_tokens": 1895,
+    "requests": 2
+  },
+  "latency_s": 16.268,
+  "ts": "2026-09-30T21:32:13+00:00"
+}

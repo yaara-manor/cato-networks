@@ -1,0 +1,33 @@
+{
+  "query_id": "TCK-20264200",
+  "variant": "d_hidden_b3_k3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn't locate a Cato KB article that covers random drops at the Chicago PoP. Please provide additional details (times of the drops, whether other sites are affected, and any CMA alerts) so we can determine the next steps or escalate to engineering if needed.",
+  "searches": [
+    {
+      "query": "Chicago site drops",
+      "passage_ids": [
+        "bac50cb0-3e47-416b-8fe6-c7f3276a7ffc",
+        "a788f0d4-8c0a-4daa-a638-a9916533b79f",
+        "7cdd47f6-7079-4da0-b042-91f790b95265"
+      ],
+      "scores": [
+        -3.3509,
+        -5.6229,
+        -6.4447
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1799,
+    "output_tokens": 2440,
+    "requests": 2
+  },
+  "latency_s": 17.677,
+  "ts": "2026-09-30T21:51:31+00:00"
+}

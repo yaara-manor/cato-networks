@@ -1,0 +1,37 @@
+{
+  "query_id": "Q34",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "cfbe4db1-6bc8-4d6b-bf41-7c5108deb852",
+    "8615a0da-edf6-4b7a-ab63-e2acddb76bb4",
+    "25acd733-f34a-409f-8933-746788983711"
+  ],
+  "answer_text": "MFA tokens are valid in a 30-second time window (they’re not valid for a fixed moment, but for that 30‑second window). Administrators can configure the MFA token validity period, and during that period the user won’t be prompted for MFA. Users can mark a device as trusted by selecting “Don’t ask me again on this device,” which designates the device as trusted and suppresses prompts until the configured window expires.",
+  "searches": [
+    {
+      "query": "MFA token validity",
+      "passage_ids": [
+        "cfbe4db1-6bc8-4d6b-bf41-7c5108deb852",
+        "8615a0da-edf6-4b7a-ab63-e2acddb76bb4",
+        "25acd733-f34a-409f-8933-746788983711"
+      ],
+      "scores": [
+        6.5099,
+        6.0775,
+        5.9807
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2008,
+    "output_tokens": 2242,
+    "requests": 2
+  },
+  "latency_s": 17.763,
+  "ts": "2026-09-30T21:50:00+00:00"
+}

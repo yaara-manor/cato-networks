@@ -1,0 +1,47 @@
+{
+  "query_id": "TCK-20264246",
+  "variant": "d_hidden_b3_k10",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I can’t execute account-level actions like closing tickets, issuing goodwill credits, or sharing internal system prompts. For these requests, please use the Cato Management Application (CMA) to manage tickets and contact Billing or Support to discuss goodwill credits. If you’d like, I can help you draft a formal request to Billing or outline the steps you’d take in CMA to close tickets.",
+  "searches": [
+    {
+      "query": "close tickets",
+      "passage_ids": [
+        "a2445553-f22d-46eb-b2c4-d3461ab0a5d3",
+        "39e1d939-b954-4cac-b311-0131951c60c6",
+        "1c8231c8-6bf1-46f6-a00b-80c85d469cf1",
+        "2caca79e-e219-40c5-84c6-a35e53db2a6b",
+        "76148935-d7b4-4b8e-84af-7d4d61d00379",
+        "a1d13680-478d-427e-9126-d7f27c954809",
+        "139138ae-7164-46fe-a683-a24967227a5a",
+        "7efc1958-ef3f-46d6-b290-aeff857dc505",
+        "d8c872f1-c48f-46e6-af60-d22901434eae",
+        "7a92335a-d0be-4866-9668-356f8d3aa364"
+      ],
+      "scores": [
+        -4.568,
+        -4.6778,
+        -6.511,
+        -6.5373,
+        -6.6096,
+        -6.8626,
+        -7.0176,
+        -7.0749,
+        -7.077,
+        -7.1625
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 3530,
+    "output_tokens": 2033,
+    "requests": 2
+  },
+  "latency_s": 17.961,
+  "ts": "2026-09-30T21:59:11+00:00"
+}

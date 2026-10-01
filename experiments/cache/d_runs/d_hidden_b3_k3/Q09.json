@@ -1,0 +1,62 @@
+{
+  "query_id": "Q09",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "22c4068a-0ccc-496a-90fa-8c77026cd0a8",
+    "2ef7dbb3-fab7-4051-b804-fca40e146dcf"
+  ],
+  "answer_text": "- For verifying the route table, the CMA view used is Monitoring > Routing Table (the playbook sections “Showing BGP routes” and “Ensuring all prefixes received” refer to viewing the account routing table in CMA). - To find the disconnect reason, the BGP Session Disconnected playbook guides you to inspect the BGP session details within CMA to identify the cause of the disconnect. ",
+  "searches": [
+    {
+      "query": "BGP Disconnected CMA views playbook",
+      "passage_ids": [
+        "e686414c-763a-4513-82a4-08be342ffce2",
+        "2ef7dbb3-fab7-4051-b804-fca40e146dcf",
+        "8b834779-80e3-4d82-8f21-990a4330d6b9"
+      ],
+      "scores": [
+        4.8617,
+        4.7536,
+        4.0124
+      ]
+    },
+    {
+      "query": "CMA views BGP playbook",
+      "passage_ids": [
+        "93fb6211-1cab-4366-9515-d6e03a8a54d5",
+        "4e249fc0-a91a-4dd2-af7d-f743fa0de35f",
+        "10e9f346-3941-4cce-a205-6d3764c62bcf"
+      ],
+      "scores": [
+        2.7246,
+        -1.0517,
+        -1.1247
+      ]
+    },
+    {
+      "query": "CMA view BGP route table",
+      "passage_ids": [
+        "22c4068a-0ccc-496a-90fa-8c77026cd0a8",
+        "c87757e1-c739-4cc2-8e6d-baf2f7eabd1e",
+        "363a360d-e176-452b-8f75-ba65437eaf55"
+      ],
+      "scores": [
+        4.0779,
+        3.977,
+        3.6824
+      ]
+    }
+  ],
+  "n_searches": 3,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 12183,
+    "output_tokens": 4684,
+    "requests": 5
+  },
+  "latency_s": 40.803,
+  "ts": "2026-09-30T21:48:15+00:00"
+}

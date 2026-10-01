@@ -1,0 +1,52 @@
+{
+  "query_id": "TCK-20264200",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "7cdd47f6-7079-4da0-b042-91f790b95265",
+    "8cd4d6c4-f6d7-4b2b-a28a-05bcc5b1f390",
+    "40c41e46-db2e-4d63-a90f-28706b9e3068",
+    "449fb39e-a314-410b-8696-ba1ee157ee17"
+  ],
+  "answer_text": "Intermittent drops at a Chicago site can be related to PoP handoffs. The CMA supports automatic PoP selection; set the site to Automatic (or City-based) so it connects to the best PoP. If a drop occurs and the SLA thresholds are at risk, you can use Reconnect to Preferred PoP to move the site to a different PoP. Use Site Experience Monitoring to view site metrics during the incident and investigate latency, jitter, or packet loss; the monitoring drill-down page provides the details you need. If you’d like, I can guide you through adjusting these settings in CMA.",
+  "searches": [
+    {
+      "query": "Chicago site drop",
+      "passage_ids": [
+        "bac50cb0-3e47-416b-8fe6-c7f3276a7ffc",
+        "7cdd47f6-7079-4da0-b042-91f790b95265",
+        "a788f0d4-8c0a-4daa-a638-a9916533b79f",
+        "8cd4d6c4-f6d7-4b2b-a28a-05bcc5b1f390",
+        "cc5233a3-dc1a-430c-8927-f3a3575d608d",
+        "9ab53521-20da-463d-85b9-c6bff39c7a6c",
+        "40c41e46-db2e-4d63-a90f-28706b9e3068",
+        "449fb39e-a314-410b-8696-ba1ee157ee17",
+        "1e0fa53b-246d-45aa-bae6-138408f53183",
+        "1156154e-8f4a-42b9-8560-5bdaa634a3ee"
+      ],
+      "scores": [
+        -4.1274,
+        -6.1532,
+        -6.454,
+        -7.4016,
+        -7.7852,
+        -10.0656,
+        -10.5597,
+        -10.5887,
+        -10.7571,
+        -10.7607
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 3094,
+    "output_tokens": 3811,
+    "requests": 2
+  },
+  "latency_s": 26.513,
+  "ts": "2026-09-30T21:59:24+00:00"
+}

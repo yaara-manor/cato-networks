@@ -1,0 +1,36 @@
+{
+  "query_id": "TCK-20264208",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "6bc4f7c7-f97d-41f5-8656-901a1f698d9c",
+    "41621dfc-b666-4b42-9eff-733486c474dd"
+  ],
+  "answer_text": "You can regain CMA admin access by resetting MFA for the departing admin so a replacement can re-enroll MFA. In CMA, go to Account > Administrators, select the departed admin, and reset their MFA permissions. On their next login, they’ll be prompted with a QR code to enroll MFA again in the authenticator app. After MFA is reset, you can manage the replacement’s admin access from the same Administrators page. MFA is required for CMA admin logins (authentication is done via an authenticator app).",
+  "searches": [
+    {
+      "query": "CMA admin access transfer MFA reset",
+      "passage_ids": [
+        "6bc4f7c7-f97d-41f5-8656-901a1f698d9c",
+        "75e9ca5f-5906-45e5-aa50-21b07fda6e58",
+        "41621dfc-b666-4b42-9eff-733486c474dd"
+      ],
+      "scores": [
+        7.8395,
+        5.3786,
+        3.8916
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1910,
+    "output_tokens": 2830,
+    "requests": 2
+  },
+  "latency_s": 21.161,
+  "ts": "2026-09-30T21:52:40+00:00"
+}

@@ -1,0 +1,37 @@
+{
+  "query_id": "ADJ01",
+  "variant": "d_hidden_b3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "The knowledge base does not include device-specific instructions for configuring a Ubiquiti UniFi Dream Machine Pro to connect to a Cato PoP. It only provides general guidance on IPsec IKEv2 site configuration in the Cato Management Application.",
+  "searches": [
+    {
+      "query": "UniFi Dream Machine Pro IPsec IKEv2",
+      "passage_ids": [
+        "4ea5200f-f143-42b9-be25-b4813e4eb5df",
+        "b26ddf59-96cb-48b5-bb4b-08e7fa91bf63",
+        "90325d78-c496-4ec3-9b46-ad7b201c675f",
+        "c7f1bcb3-6b76-41bc-b1ee-95985aa77236",
+        "e424991c-28d7-4ba5-aae2-a7abcd58b840"
+      ],
+      "scores": [
+        0.8807,
+        0.8006,
+        0.316,
+        0.0262,
+        0.01
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2361,
+    "output_tokens": 3161,
+    "requests": 2
+  },
+  "latency_s": 22.804,
+  "ts": "2026-09-30T21:31:56+00:00"
+}

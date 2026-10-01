@@ -1,0 +1,37 @@
+{
+  "query_id": "TCK-20264238",
+  "variant": "d_hidden_b3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn’t locate guidance on duplicate invoices or refunds in the knowledge base. This requires billing review. Please contact Billing with details: your account ID, the two August invoices (dates 3 and 5, $4,200 each), and the respective invoice numbers, and request a credit/refund for the duplicate charge. They will review and reply with the next steps and an estimated timeline.",
+  "searches": [
+    {
+      "query": "duplicate invoice refund",
+      "passage_ids": [
+        "0238c77d-9f75-4778-b889-f41f6ff177f8",
+        "85f7b4d5-af07-4e69-811b-2267a70ad439",
+        "8165e7ed-88ef-49b3-be40-755a6fb3e3ad",
+        "942001b6-1fae-415f-bda1-7d46944f2012",
+        "67a9066b-6d99-4770-8bea-4c0f30c0d79c"
+      ],
+      "scores": [
+        -5.4654,
+        -8.5865,
+        -10.2281,
+        -10.9291,
+        -11.1724
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2516,
+    "output_tokens": 2109,
+    "requests": 2
+  },
+  "latency_s": 15.15,
+  "ts": "2026-09-30T21:30:42+00:00"
+}

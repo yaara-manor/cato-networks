@@ -1,0 +1,36 @@
+{
+  "query_id": "Q13",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "2723b477-6178-4676-8da4-f1e2a8d319da",
+    "f6594197-dbf9-4f97-a75e-a2c2ab717a49"
+  ],
+  "answer_text": "Cato recommends Initiate connection by Cato for IKEv2 sites because edge devices often incur long reconnect delays, which slows VPN negotiation when the site initiates the connection. Having Cato initiate the VPN tunnel makes the negotiation happen much faster. This setting is enabled by default on IPsec IKEv2 sites to minimize downtime by letting the Cato Cloud start the IPsec connection.",
+  "searches": [
+    {
+      "query": "Initiate connection by Cato IKEv2",
+      "passage_ids": [
+        "2723b477-6178-4676-8da4-f1e2a8d319da",
+        "f6594197-dbf9-4f97-a75e-a2c2ab717a49",
+        "7f8b412f-d8e2-4686-990a-603be4a7c823"
+      ],
+      "scores": [
+        9.1746,
+        8.5142,
+        7.9994
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1743,
+    "output_tokens": 1444,
+    "requests": 2
+  },
+  "latency_s": 11.874,
+  "ts": "2026-09-30T21:48:11+00:00"
+}

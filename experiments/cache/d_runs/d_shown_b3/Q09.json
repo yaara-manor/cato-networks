@@ -1,0 +1,57 @@
+{
+  "query_id": "Q09",
+  "variant": "d_shown_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "2ef7dbb3-fab7-4051-b804-fca40e146dcf",
+    "363a360d-e176-452b-8f75-ba65437eaf55"
+  ],
+  "answer_text": "The XOps Network Playbook for BGP Session Disconnected uses two CMA views: (1) the BGP Sessions view to locate the disconnect reason, and (2) the Routing Table view (Routing Table screen) to verify the route table for the account.",
+  "searches": [
+    {
+      "query": "BGP Disconnected CMA views playbook",
+      "passage_ids": [
+        "e686414c-763a-4513-82a4-08be342ffce2",
+        "2ef7dbb3-fab7-4051-b804-fca40e146dcf",
+        "8b834779-80e3-4d82-8f21-990a4330d6b9",
+        "e57c5e1c-548d-42fa-961a-ffe8477a6858",
+        "914b40f0-5898-4055-b3f2-41db869cb279"
+      ],
+      "scores": [
+        4.8617,
+        4.7536,
+        4.0124,
+        3.9499,
+        1.2997
+      ]
+    },
+    {
+      "query": "CMA views BGP",
+      "passage_ids": [
+        "5ab8c97b-66a9-4207-9fce-2ac3b30bb3e4",
+        "124b5540-a073-474d-a714-074c5d3a57d3",
+        "363a360d-e176-452b-8f75-ba65437eaf55",
+        "add7fcb7-01c6-4ea4-adb0-061afbfd65f2",
+        "38aa2896-7538-4940-8f7f-eaff9435da85"
+      ],
+      "scores": [
+        3.2009,
+        2.357,
+        -0.305,
+        -1.8328,
+        -2.6435
+      ]
+    }
+  ],
+  "n_searches": 2,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 5401,
+    "output_tokens": 3872,
+    "requests": 3
+  },
+  "latency_s": 28.123,
+  "ts": "2026-09-30T21:33:40+00:00"
+}

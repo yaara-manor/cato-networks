@@ -1,0 +1,37 @@
+{
+  "query_id": "OOD08",
+  "variant": "d_shown_b3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn’t find a Cato Knowledge Base article about replacing an iPhone battery. This topic isn’t covered in our KB. Please refer to Apple Support or the device manufacturer for official battery replacement guidance.",
+  "searches": [
+    {
+      "query": "iPhone battery replacement",
+      "passage_ids": [
+        "f22ac93a-65cf-4736-9d5c-cb3125d56e7a",
+        "0860815e-dc4f-4d61-be00-94b65890d2b8",
+        "01a24733-8bab-45d0-8f55-7e900f1c7c01",
+        "3fd8bcc4-0bee-4e35-a855-80d8a40fd61b",
+        "0f0a57dd-7e1d-4aee-be99-1fcd146c5ec6"
+      ],
+      "scores": [
+        -8.2496,
+        -8.4372,
+        -10.404,
+        -10.9131,
+        -11.0685
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2435,
+    "output_tokens": 1177,
+    "requests": 2
+  },
+  "latency_s": 11.171,
+  "ts": "2026-09-30T21:38:47+00:00"
+}

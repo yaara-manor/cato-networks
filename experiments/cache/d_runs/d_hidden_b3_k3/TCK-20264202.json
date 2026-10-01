@@ -1,0 +1,50 @@
+{
+  "query_id": "TCK-20264202",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "2a29c140-cdf3-4771-9aad-34427ae0d709",
+    "9ff894b0-62d7-45e5-b292-fc79e63831b2",
+    "0dc08062-2806-4d8c-b641-35a388073ceb"
+  ],
+  "answer_text": "To avoid VoIP calls using changing egress IPs, enable the Preferred IP for SIP Traffic feature so VoIP/SIP traffic always exits from the same IP. If you have two IPs in a rule, configure it to use a single egress IP (via the Preferred IP setting) and ensure the IP you designate is the one allowed by your SIP trunk. Steps: account-wide: Resources > Advanced Configuration; site-wide: Network > Sites, select the site and enable the Preferred IP for SIP Traffic (or the equivalent advanced setting). After enabling, reset IP phones if needed and monitor for continued calls; note that if the chosen egress IP becomes unavailable during PoP maintenance, traffic may be dropped until the IP is reachable again.",
+  "searches": [
+    {
+      "query": "VoIP egress IP changes",
+      "passage_ids": [
+        "7c5c2f83-e204-4868-874a-df323f457735",
+        "5d32c955-9f10-46e3-9186-115bde4c3d2b",
+        "2a29c140-cdf3-4771-9aad-34427ae0d709"
+      ],
+      "scores": [
+        7.0365,
+        6.8114,
+        6.4997
+      ]
+    },
+    {
+      "query": "Preferred IP for SIP Traffic",
+      "passage_ids": [
+        "2a29c140-cdf3-4771-9aad-34427ae0d709",
+        "9ff894b0-62d7-45e5-b292-fc79e63831b2",
+        "0dc08062-2806-4d8c-b641-35a388073ceb"
+      ],
+      "scores": [
+        8.9028,
+        7.9439,
+        7.5392
+      ]
+    }
+  ],
+  "n_searches": 2,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 4465,
+    "output_tokens": 2049,
+    "requests": 3
+  },
+  "latency_s": 18.468,
+  "ts": "2026-09-30T21:52:33+00:00"
+}

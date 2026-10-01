@@ -1,0 +1,41 @@
+{
+  "query_id": "Q17",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "4a122029-3e5b-4870-8653-f319b8212629",
+    "cde2fc9c-7569-4c58-bfa0-452dd3533605",
+    "1eb68c50-555d-4ec6-b60e-cccfefb55628"
+  ],
+  "answer_text": "The alternate UDP port for DTLS tunnels is UDP 1337. This is recommended in locations with restrictive networks (notably China) where DTLS over UDP port 443 can have connectivity issues, as 1337 can improve reliability; by default DTLS uses 443 and will fall back to 1337 when connectivity issues are experienced. You can enable and configure the Alternate DTLS UDP Port in System Settings (Resources > System Settings) under the Alternative DTLS Port option, but note that enabling this may briefly impact connectivity as sockets reconnect. The knowledge base does not list any version prerequisites for this feature.",
+  "searches": [
+    {
+      "query": "DTLS UDP port alternate",
+      "passage_ids": [
+        "cde2fc9c-7569-4c58-bfa0-452dd3533605",
+        "1eb68c50-555d-4ec6-b60e-cccfefb55628",
+        "4a122029-3e5b-4870-8653-f319b8212629",
+        "5adb2297-8adc-4288-88e1-9232a0c98c18",
+        "ea0714b8-a1d1-4c88-9e75-849192125feb"
+      ],
+      "scores": [
+        8.7726,
+        8.4569,
+        7.9441,
+        7.7397,
+        7.3426
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2163,
+    "output_tokens": 4235,
+    "requests": 2
+  },
+  "latency_s": 28.723,
+  "ts": "2026-09-30T21:26:32+00:00"
+}

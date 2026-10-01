@@ -1,0 +1,77 @@
+{
+  "query_id": "Q17",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "5adb2297-8adc-4288-88e1-9232a0c98c18",
+    "1eb68c50-555d-4ec6-b60e-cccfefb55628"
+  ],
+  "answer_text": "DTLS tunnels can use UDP port 1337 as an alternate UDP port; by default they use UDP port 443 and will fall back to UDP 1337 when connectivity issues are experienced. This is recommended in locations with restrictive network controls (such as China) to improve DTLS connectivity. To configure it, go to Resources > System Settings and enable the Alternative DTLS Port setting; note that enabling it may briefly reconnect the DTLS tunnels. Version prerequisites are not specified in the knowledge base.",
+  "searches": [
+    {
+      "query": "DTLS tunnels alternate UDP port",
+      "passage_ids": [
+        "cde2fc9c-7569-4c58-bfa0-452dd3533605",
+        "5adb2297-8adc-4288-88e1-9232a0c98c18",
+        "1eb68c50-555d-4ec6-b60e-cccfefb55628",
+        "ea0714b8-a1d1-4c88-9e75-849192125feb",
+        "27e3782a-74ec-413d-ae6c-d658750bcb50",
+        "4a122029-3e5b-4870-8653-f319b8212629",
+        "cbbe64b8-e204-42d5-9d0b-8147e7fbfce4",
+        "e3cefa0e-5d93-4289-bfea-49dc1a33c399",
+        "1845304f-4066-4c7d-93cc-7af97362fcaa",
+        "0674df86-c0cc-4402-9a13-649a8a8a614f"
+      ],
+      "scores": [
+        9.0012,
+        8.6494,
+        8.001,
+        7.4285,
+        7.1135,
+        5.6672,
+        3.4102,
+        3.0881,
+        2.6758,
+        2.5708
+      ]
+    },
+    {
+      "query": "Alternate DTLS UDP Port",
+      "passage_ids": [
+        "cde2fc9c-7569-4c58-bfa0-452dd3533605",
+        "1eb68c50-555d-4ec6-b60e-cccfefb55628",
+        "4a122029-3e5b-4870-8653-f319b8212629",
+        "5adb2297-8adc-4288-88e1-9232a0c98c18",
+        "ea0714b8-a1d1-4c88-9e75-849192125feb",
+        "27e3782a-74ec-413d-ae6c-d658750bcb50",
+        "1845304f-4066-4c7d-93cc-7af97362fcaa",
+        "495187d9-c1b1-432d-b2d2-932944528a1b",
+        "4c47d781-6ced-44ab-9aba-19e7e766be6b",
+        "da7351aa-db11-42a2-b334-d4b9ce9b5c22"
+      ],
+      "scores": [
+        8.8866,
+        8.5004,
+        7.9573,
+        7.8974,
+        7.2207,
+        6.8988,
+        4.3084,
+        4.1912,
+        3.8554,
+        2.096
+      ]
+    }
+  ],
+  "n_searches": 2,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 10193,
+    "output_tokens": 5705,
+    "requests": 3
+  },
+  "latency_s": 43.687,
+  "ts": "2026-09-30T21:56:08+00:00"
+}

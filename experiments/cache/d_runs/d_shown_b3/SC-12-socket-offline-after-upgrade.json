@@ -1,0 +1,42 @@
+{
+  "query_id": "SC-12-socket-offline-after-upgrade",
+  "variant": "d_shown_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "5f1025f2-23bf-463b-9b2a-e74de7883c50",
+    "87d76f0e-ec41-41a8-9e91-2cb71eb501cd",
+    "ff4198c5-167c-482f-84f4-c81ab5778c06",
+    "8e61b584-ccab-4337-80e9-c2434d319e88"
+  ],
+  "answer_text": "First, verify the socket is online in CMA and check licensing: in CMA, Account > License > Bandwidth, ensure the license is shown as Trial or Commercial. If the license is listed as Scheduled, that will cause the site to disconnect. If the license appears OK, check the site’s tunnel connectivity in CMA, as a Site disconnected status often reflects tunnel or PoP issues. If the upgrade did not complete, consider a manual upgrade from Site Configuration > Socket > Actions > Upgrade (choose the latest firmware with CMA-managed upgrade); note that upgrades can take time and CMA will show a result after roughly 17 minutes. If you have an HA pair, ensure both sockets are on the same version.",
+  "searches": [
+    {
+      "query": "Socket upgrade CMA disconnected Denver Clinic",
+      "passage_ids": [
+        "5f1025f2-23bf-463b-9b2a-e74de7883c50",
+        "87d76f0e-ec41-41a8-9e91-2cb71eb501cd",
+        "df460be8-3e19-4ae8-a6ff-4e1c9d1c2771",
+        "ff4198c5-167c-482f-84f4-c81ab5778c06",
+        "8e61b584-ccab-4337-80e9-c2434d319e88"
+      ],
+      "scores": [
+        0.0352,
+        -0.081,
+        -0.1084,
+        -0.556,
+        -0.5819
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2179,
+    "output_tokens": 2697,
+    "requests": 2
+  },
+  "latency_s": 18.311,
+  "ts": "2026-09-30T21:36:48+00:00"
+}

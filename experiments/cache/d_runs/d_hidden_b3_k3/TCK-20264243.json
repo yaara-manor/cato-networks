@@ -1,0 +1,36 @@
+{
+  "query_id": "TCK-20264243",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "25018bf7-7d83-4e4e-a40e-c3c630189d58",
+    "18b5074e-5155-4687-8b43-55a306645cd9"
+  ],
+  "answer_text": "Not Ready (In HA Failover) indicates the HA redundancy and failover mechanisms may not function as expected. It does not automatically mean you broke something; it means the site is in a Not Ready state during HA operations and may impact failover. The KB provides a Not Ready HA status playbook to help diagnose and resolve this condition. For context, CMA can display Not Ready as a symptom in AWS/Azure vSocket HA deployments, so follow the playbook steps to identify and resolve the Not Ready state and restore normal HA function.",
+  "searches": [
+    {
+      "query": "Not Ready (In HA Failover)",
+      "passage_ids": [
+        "25018bf7-7d83-4e4e-a40e-c3c630189d58",
+        "18b5074e-5155-4687-8b43-55a306645cd9",
+        "11a8e9ce-64e9-4d28-979c-9e98279ee12c"
+      ],
+      "scores": [
+        8.4994,
+        7.2688,
+        6.6399
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1888,
+    "output_tokens": 2274,
+    "requests": 2
+  },
+  "latency_s": 16.715,
+  "ts": "2026-09-30T21:51:58+00:00"
+}

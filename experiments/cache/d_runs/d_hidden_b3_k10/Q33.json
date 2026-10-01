@@ -1,0 +1,50 @@
+{
+  "query_id": "Q33",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "42bc7e6d-7428-44a5-9782-8ed623f256ec",
+    "b3b40211-d100-4751-a7d4-6a98bbe5d428"
+  ],
+  "answer_text": "The default license includes 3 unique egress public IPs that can be used by any PoP. For VoIP/SIP traffic, configure network rules to egress to a single egress IP; using multiple egress IPs can cause SIP issues.",
+  "searches": [
+    {
+      "query": "default license egress IPs",
+      "passage_ids": [
+        "42bc7e6d-7428-44a5-9782-8ed623f256ec",
+        "a26a369f-4837-4d32-80dc-501ebb7771a5",
+        "2b5d3fed-f4ff-4ecf-8597-d5b03740fcd6",
+        "2518a362-e036-4da9-8528-d01f69b6f71c",
+        "b3b40211-d100-4751-a7d4-6a98bbe5d428",
+        "b402c2bf-384d-4cee-b44f-0af70d4238a8",
+        "7c5c2f83-e204-4868-874a-df323f457735",
+        "91319e53-ccea-45c4-8b74-a0afbacad435",
+        "5d32c955-9f10-46e3-9186-115bde4c3d2b",
+        "eb459688-55a7-4b2d-9f7c-06c26ac99ca4"
+      ],
+      "scores": [
+        6.4877,
+        4.3217,
+        1.4141,
+        0.8896,
+        0.126,
+        -0.0511,
+        -0.0561,
+        -0.6769,
+        -1.087,
+        -4.3848
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 3153,
+    "output_tokens": 1828,
+    "requests": 2
+  },
+  "latency_s": 14.78,
+  "ts": "2026-09-30T21:57:31+00:00"
+}

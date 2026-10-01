@@ -1,0 +1,50 @@
+{
+  "query_id": "Q11",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "4208a432-e59a-4da6-b822-e675d80e3ab1",
+    "8e58b4b9-1fb9-43e1-96f6-f5baa2d29aea"
+  ],
+  "answer_text": "This happens because Cisco ASA does not support multiple Traffic Selectors (TS) in a single IKEv2 child SA. When Cato proposes a child SA with multiple TS, the ASA returns TS_UNACCEPTABLE. To fix it, enable the IKEv2 option to send a single TS per payload (IKEv2 Send Single TS per Payload = On) at the account or per-site IPsec/IKEv2 site configuration (Site Configuration > Advanced Configuration). This causes Cato to send only one TS per child SA, which ASA accepts.",
+  "searches": [
+    {
+      "query": "TS_UNACCEPTABLE",
+      "passage_ids": [
+        "47f5a4c0-8eb1-4626-b5c6-566fd61c879e",
+        "db651f0c-4fcd-4a97-b63e-6034b7e8ecbd",
+        "a969e361-e085-4883-8ea4-7702f1f2c1c6",
+        "7f5d3d54-2370-4eaf-92d2-0fa0f86db45a",
+        "4208a432-e59a-4da6-b822-e675d80e3ab1",
+        "8e58b4b9-1fb9-43e1-96f6-f5baa2d29aea",
+        "56bfb227-4bd4-4415-a359-926472a7ed24",
+        "c09a24dc-e28d-47ea-9016-778c54cc1a59",
+        "49159ba9-a339-4da9-9d32-375fc2ffd21b",
+        "787b1551-eda0-413f-b2de-fe3ba3f140b1"
+      ],
+      "scores": [
+        6.4644,
+        6.1125,
+        5.9706,
+        5.8338,
+        5.7852,
+        5.6912,
+        5.5087,
+        4.7713,
+        -2.2245,
+        -7.4821
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 3051,
+    "output_tokens": 2307,
+    "requests": 2
+  },
+  "latency_s": 16.75,
+  "ts": "2026-09-30T21:55:09+00:00"
+}

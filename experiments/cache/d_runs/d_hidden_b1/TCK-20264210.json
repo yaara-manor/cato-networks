@@ -1,0 +1,37 @@
+{
+  "query_id": "TCK-20264210",
+  "variant": "d_hidden_b1",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "Not in KB: there is no documented guidance on incident commander assignment or a 15-minute bridge SLA for Sev-1 in our knowledge base. The KB does show general Sev-1 definitions and initial case submission targets, but it does not specify escalation timing or on-bridge command. Please refer to your internal Sev-1 escalation plan or contact your on-call NOC per your organization’s policy.",
+  "searches": [
+    {
+      "query": "Sev-1 SLA bridge incident commander",
+      "passage_ids": [
+        "4f997957-991f-4b21-a6ca-78e1c6e8c367",
+        "d8334539-fb96-4f89-bfb9-0fb81bd9c6ce",
+        "aff45b2d-54f6-4384-8ce0-014da05ae13c",
+        "6147facd-f5e3-4a28-80f0-7e60e081cf8f",
+        "28b0164d-0572-41b5-ae88-1bd9c938f000"
+      ],
+      "scores": [
+        -6.3193,
+        -6.9903,
+        -7.8142,
+        -7.87,
+        -8.1197
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2354,
+    "output_tokens": 2745,
+    "requests": 2
+  },
+  "latency_s": 18.897,
+  "ts": "2026-09-30T21:45:17+00:00"
+}

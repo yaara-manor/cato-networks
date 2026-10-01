@@ -1,0 +1,36 @@
+{
+  "query_id": "SC-03-sla-credit",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ASK_CUSTOMER",
+  "final_decision": "ASK_CUSTOMER",
+  "invalid_citations": [],
+  "citations": [
+    "0996c6ed-d63c-4d18-9c90-c370945c029f",
+    "2627d260-66ec-4417-801c-b61e32a69af7"
+  ],
+  "answer_text": "Thanks for the details. Per our SLA, service credits are calculated as a percentage of the fees for the affected service and are capped per site per month. To confirm the credit for INC-4471, I need: (1) which Cato service applies (ILMM or NOCaaS), (2) which site(s) were affected and the monthly fees for those site(s), and (3) whether INC-4471 meets the SLA criteria for a credit. Once you share those, I can confirm the credit amount within policy limits.",
+  "searches": [
+    {
+      "query": "service credit outage INC-4471",
+      "passage_ids": [
+        "0996c6ed-d63c-4d18-9c90-c370945c029f",
+        "d8334539-fb96-4f89-bfb9-0fb81bd9c6ce",
+        "2627d260-66ec-4417-801c-b61e32a69af7"
+      ],
+      "scores": [
+        -5.3638,
+        -7.0043,
+        -7.3175
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1849,
+    "output_tokens": 2252,
+    "requests": 2
+  },
+  "latency_s": 21.0,
+  "ts": "2026-09-30T21:50:21+00:00"
+}

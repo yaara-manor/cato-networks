@@ -1,0 +1,45 @@
+{
+  "query_id": "SC-02-vague-slow",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [
+    "3477d5a7",
+    "0142c3f4",
+    "ac6b188c"
+  ],
+  "citations": [
+    "3477d5a7",
+    "0142c3f4",
+    "ac6b188c"
+  ],
+  "answer_text": "Slow performance can be caused by weak Wi‑Fi or routing issues. First, check your client’s Wi‑Fi signal; if it’s -75 dBm or worse, improving the Wi‑Fi signal often resolves slow client performance. If Wi‑Fi looks fine, run a quick ping and traceroute to compare latencies with and without the Cato path to identify sub-optimal routing. If the Internet problems persist, you can enable Recovery via Internet to automatically recover connectivity by routing through ISP links when Cato Cloud can't reach the Internet.",
+  "searches": [
+    {
+      "query": "slow internet",
+      "passage_ids": [
+        "0142c3f4-e2dc-4f35-b301-10e11248c307",
+        "3477d5a7-682d-458a-8747-9d34d4c3ca47",
+        "ac6b188c-51f2-45f9-9c19-98012df60ee2",
+        "1b1974f8-e221-4494-bd72-5ecaaef4b9da",
+        "3a0479cc-208e-4181-939f-30800d306cc6"
+      ],
+      "scores": [
+        1.3508,
+        0.1272,
+        -6.1732,
+        -6.3074,
+        -7.0524
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2103,
+    "output_tokens": 2604,
+    "requests": 2
+  },
+  "latency_s": 20.905,
+  "ts": "2026-09-30T21:28:23+00:00"
+}

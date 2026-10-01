@@ -1,0 +1,75 @@
+{
+  "query_id": "Q07",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "b96f38bd-47f3-4f85-adfc-bf0e30f8bcb6",
+    "7471433c-228e-4c4b-9042-86001568c566",
+    "a7ed8631-5def-446d-8a75-6395d4ff1cf6"
+  ],
+  "answer_text": "IPsec sites: the default BFD timers are 1000 ms transmit, 1000 ms receive, with a multiplier of 5 (overall indicating ~5 seconds for detection after BFD is configured). Cloud Interconnect sites use 500 ms transmit, 500 ms receive, and a multiplier of 3. After you change BFD timers, re-establish the BFD session so the new values are negotiated with the remote peer; ensure BFD is enabled and configured on both the Cato Management Application and the remote peer, as timers are negotiated when the BFD session is established.",
+  "searches": [
+    {
+      "query": "BFD timers IPsec Cloud Interconnect default Cato",
+      "passage_ids": [
+        "9b73ca22-7412-4c49-8b88-39285e876c90",
+        "be13ccd7-46d1-4ebc-b002-5db5fa3b3c9d",
+        "a7ed8631-5def-446d-8a75-6395d4ff1cf6",
+        "b96f38bd-47f3-4f85-adfc-bf0e30f8bcb6",
+        "f6594197-dbf9-4f97-a75e-a2c2ab717a49"
+      ],
+      "scores": [
+        7.814,
+        5.1143,
+        4.076,
+        3.4918,
+        2.5843
+      ]
+    },
+    {
+      "query": "Cloud Interconnect BFD defaults",
+      "passage_ids": [
+        "7471433c-228e-4c4b-9042-86001568c566",
+        "9b73ca22-7412-4c49-8b88-39285e876c90",
+        "8ea761a9-df39-423a-95a5-34ddeb8542a9",
+        "5c06be9b-3b51-4698-a777-d3f0b35a46c7",
+        "89e2a340-66a1-449e-94f6-b2502bda9fbf"
+      ],
+      "scores": [
+        8.4926,
+        6.3644,
+        2.6327,
+        1.3924,
+        1.3404
+      ]
+    },
+    {
+      "query": "default BFD values Cloud Interconnect",
+      "passage_ids": [
+        "7471433c-228e-4c4b-9042-86001568c566",
+        "b96f38bd-47f3-4f85-adfc-bf0e30f8bcb6",
+        "9b73ca22-7412-4c49-8b88-39285e876c90",
+        "8a9ed7b6-7c0f-42b4-bbdf-da78e8b3e2e0",
+        "d9f3677b-7d97-46f7-8d40-e2d9ad5c7ca1"
+      ],
+      "scores": [
+        9.9005,
+        5.2644,
+        4.9603,
+        0.4073,
+        0.3976
+      ]
+    }
+  ],
+  "n_searches": 3,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 9357,
+    "output_tokens": 4455,
+    "requests": 4
+  },
+  "latency_s": 43.239,
+  "ts": "2026-09-30T21:25:42+00:00"
+}

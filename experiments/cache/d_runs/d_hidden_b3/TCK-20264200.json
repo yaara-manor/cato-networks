@@ -1,0 +1,41 @@
+{
+  "query_id": "TCK-20264200",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "3319d96f-4ccd-415c-aa8f-4cb17e293e09",
+    "d4b17bb0-0bc4-451b-bbc8-e0d30baa9868",
+    "9b2ede4b-d147-459c-b77d-5a3bbdc6150c"
+  ],
+  "answer_text": "Random drops at Chicago with CMA showing the site healthy can mean the tunnel to the Cato Cloud briefly went down while traffic continued over an alternate path. In CMA, review the Chicago site’s connectivity events (Home > Events; filter by Site connectivity status) to see if there were Disconnected events, and if so re-establish the tunnel to the Cato Cloud. You can also check the CMA Status Page for PoP/workload signals that might explain service impact. If the issue persists, gather the site’s event history and contact support for further diagnosis.",
+  "searches": [
+    {
+      "query": "site drops CMA",
+      "passage_ids": [
+        "3319d96f-4ccd-415c-aa8f-4cb17e293e09",
+        "37f826bd-d527-4a55-909d-44e8dbfb2792",
+        "9b2ede4b-d147-459c-b77d-5a3bbdc6150c",
+        "d4b17bb0-0bc4-451b-bbc8-e0d30baa9868",
+        "98464bb9-e080-4bcd-b7d7-6193b13f8069"
+      ],
+      "scores": [
+        3.4326,
+        3.4326,
+        0.9468,
+        0.0667,
+        -0.1189
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2152,
+    "output_tokens": 2347,
+    "requests": 2
+  },
+  "latency_s": 14.974,
+  "ts": "2026-09-30T21:29:46+00:00"
+}

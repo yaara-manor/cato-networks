@@ -1,0 +1,41 @@
+{
+  "query_id": "Q30",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "6a728f2d-308b-40d0-975f-22ccc40cacf8",
+    "98743a53-fe10-4093-bfd3-e921f00725ed",
+    "5bebdcf4-5ab0-4ee6-bf47-72b7bd4f84e6"
+  ],
+  "answer_text": "Cato’s guidance is to enable TLS Inspection and use the default TLS Inspection policy. The default policy inspects traffic except for the applications and OS categories that are automatically bypassed, to avoid known breakages. Automatic bypass rules for operating systems are documented in the Default Bypass Rules for Applications; see the TLS Inspection configuration docs for the exact list of OSes that are bypassed. If a pinned banking app breaks, you would rely on these bypass rules or add a specific bypass for that app as needed.",
+  "searches": [
+    {
+      "query": "TLS inspection bypass operating systems automatically Cato",
+      "passage_ids": [
+        "6a728f2d-308b-40d0-975f-22ccc40cacf8",
+        "98743a53-fe10-4093-bfd3-e921f00725ed",
+        "5bebdcf4-5ab0-4ee6-bf47-72b7bd4f84e6",
+        "f8746adb-42a2-489c-a57b-009d3a9ea001",
+        "9d13c490-baef-4c17-825e-236baf0bef5b"
+      ],
+      "scores": [
+        7.4323,
+        7.1881,
+        6.303,
+        6.0129,
+        5.8925
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2095,
+    "output_tokens": 2183,
+    "requests": 2
+  },
+  "latency_s": 18.917,
+  "ts": "2026-09-30T21:42:30+00:00"
+}

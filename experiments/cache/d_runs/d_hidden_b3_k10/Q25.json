@@ -1,0 +1,49 @@
+{
+  "query_id": "Q25",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "6a50933d-0d00-4abc-9216-ba0b8280a25e"
+  ],
+  "answer_text": "When all active links fail to meet the SLA, the Socket switches traffic to a different PoP and starts an initial SLA evaluation period. The evaluation lasts up to 40–50 seconds; the SLA is evaluated over a 40-second window and checked every 10 seconds, so the decision to move to another PoP occurs within roughly 40 seconds (with an upper bound near 50 seconds).",
+  "searches": [
+    {
+      "query": "Socket PoP failover SLA duration",
+      "passage_ids": [
+        "6a50933d-0d00-4abc-9216-ba0b8280a25e",
+        "ce6af09e-3e89-496c-8af0-ec47f617e91f",
+        "64033488-5c2f-43be-8a8e-63cea68a53ae",
+        "bc361009-8da9-463c-8fe2-9c52fd3d6b17",
+        "1fd92019-ee6b-4bcd-a42d-fb5de1b6ed73",
+        "28b0164d-0572-41b5-ae88-1bd9c938f000",
+        "40f72ecf-3ff3-4f8c-a690-8f8eb6ce0f36",
+        "80117de5-a546-457a-bbfa-0fbedef2aa4e",
+        "103ecc02-1b7e-46df-b238-1e0136df283a",
+        "df4be205-f5c3-48d6-8473-364753d9716a"
+      ],
+      "scores": [
+        4.9955,
+        4.1061,
+        4.0559,
+        3.9929,
+        3.3322,
+        2.0805,
+        1.595,
+        1.5311,
+        1.3629,
+        1.2895
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 3139,
+    "output_tokens": 1912,
+    "requests": 2
+  },
+  "latency_s": 25.61,
+  "ts": "2026-09-30T21:56:42+00:00"
+}

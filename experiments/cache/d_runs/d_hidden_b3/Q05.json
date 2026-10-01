@@ -1,0 +1,39 @@
+{
+  "query_id": "Q05",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "18a7fb94-4af0-46e4-aee7-272e887eba00"
+  ],
+  "answer_text": "KB does not specify a numeric limit on how many BGP routes a Socket can accept from a neighbor before the session is affected. Two recommended methods to reduce the number of advertised routes to Cato are: 1) Advertise Aggregated (Summarized) Routes by summarizing internal prefixes; 2) Apply Route Filtering to exclude infrastructure, transit, or non-WAN-relevant prefixes.",
+  "searches": [
+    {
+      "query": "BGP routes Socket reduce advertised routes",
+      "passage_ids": [
+        "2bfc4c5d-a149-40c4-9e40-8c35d33c260d",
+        "d2e3e4f2-0d3b-486c-be17-a751fe8f822c",
+        "18a7fb94-4af0-46e4-aee7-272e887eba00",
+        "d41097db-20eb-44a9-b01d-c8d3290157f4",
+        "43d6c3ad-ce75-49fa-8d46-7d2be4d64449"
+      ],
+      "scores": [
+        8.0932,
+        6.844,
+        6.3416,
+        5.6179,
+        5.0848
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2092,
+    "output_tokens": 2951,
+    "requests": 2
+  },
+  "latency_s": 24.602,
+  "ts": "2026-09-30T21:25:23+00:00"
+}

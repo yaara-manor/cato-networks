@@ -1,0 +1,71 @@
+{
+  "query_id": "ADJ11",
+  "variant": "d_shown_b3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn't locate Barracuda CloudGen F-Series IPsec configuration guidance for connecting to a Cato PoP in the Cato knowledge base. The available KB articles cover IPsec configurations for other vendors (e.g., VMware Edge, FortiGate) but not Barracuda. Please refer to Barracuda's documentation for Barracuda CloudGen F-Series VPN setup, or contact Cato Support for Barracuda-specific guidance and validation.",
+  "searches": [
+    {
+      "query": "Barracuda CloudGen F-Series IPsec Cato PoP",
+      "passage_ids": [
+        "02d90311-17ae-4a13-b5ce-95ef0e2e0a3c",
+        "fa9f9196-2276-41ff-8a8c-eeaf0dc85634",
+        "94f0c49b-b12b-4da6-b534-b8343585cf1a",
+        "1bfef2c8-3f77-45de-895f-54fd4d1b1916",
+        "94c79749-9ad6-455d-b87b-220f42902322"
+      ],
+      "scores": [
+        2.1124,
+        0.7705,
+        0.6848,
+        0.1865,
+        0.1069
+      ]
+    },
+    {
+      "query": "Barracuda CloudGen",
+      "passage_ids": [
+        "e452026f-59dd-4dae-8aaa-ec0384b53e9d",
+        "d567a456-7238-42d9-b2c4-fce713191b2d",
+        "82fef58e-ffad-4053-87f1-bbdaf252e7be",
+        "b59d198e-ef09-47e6-8d2a-80df49085d53",
+        "a7e8f9c8-86be-4627-837d-afb0c06d2b05"
+      ],
+      "scores": [
+        -10.9432,
+        -11.004,
+        -11.0843,
+        -11.1072,
+        -11.1508
+      ]
+    },
+    {
+      "query": "Barracuda CloudGen F-Series IPsec",
+      "passage_ids": [
+        "da693a4c-984b-4fd3-8606-773f2557a424",
+        "6b87d78d-9206-4df8-ac08-ce75e4890209",
+        "e7d1bd23-04a7-4943-bd53-c4a02ddcf728",
+        "2df8a7a3-95f2-4e5a-9e37-ac25c22c6fa8",
+        "286685a9-1fc4-4518-a49d-46e4a8da4f6e"
+      ],
+      "scores": [
+        -5.4346,
+        -5.6628,
+        -5.6992,
+        -6.4577,
+        -6.5148
+      ]
+    }
+  ],
+  "n_searches": 3,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 9934,
+    "output_tokens": 2617,
+    "requests": 4
+  },
+  "latency_s": 24.423,
+  "ts": "2026-09-30T21:39:47+00:00"
+}

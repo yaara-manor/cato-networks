@@ -120,8 +120,7 @@ Every agent receives a typed context container via PydanticAI dependency injecti
 - `clock: SimulationClock` — Provides frozen time `2026-08-28T17:00:00Z` and elapsed time calculations.
 - `db_pool: AsyncConnectionPool` — Connection pool to Postgres.
 - `telemetry: TelemetryService` — Interface to read synthetic CMA telemetry files directly from `data/telemetry/` with `(resolved_path, mtime_ns)` caching, returning typed `TelemetryToolResult[T]` envelopes with pre-extracted `TelemetryEvidence`.
-- `retrieval: RetrievalService` — Interface for keyword, vector, and cross-encoder search.
-- `policy_store: PolicyStore` — Direct loader for the 6 internal policy markdown documents.
+- `retrieval: RetrievalService` — Unified interface in `retrieval/service.py` for hybrid KB search (`search_kb` returning `KBSearchResult`) and authoritative internal policy lookup (`get_policy(policy_id) -> PolicyDocument | None`, `list_policies() -> list[PolicyDocument]`). Policies are loaded once at construction and served from memory, so lookup cannot fail at runtime (it keeps working during a DB outage); an unknown id returns `None`.
 - `customer_store: CustomerService` — Account tier and ticket history query engine.
 
 ---
@@ -159,14 +158,14 @@ Every agent receives a typed context container via PydanticAI dependency injecti
 - **Failure Mode**: If a telemetry file is missing or corrupt, the tool returns `status=TelemetryStatus.NOT_FOUND` or `status=TelemetryStatus.UNAVAILABLE` with an explicit `error` description, allowing the agent to continue without inventing numbers.
 
 #### 3. Knowledge Agent
-- **Purpose**: Formulates search queries against Cato documentation, queries Postgres hybrid index, executes cross-encoder reranking, and checks policy rules.
-- **Allowed Tools**: `search_knowledge_base(query: str)`, `get_policy_by_id(policy_id: str)`.
+- **Purpose**: Formulates search queries against Cato documentation, queries Postgres hybrid index via `RetrievalService`, executes cross-encoder reranking, and checks policy rules.
+- **Allowed Tools**: `search_knowledge_base(query: str) -> KBSearchResult`, `get_policy(policy_id: str) -> PolicyDocument | None` (unknown id → `None`; in-memory, unaffected by DB outages).
 - **Typed Input**: Diagnosis findings or customer technical question.
 - **Typed Output (`KnowledgeBundle`)**:
-  - `retrieved_passages: list[PassageCitation]` (slug, heading, heading_anchor, public_url, rrf_score, rerank_score, snippet)
-  - `referenced_policies: list[PolicyCitation]` (policy_id, title, excerpt)
-  - `confidence_status: Literal["confident", "low_confidence_refusal", "not_covered"]`
-- **Failure Mode**: If top rerank score < `RERANK_MIN_SCORE`, flags `low_confidence_refusal`. If database is down, raises `RetrievalUnavailableError`.
+  - `retrieved_passages: list[RetrievedPassage]` (`passage_id`, `slug`, `title`, `heading`, `heading_anchor`, `public_url`, `body`, `site_updated_at`, `lex_rank`, `vec_rank`, `rrf_score`, `rerank_score`, `citation_tag`)
+  - `referenced_policies: list[PolicyDocument]` (`policy_id`, `title`, `file_path`, `body`, `citation_tag`)
+  - `confidence_status: KBSearchStatus` (`StrEnum`: `CONFIDENT`, `LOW_CONFIDENCE_REFUSAL`, `UNAVAILABLE`)
+- **Failure Mode**: If top rerank score < `RERANK_MIN_SCORE`, `KBSearchResult` returns `status=KBSearchStatus.LOW_CONFIDENCE_REFUSAL` with `passages=[]` and unfiltered `candidates` preserved for eval/trace logging. If the database is down, `search_kb` catches `psycopg.Error` and returns a `KBSearchResult` with `status=KBSearchStatus.UNAVAILABLE`; policy lookup is unaffected (served from memory).
 
 #### 4. Resolution & Action Agent
 - **Purpose**: Synthesizes customer context, telemetry evidence, and KB passages into a conversational, empathetic, and grounded response. Proposes support actions and marks high-impact operations for approval.
@@ -209,7 +208,7 @@ stateDiagram-v2
 | Failure Event | System Behavior | Customer Experience |
 |---|---|---|
 | **Telemetry source unreachable / file missing** | `Diagnostics Agent` catches error, logs warning, returns partial evidence. | Agent states: *"CMA telemetry for site [X] is temporarily unavailable. Based on your description..."* Guides manual verification without guessing. |
-| **Postgres RAG service down** | `Knowledge Agent` catches DB connection error, sets status to `RetrievalUnavailable`. | Agent states: *"Our documentation service is currently unavailable. To ensure you receive accurate technical guidance, I am escalating this to our engineering team."* Refuses to answer from ungrounded LLM memory. |
+| **Postgres RAG service down** | `Knowledge Agent` catches DB connection error, `search_kb` returns `status=KBSearchStatus.UNAVAILABLE`. | Agent states: *"Our documentation service is currently unavailable. To ensure you receive accurate technical guidance, I am escalating this to our engineering team."* Refuses to answer from ungrounded LLM memory. |
 | **Rerank score < `RERANK_MIN_SCORE`** | Top score below threshold indicates no KB coverage (e.g. roadmap query). | Agent states: *"Cato's knowledge base does not currently document support for [feature]. Let me connect you with product support."* Hallucination prevented. |
 | **Model API rate limit or error** | State machine retries with exponential backoff (up to 2 retries), then falls back to secondary model. | System remains resilient; if unrecoverable, preserves conversation state and returns a courteous system pause message. |
 
@@ -352,7 +351,7 @@ erDiagram
 ```
 
 ### Key Table Responsibilities
-- **`passages`**: Lexical index (`GIN` on `search_vector`, `simple` configuration) + Vector column (`vector(384)`, exact cosine distance scan).
+- **`passages`**: Lexical index (`GIN` on `search_vector`, `english` configuration) + Vector column (`vector(384)`, exact cosine distance scan).
 - **`policies`**: Read-only store for the 6 internal governance policies.
 - **`accounts`**: Ground-truth customer account records (`ACC-1001`..`ACC-1012`) enriched with primary `-01` site `country` codes for SLA timezone resolution.
 - **`tickets`**: Historical and live support tickets (`TCK-*`), indexed on `(customer_id, created_at)` and `(customer_id, site_id)` for repeat-contact detection and live status updates.
@@ -364,21 +363,23 @@ erDiagram
 
 ## 7. Hybrid RAG & Knowledge Grounding Architecture
 
-The retrieval pipeline implements the contract specified in `00-2026-09-28-kb-ingestion-design.md`:
+The retrieval pipeline (`RetrievalService` in `retrieval/service.py`) implements the hybrid retrieval and reranking contract:
 
 1. **Query Construction**:
-   - Technical questions are prefixed with: `Represent this sentence for searching relevant passages: ` (required by `BAAI/bge-small-en-v1.5`).
-2. **First-Stage Hybrid Retrieval**:
-   - **Lexical**: Top 20 passages via Postgres `tsvector @@ plainto_tsquery('simple', :query)`.
-   - **Vector**: Top 20 passages via `<=>` cosine distance against passage embedding.
-3. **Reciprocal Rank Fusion (RRF)**:
-   - For every candidate passage in either list:
+   - Vector search prefixes questions with: `Represent this sentence for searching relevant passages: ` (required by `BAAI/bge-small-en-v1.5` via `encoders.embed.embed_query`).
+   - Lexical search passes the query through PostgreSQL's built-in `'english'` Snowball stemmer, folded straight into a `::tsquery` cast (`string_agg(quote_literal(lexeme), ' | ')::tsquery` over `tsvector_to_array(to_tsvector('english', :query))`) — no `:*` prefix wildcards — and matches against `passages.search_vector`, itself a generated column indexed (`GIN`) on the same `'english'` configuration so stems compare equal on both sides.
+2. **Single-Roundtrip First-Stage Hybrid Retrieval & RRF**:
+   - **Lexical CTE**: Top 20 passages via `search_vector @@ tsq` ordered by `ts_rank_cd(search_vector, tsq) DESC`.
+   - **Vector CTE**: Top 20 passages via `<=>` cosine distance against passage embedding.
+   - **Reciprocal Rank Fusion (RRF CTE)**: `FULL OUTER JOIN` across both top-20 lists computing:
      $$\text{RRF Score} = \sum_{m \in \{\text{lexical}, \text{vector}\}} \frac{1}{60 + \text{rank}_m}$$
-4. **Second-Stage Cross-Encoder Reranking**:
-   - The top fused candidates are evaluated locally using `cross-encoder/ms-marco-MiniLM-L-12-v2`.
-5. **Confidence Filter**:
-   - Filter candidates where $\text{Rerank Score} \ge \text{RERANK\_MIN\_SCORE}$.
-   - Pass top 3–5 surviving chunks to the agent with exact heading anchors for citation.
+     joined with `kb_articles` in a single SQL query; the top 20 by RRF score are carried into reranking. `policies` and `snapshots.crawled_at` are not joined per call — `RetrievalService.__init__` loads them once into memory.
+3. **Second-Stage Cross-Encoder Reranking**:
+   - The RRF top 20 fused candidates are scored locally using `cross-encoder/ms-marco-MiniLM-L-12-v2` (`encoders.rerank.rerank_pairs`).
+4. **Confidence Filter & `KBSearchResult` Envelope**:
+   - Candidates with $\text{Rerank Score} \ge \text{RERANK\_MIN\_SCORE}$ populate `KBSearchResult.passages` (top $k$, `status=KBSearchStatus.CONFIDENT`).
+   - `RERANK_MIN_SCORE` defaults to `2.0`, a calibrated safety floor rather than a correctness test (see [threshold calibration](../eval/threshold_calibration.md) and ADR-007).
+   - If no candidate meets threshold, `status=KBSearchStatus.LOW_CONFIDENCE_REFUSAL` is returned with `passages=[]` while `candidates` preserves the top $k$ unfiltered chunks and `snapshot_date` for `answers.md` and `traces`.
 
 ---
 
@@ -495,15 +496,18 @@ The codebase is organized into clean, single-responsibility packages separating 
 │   ├── crawl.py                       # Respects robots.txt and 1s rate limit
 │   ├── discover.py                    # llms.txt discovery parser
 │   ├── chunk.py                       # Markdown slicing (max 400 tokens)
-│   ├── embed.py                       # BAAI/bge-small-en-v1.5 embeddings
 │   ├── hashing.py                     # SHA-256 integrity verifier
 │   └── store.py                       # Loads KB articles & passages into Postgres
 │
-├── retrieval/                         # Online RAG & search pipeline
-│   ├── search.py                      # Hybrid lexical (tsvector) + vector (pgvector) + RRF fusion
-│   ├── rerank.py                      # Cross-encoder MiniLM reranker (query-time)
-│   ├── threshold.py                   # RERANK_MIN_SCORE confidence gate & refusal evaluation
-│   └── policies.py                    # Direct authoritative policy reader by ID
+├── encoders/                          # Shared embedding & reranking models
+│   ├── embed.py                       # BAAI/bge-small-en-v1.5 embeddings
+│   └── rerank.py                      # Cross-encoder MiniLM reranker (query-time)
+│
+├── retrieval/                         # Online RAG & policy lookup pipeline
+│   └── service.py                     # RetrievalService: single-roundtrip hybrid SQL + RRF + threshold gate + policy lookup
+│
+├── eval/                              # Offline evaluation
+│   └── calibrate_threshold.py         # Rerank-score calibration -> docs/eval/threshold_calibration.md
 │
 ├── core/                              # Central primitives & shared domain models
 │   ├── clock.py                       # SimulationClock frozen at 2026-08-28T17:00:00Z

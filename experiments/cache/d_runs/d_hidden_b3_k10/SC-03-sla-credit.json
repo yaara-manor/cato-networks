@@ -1,0 +1,50 @@
+{
+  "query_id": "SC-03-sla-credit",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ASK_CUSTOMER",
+  "final_decision": "ASK_CUSTOMER",
+  "invalid_citations": [],
+  "citations": [
+    "d8334539-fb96-4f89-bfb9-0fb81bd9c6ce",
+    "ad56aba0-5a8d-4a80-a443-bf1fff110900"
+  ],
+  "answer_text": "Per our NOCaaS SLA, service credits are defined by outage severity. For Critical outages, the Service Level Credit is 5% of the monthly charge; other severities have different credits. To confirm the credit for INC-4471 and apply it, we need to verify the outage severity and ensure eligibility (e.g., Socket hardware EOS would disqualify credits). Please confirm the incident severity and whether your Socket site is EOS-end-of-life, or share any details from the incident so we can determine the correct credit amount.",
+  "searches": [
+    {
+      "query": "service credit outage SLA",
+      "passage_ids": [
+        "d8334539-fb96-4f89-bfb9-0fb81bd9c6ce",
+        "ad56aba0-5a8d-4a80-a443-bf1fff110900",
+        "63cc9304-71d6-46fc-b37c-746c7ae24588",
+        "4bf3278c-57a6-49a4-9c58-16cdfc9d9fdf",
+        "b0281e30-e5f2-466d-a49d-7ece08ad64f6",
+        "64033488-5c2f-43be-8a8e-63cea68a53ae",
+        "ce6af09e-3e89-496c-8af0-ec47f617e91f",
+        "60005c04-eb5a-43de-8021-c073e8611341",
+        "167de8fe-5db7-4679-9d06-623166fe84a2",
+        "75051713-b2a0-4c2a-a426-f7440f8515e5"
+      ],
+      "scores": [
+        3.4076,
+        2.6864,
+        -2.7401,
+        -2.8841,
+        -3.0605,
+        -3.586,
+        -3.7874,
+        -4.3358,
+        -4.4438,
+        -4.5073
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2987,
+    "output_tokens": 2352,
+    "requests": 2
+  },
+  "latency_s": 15.592,
+  "ts": "2026-09-30T21:57:55+00:00"
+}

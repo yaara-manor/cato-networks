@@ -1,0 +1,47 @@
+{
+  "query_id": "OOD10",
+  "variant": "d_hidden_b3_k10",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn't find any information on filing a US tax return extension in the Cato knowledge base. For tax-related questions, please consult the IRS website or a qualified tax professional.",
+  "searches": [
+    {
+      "query": "tax extension",
+      "passage_ids": [
+        "1ec8d3be-233f-4eea-8dde-57e05bb39604",
+        "c33c74b3-2b3e-4f20-b482-35213edd2f82",
+        "00d82f51-5b15-4080-8b8b-15ee7704c88f",
+        "c5254355-bdce-4831-b31c-167c34393423",
+        "8160204e-07b2-407c-8077-7f142a25e4f6",
+        "e1f2f9f4-c8a1-4277-b453-77cddf00d4dd",
+        "0a8d26ef-bfcf-40d5-b59f-12070c42e1c5",
+        "a8698711-ccd7-4497-9de5-0f69164ec3a2",
+        "1fe95eaa-df96-4c6f-9fe8-1a59c7dbc1d4",
+        "dd35ea38-54d6-4067-b337-c76a200f4166"
+      ],
+      "scores": [
+        -2.5533,
+        -6.188,
+        -8.3424,
+        -8.8675,
+        -8.9313,
+        -8.954,
+        -9.7916,
+        -9.9349,
+        -10.1702,
+        -10.2181
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2848,
+    "output_tokens": 1029,
+    "requests": 2
+  },
+  "latency_s": 9.672,
+  "ts": "2026-09-30T22:01:21+00:00"
+}

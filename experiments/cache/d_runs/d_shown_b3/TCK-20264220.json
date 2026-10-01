@@ -1,0 +1,37 @@
+{
+  "query_id": "TCK-20264220",
+  "variant": "d_shown_b3",
+  "decision": "ASK_CUSTOMER",
+  "final_decision": "ASK_CUSTOMER",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "Thanks for the details. The knowledge base does not show a published hard limit for total prefixes per Socket session. To determine if a limit is involved, please provide the Socket model (e.g., X1500, X1600, X1700), the affected site(s), whether the 1,100 prefixes come from a single peer or multiple peers, and any relevant BGP/session logs around the outages. If you’d like, I can run another KB search for a precise “prefix limit” or “BGP prefix limit” specification to pull the exact number.",
+  "searches": [
+    {
+      "query": "Cato Socket prefix limit",
+      "passage_ids": [
+        "41157a40-896f-4bd2-8b09-b6a87b493a66",
+        "7e78d44e-945d-469b-b696-127907f4ce6f",
+        "066ea2c2-a18d-4af7-97b5-a4e16e189188",
+        "629c78ae-e400-447e-8bc5-fff85fa09b6e",
+        "90daa2ef-eb87-4e2c-abbc-e67fc88de5e0"
+      ],
+      "scores": [
+        2.8651,
+        2.5973,
+        2.5059,
+        2.12,
+        1.7488
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2413,
+    "output_tokens": 2764,
+    "requests": 2
+  },
+  "latency_s": 21.083,
+  "ts": "2026-09-30T21:38:04+00:00"
+}

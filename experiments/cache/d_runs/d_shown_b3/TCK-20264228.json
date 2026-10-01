@@ -1,0 +1,39 @@
+{
+  "query_id": "TCK-20264228",
+  "variant": "d_shown_b3",
+  "decision": "ASK_CUSTOMER",
+  "final_decision": "ASK_CUSTOMER",
+  "invalid_citations": [],
+  "citations": [
+    "b5981eaf-f994-4a5f-9156-511d116d687b"
+  ],
+  "answer_text": "The X1600 Socket WiFi FAQ notes that an HA pair of X1600 units can provide Wi‑Fi without WAPs. The KB does not explicitly state whether an X1600-LTE can serve as the secondary in an HA pair. Please confirm whether you’re pairing two X1600 devices (non-LTE) or specifically want to pair an X1600 with an X1600-LTE; I can check for LTE‑specific HA guidance if needed.",
+  "searches": [
+    {
+      "query": "X1600 LTE high availability",
+      "passage_ids": [
+        "b5981eaf-f994-4a5f-9156-511d116d687b",
+        "39a11d8e-7a57-4d0b-8389-5f938437fad0",
+        "b00f9e84-b701-4d1b-bc53-a9b3d91a45e5",
+        "9841ddd9-9727-4a89-81a9-4e3ad4ef764f",
+        "4e60bc59-ff2f-46e5-8ec4-4b6ae53bf12d"
+      ],
+      "scores": [
+        4.7633,
+        4.2846,
+        4.2668,
+        4.0243,
+        3.5624
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2301,
+    "output_tokens": 2346,
+    "requests": 2
+  },
+  "latency_s": 16.097,
+  "ts": "2026-09-30T21:37:29+00:00"
+}

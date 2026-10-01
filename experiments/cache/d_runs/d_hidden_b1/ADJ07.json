@@ -1,0 +1,41 @@
+{
+  "query_id": "ADJ07",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "69ca7470-06c4-498d-a142-55d42f9b51e3",
+    "1692bd4f-0b55-4dac-959b-9479e02b4aca",
+    "64285db8-f7d9-4f1c-9a04-32fce38cf2f5"
+  ],
+  "answer_text": "You can trigger a controlled failover behind a Cato Socket HA pair using the Cato Management Application (CMA). Open the Socket page and use Failover to the Secondary Socket to force a failover; this validates that HA is correctly configured and responsive. When the Secondary Socket takes over, traffic is moved to its WAN links. If the Primary is not communicating, keepalive failures can trigger a failover after the keepalive timeout (about three seconds) and the Secondary will assume Master status. See the Socket HA overview and the sample failover diagrams for additional context.",
+  "searches": [
+    {
+      "query": "Juniper SRX chassis cluster failover behind Cato Socket HA",
+      "passage_ids": [
+        "69ca7470-06c4-498d-a142-55d42f9b51e3",
+        "30e8e4e4-de75-4410-b194-1f32edc534c7",
+        "1692bd4f-0b55-4dac-959b-9479e02b4aca",
+        "64285db8-f7d9-4f1c-9a04-32fce38cf2f5",
+        "bffea9bb-381a-4ff9-baac-0acc6c08bdec"
+      ],
+      "scores": [
+        2.6015,
+        0.804,
+        0.7071,
+        0.6682,
+        -0.3486
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2051,
+    "output_tokens": 2779,
+    "requests": 2
+  },
+  "latency_s": 19.302,
+  "ts": "2026-09-30T21:46:44+00:00"
+}

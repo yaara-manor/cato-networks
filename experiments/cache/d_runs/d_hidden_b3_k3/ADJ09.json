@@ -1,0 +1,33 @@
+{
+  "query_id": "ADJ09",
+  "variant": "d_hidden_b3_k3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn’t locate the exact ML-KEM parameter set negotiated by the Cato Client with PQC enabled (512, 768, or 1024) in the knowledge base. The PQC overview describes that PQC is used for the client, but it does not specify the parameter size or the negotiation details. If you need this precise detail, please contact your Cato account team or engineering for confirmation.",
+  "searches": [
+    {
+      "query": "ML-KEM parameter set PQC PoP Cato",
+      "passage_ids": [
+        "06fe0ab4-5024-4c4b-84cb-564af3653c16",
+        "3da7b238-94a4-4785-8015-e669d861177c",
+        "9865c294-3df4-414b-84fb-b932202eeded"
+      ],
+      "scores": [
+        1.3836,
+        -0.3816,
+        -0.6618
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1890,
+    "output_tokens": 1657,
+    "requests": 2
+  },
+  "latency_s": 15.024,
+  "ts": "2026-09-30T21:53:50+00:00"
+}

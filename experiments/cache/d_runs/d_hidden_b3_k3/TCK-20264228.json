@@ -1,0 +1,33 @@
+{
+  "query_id": "TCK-20264228",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ASK_CUSTOMER",
+  "final_decision": "ASK_CUSTOMER",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "Per the X1600 Socket WiFi FAQ, HA pairing is supported for two X1600 units. The KB does not specify whether an X1600-LTE can act as the HA partner. Please confirm if you want to pair an X1600 with an X1600-LTE, or if you would prefer to pair two X1600 devices; I can check with engineering for exact compatibility.",
+  "searches": [
+    {
+      "query": "X1600 LTE high availability",
+      "passage_ids": [
+        "b5981eaf-f994-4a5f-9156-511d116d687b",
+        "39a11d8e-7a57-4d0b-8389-5f938437fad0",
+        "b00f9e84-b701-4d1b-bc53-a9b3d91a45e5"
+      ],
+      "scores": [
+        4.7633,
+        4.2846,
+        4.2668
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1941,
+    "output_tokens": 2702,
+    "requests": 2
+  },
+  "latency_s": 18.562,
+  "ts": "2026-09-30T21:51:50+00:00"
+}

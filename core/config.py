@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from pydantic import AwareDatetime
@@ -16,7 +16,7 @@ class Settings(BaseSettings):
 
     repo_root: Path = REPO_ROOT
     database_url: str = "postgresql://kb:kb@localhost:5432/kb"
-    simulation_time: AwareDatetime = datetime(2026, 8, 28, 17, 0, 0, tzinfo=timezone.utc)
+    simulation_time: AwareDatetime = datetime(2026, 8, 28, 17, 0, 0, tzinfo=UTC)
     user_agent: str = "CatoHomeTaskBot/1.0 (educational assignment)"
     rate_limit_seconds: float = 1.0
     embedding_model: str = "BAAI/bge-small-en-v1.5"
@@ -24,12 +24,12 @@ class Settings(BaseSettings):
     embedding_dimensions: int = 384
     reranker_model: str = "cross-encoder/ms-marco-MiniLM-L12-v2"
     reranker_revision: str = "7b0235231ca2674cb8ca8f022859a6eba2b1c968"
-    rerank_min_score: float = 0.0
+    rerank_min_score: float = 2.0  # safety floor, see docs/eval/threshold_calibration.md
     query_prefix: str = "Represent this sentence for searching relevant passages: "
     passage_token_cap: int = 400
     slice_new_tokens: int = 350
     slice_overlap_tokens: int = 50
-    llm_model: str = "google-gla:gemini-3.8-flash"
+    llm_model: str = "openai:gpt-5-nano"
 
 
 settings: Settings = Settings()

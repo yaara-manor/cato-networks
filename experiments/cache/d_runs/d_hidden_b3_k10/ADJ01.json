@@ -1,0 +1,47 @@
+{
+  "query_id": "ADJ01",
+  "variant": "d_hidden_b3_k10",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I can’t find UniFi Dream Machine Pro–specific configuration steps in the Cato KB. The KB covers general IPsec IKEv2 site configuration and edge-device considerations (such as using IKEv2, choosing Bidirectional or Responder Only connection modes, and how to configure IPsec settings in the Cato Management Application), but it does not include UniFi‑specific instructions.",
+  "searches": [
+    {
+      "query": "UniFi Dream Machine Pro IKEv2 IPsec Cato PoP",
+      "passage_ids": [
+        "94c79749-9ad6-455d-b87b-220f42902322",
+        "3da7b238-94a4-4785-8015-e669d861177c",
+        "75375d13-2430-4389-885e-51c5de087149",
+        "90325d78-c496-4ec3-9b46-ad7b201c675f",
+        "8fb3b323-91df-4c8f-832d-bc458407d37e",
+        "a065018f-4396-44b9-a794-383384df32cb",
+        "87751f4b-7004-4ef4-9217-7bd437014fc5",
+        "c7f1bcb3-6b76-41bc-b1ee-95985aa77236",
+        "02d90311-17ae-4a13-b5ce-95ef0e2e0a3c",
+        "2df8a7a3-95f2-4e5a-9e37-ac25c22c6fa8"
+      ],
+      "scores": [
+        2.6106,
+        2.5581,
+        2.4853,
+        2.4179,
+        1.9339,
+        1.7442,
+        1.5932,
+        1.0385,
+        0.366,
+        0.3458
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 3035,
+    "output_tokens": 1729,
+    "requests": 2
+  },
+  "latency_s": 16.768,
+  "ts": "2026-09-30T22:01:31+00:00"
+}

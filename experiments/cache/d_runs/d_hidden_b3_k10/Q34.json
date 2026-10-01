@@ -1,0 +1,51 @@
+{
+  "query_id": "Q34",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "8615a0da-edf6-4b7a-ab63-e2acddb76bb4",
+    "d924dd90-7f10-48e9-8b41-9b72301fd0d8",
+    "25acd733-f34a-409f-8933-746788983711"
+  ],
+  "answer_text": "MFA tokens in Cato are valid in a 30‑second time window. On trusted devices, MFA is not required as long as the device is marked trusted (Don’t ask me again on this device/computer), the token validity duration hasn’t expired, and geolocation hasn’t changed to a different country. Administrators can configure the Token Validity duration; outside of a trusted device or when the duration has expired or location changes, you’ll be prompted for MFA again.",
+  "searches": [
+    {
+      "query": "MFA token validity Cato",
+      "passage_ids": [
+        "8615a0da-edf6-4b7a-ab63-e2acddb76bb4",
+        "cfbe4db1-6bc8-4d6b-bf41-7c5108deb852",
+        "d924dd90-7f10-48e9-8b41-9b72301fd0d8",
+        "25acd733-f34a-409f-8933-746788983711",
+        "e7f25ee5-3ee8-40ae-bee1-b9dd23e5a442",
+        "206ba257-d116-43ee-afa3-d28b4861afac",
+        "c9adca59-820d-4a90-8c56-75eeec34124b",
+        "a02316b9-8cf5-4f12-8c99-0b4a5278a3eb",
+        "2da11a8b-8b22-48da-8288-c20372f0dedb",
+        "6e175a2f-a08e-4b8e-9c04-8a3afd8f0a9b"
+      ],
+      "scores": [
+        7.5662,
+        7.2733,
+        7.1148,
+        6.8826,
+        4.6193,
+        3.3636,
+        3.3593,
+        3.3056,
+        3.2359,
+        3.2162
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2952,
+    "output_tokens": 2499,
+    "requests": 2
+  },
+  "latency_s": 17.017,
+  "ts": "2026-09-30T21:57:39+00:00"
+}

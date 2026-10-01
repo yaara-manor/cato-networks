@@ -1,0 +1,40 @@
+{
+  "query_id": "Q18",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "797eff0e-151a-408b-8b7a-9222937a93ad",
+    "6cdde4ae-97b3-46d0-9ee4-20dac91b91cf"
+  ],
+  "answer_text": "Throughput drop for a Cato Socket behind a third-party firewall is often caused by UDP Flooding protection on the firewall, which can throttle traffic sent over Cato DTLS tunnels. The recommended fix is to disable or adjust the firewall's UDP Flooding protection (as this setting is commonly enabled by default) to allow Cato DTLS traffic.",
+  "searches": [
+    {
+      "query": "Socket throughput third-party firewall",
+      "passage_ids": [
+        "797eff0e-151a-408b-8b7a-9222937a93ad",
+        "85d6e8b6-8041-4e3a-ae5e-79e28ae5aba0",
+        "34a79ace-b53a-4e6c-8616-d6c4dc6467cf",
+        "6cdde4ae-97b3-46d0-9ee4-20dac91b91cf",
+        "ca8f4067-da0b-4ec5-ba9d-35bb6440c323"
+      ],
+      "scores": [
+        6.7846,
+        6.4169,
+        5.0837,
+        4.857,
+        4.426
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2065,
+    "output_tokens": 3148,
+    "requests": 2
+  },
+  "latency_s": 22.293,
+  "ts": "2026-09-30T21:41:37+00:00"
+}

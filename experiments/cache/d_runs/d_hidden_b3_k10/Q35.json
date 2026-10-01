@@ -1,0 +1,106 @@
+{
+  "query_id": "Q35",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "67699e14-a758-4c0c-9c36-68d62017b0d0",
+    "216c00bf-55b6-4b3f-aa00-d827f0d3bdc2",
+    "d8127bc6-a7cb-4099-a605-4074a71be6cd",
+    "cf7a6a93-afb5-4b2e-afe4-7b5b11c279e1"
+  ],
+  "answer_text": "The XOps Network Playbook for SCIM Provisioning Failed lists three troubleshooting moves: 1) Inspect the audit and provisioning logs (e.g., in Azure Enterprise Applications > Cato Networks Provisioning) to determine if a configuration change or error triggered the failure. 2) Review the documented possible causes (credential mismatches, missing attributes, insufficient licenses, group/app scoping, etc.) to identify the likely root cause. 3) Make targeted changes by reassigning or removing users or groups in the IdP or CMA and then re-run provisioning. ",
+  "searches": [
+    {
+      "query": "SCIM provisioning playbook",
+      "passage_ids": [
+        "7b96a961-d52f-46e2-b082-052541cee197",
+        "ee690f5f-0632-4d26-862e-e98048f0ac09",
+        "67699e14-a758-4c0c-9c36-68d62017b0d0",
+        "4877b072-607c-448b-b729-84bd1b64eb73",
+        "cb29bfb8-4f63-4060-b151-8b4dfb861c67",
+        "4515617a-4e63-433d-a164-6731674ff992",
+        "8f32cf0e-1663-405a-aabe-c0a57bb5de27",
+        "c68df0f6-074d-4fc4-ae48-8083be7197a2",
+        "3ce73cd5-7ec4-4ed8-b770-4ccbd1ac751a",
+        "7644f26e-76b9-4bd3-9ce7-8f0c5e0a4933"
+      ],
+      "scores": [
+        9.3542,
+        7.9253,
+        7.8454,
+        7.246,
+        6.8843,
+        6.836,
+        4.288,
+        3.3721,
+        3.3467,
+        3.2096
+      ]
+    },
+    {
+      "query": "three troubleshooting moves SCIM provisioning",
+      "passage_ids": [
+        "4515617a-4e63-433d-a164-6731674ff992",
+        "5170f267-6401-4b61-b158-a0664f65ba7f",
+        "17e8a11e-061d-4b5d-a225-041fe7d98da1",
+        "de1e3979-47ef-42cf-97c5-a0136ea5295e",
+        "aa6f09e8-b138-4751-b8de-c379bf1848eb",
+        "d8127bc6-a7cb-4099-a605-4074a71be6cd",
+        "ed68f600-f45f-4c92-9a4f-2f4c1fa52014",
+        "42436976-13f8-4e67-b3a7-4f3de727188f",
+        "3ce73cd5-7ec4-4ed8-b770-4ccbd1ac751a",
+        "67699e14-a758-4c0c-9c36-68d62017b0d0"
+      ],
+      "scores": [
+        4.0731,
+        3.6267,
+        3.6233,
+        3.349,
+        3.1857,
+        3.1123,
+        2.6351,
+        2.0867,
+        1.9233,
+        0.8409
+      ]
+    },
+    {
+      "query": "XOps Network Playbook SCIM Provisioning Failed steps",
+      "passage_ids": [
+        "cb29bfb8-4f63-4060-b151-8b4dfb861c67",
+        "67699e14-a758-4c0c-9c36-68d62017b0d0",
+        "de1e3979-47ef-42cf-97c5-a0136ea5295e",
+        "4877b072-607c-448b-b729-84bd1b64eb73",
+        "4964a74b-4747-4c02-823a-9f8ece83a857",
+        "ed68f600-f45f-4c92-9a4f-2f4c1fa52014",
+        "5170f267-6401-4b61-b158-a0664f65ba7f",
+        "216c00bf-55b6-4b3f-aa00-d827f0d3bdc2",
+        "cf7a6a93-afb5-4b2e-afe4-7b5b11c279e1",
+        "42436976-13f8-4e67-b3a7-4f3de727188f"
+      ],
+      "scores": [
+        7.2345,
+        5.4682,
+        5.358,
+        5.2924,
+        3.4872,
+        2.5331,
+        1.621,
+        0.5981,
+        -0.2481,
+        -1.4962
+      ]
+    }
+  ],
+  "n_searches": 3,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 13277,
+    "output_tokens": 4437,
+    "requests": 4
+  },
+  "latency_s": 36.673,
+  "ts": "2026-09-30T21:58:03+00:00"
+}

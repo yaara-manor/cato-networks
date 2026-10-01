@@ -1,0 +1,53 @@
+{
+  "query_id": "TCK-20264240",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [
+    "355143f6-9a6d-4344-86d4-f6ae7302ae87"
+  ],
+  "citations": [
+    "3bb821b4-2350-443a-ae4d-f6549b61cb32",
+    "75b52219-3f99-469b-9131-a704e8bf8a44",
+    "355143f6-9a6d-4344-86d4-f6ae7302ae87"
+  ],
+  "answer_text": "Google misclassifying your Paris site as Germany is typically caused by the site’s location settings. In Cato, the siteLocation countryCode determines the country for a site, so verify that the Paris site has countryCode FR (ISO 3166-1 alpha-2) and update it if needed. Paris PoP IP ranges exist to route traffic from France (e.g., 159.117.224.0/24 and 159.117.234.0/24), and a Paris range 216.252.179.0/24 has been added, which can help ensure egress via France.",
+  "searches": [
+    {
+      "query": "geolocation France Cato",
+      "passage_ids": [
+        "1033b64d-a8d4-4be4-828f-6d1ce55f675f",
+        "75b52219-3f99-469b-9131-a704e8bf8a44",
+        "5884bfc0-1f7a-4ecf-8ea2-9f61346e89b9",
+        "ba01b88b-b05e-4685-a6b7-15ab3d5769d8",
+        "52a803ad-42dd-4020-b573-99fc10f7d589",
+        "355143f6-9a6e-4344-86d4-f6ae7302ae87",
+        "ed39dfdf-23b2-445b-adad-b3810c7ecb3d",
+        "3bb821b4-2350-443a-ae4d-f6549b61cb32",
+        "ee4c8707-64ba-4b4d-b284-67c0015b5884",
+        "fb4dc08d-2fbd-42d1-9224-28d485f6c576"
+      ],
+      "scores": [
+        -1.6233,
+        -1.9242,
+        -2.2097,
+        -2.2097,
+        -3.5153,
+        -4.1411,
+        -5.6565,
+        -5.8657,
+        -6.5395,
+        -7.0964
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2870,
+    "output_tokens": 5004,
+    "requests": 2
+  },
+  "latency_s": 35.119,
+  "ts": "2026-09-30T21:59:46+00:00"
+}

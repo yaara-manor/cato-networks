@@ -1,0 +1,74 @@
+{
+  "query_id": "Q27",
+  "variant": "d_shown_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "a290f0ac-7d21-417d-b3dc-8ed9875d546a",
+    "6147facd-f5e3-4a28-80f0-7e60e081cf8f"
+  ],
+  "answer_text": "- KPIs monitored by a Link Quality health rule: Packet loss, Jitter, and Latency. (Link Health Evaluation) \n- To raise a case with your ISP, export Traceroute and ICMP results from the Link Quality SLA Site Operations Story. Use the Actions menu in the story drill-down page to export the Traceroute and ICMP data, which you can share with your ISP.",
+  "searches": [
+    {
+      "query": "Link Quality rule KPIs",
+      "passage_ids": [
+        "607828c0-82f3-4fcf-9f1a-6439a24992aa",
+        "f061d3f8-2e2d-4b39-ba01-c2edc16f0a94",
+        "2eff1c0b-ea80-4bfa-9a96-2ef7360b6d82",
+        "a290f0ac-7d21-417d-b3dc-8ed9875d546a",
+        "33402070-f04e-4638-942b-b448aca894ff"
+      ],
+      "scores": [
+        6.4311,
+        4.0276,
+        3.6429,
+        3.3364,
+        1.2705
+      ]
+    },
+    {
+      "query": "Link Quality KPIs",
+      "passage_ids": [
+        "607828c0-82f3-4fcf-9f1a-6439a24992aa",
+        "a290f0ac-7d21-417d-b3dc-8ed9875d546a",
+        "2eff1c0b-ea80-4bfa-9a96-2ef7360b6d82",
+        "26865461-1135-482b-88a9-b6bd1c26d4c3",
+        "2ccf7b63-7888-4cfc-99d1-fa352464ba79"
+      ],
+      "scores": [
+        6.6322,
+        4.7092,
+        1.0657,
+        0.7295,
+        0.4526
+      ]
+    },
+    {
+      "query": "SLA story export Link Quality ISP case",
+      "passage_ids": [
+        "6147facd-f5e3-4a28-80f0-7e60e081cf8f",
+        "4488fedc-db41-496b-9fb6-4c8ff1c5a6ea",
+        "607828c0-82f3-4fcf-9f1a-6439a24992aa",
+        "dec88cb4-5078-499e-8885-c6f0e4e5b5f3",
+        "d3727424-d4c8-4174-a2f3-5dd5e8c31185"
+      ],
+      "scores": [
+        6.6381,
+        2.8335,
+        1.5509,
+        0.4168,
+        -0.5512
+      ]
+    }
+  ],
+  "n_searches": 3,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 10270,
+    "output_tokens": 2430,
+    "requests": 4
+  },
+  "latency_s": 22.799,
+  "ts": "2026-09-30T21:35:06+00:00"
+}

@@ -1,0 +1,37 @@
+{
+  "query_id": "ADJ11",
+  "variant": "d_hidden_b1",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "Sorry — I can't locate Barracuda CloudGen F-Series IPsec tunnel configuration steps for connecting to a Cato PoP in our knowledge base. The KB only shows general IPsec/site-to-site guidance (e.g., VMware Edge) and does not include Barracuda-specific instructions. If you can share your Barracuda firmware version and the Cato PoP you're targeting, I can see if there is any related KB guidance or escalate for assistance.",
+  "searches": [
+    {
+      "query": "Barracuda CloudGen F-Series IPsec Cato PoP",
+      "passage_ids": [
+        "02d90311-17ae-4a13-b5ce-95ef0e2e0a3c",
+        "fa9f9196-2276-41ff-8a8c-eeaf0dc85634",
+        "94f0c49b-b12b-4da6-b534-b8343585cf1a",
+        "1bfef2c8-3f77-45de-895f-54fd4d1b1916",
+        "94c79749-9ad6-455d-b87b-220f42902322"
+      ],
+      "scores": [
+        2.1124,
+        0.7705,
+        0.6848,
+        0.1865,
+        0.1069
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2220,
+    "output_tokens": 1524,
+    "requests": 2
+  },
+  "latency_s": 11.84,
+  "ts": "2026-09-30T21:46:52+00:00"
+}

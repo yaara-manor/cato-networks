@@ -1,0 +1,35 @@
+{
+  "query_id": "Q25",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "6a50933d-0d00-4abc-9216-ba0b8280a25e"
+  ],
+  "answer_text": "When all active links have unacceptable SLA, the Socket begins an SLA evaluation period to decide whether to move to another PoP. The SLA evaluation window is about 40 seconds (the period is 40 seconds, checked every 10 seconds). If the remedy actions don’t resolve the connectivity issues within that window, the Socket connects to a different PoP.",
+  "searches": [
+    {
+      "query": "Socket PoP failover evaluation time",
+      "passage_ids": [
+        "6a50933d-0d00-4abc-9216-ba0b8280a25e",
+        "732cdda5-b953-45ed-8578-80b803adf828",
+        "329c04fe-04ee-4bbd-96db-afd8dd8654b3"
+      ],
+      "scores": [
+        6.2,
+        3.0279,
+        2.2533
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1916,
+    "output_tokens": 1630,
+    "requests": 2
+  },
+  "latency_s": 15.673,
+  "ts": "2026-09-30T21:49:13+00:00"
+}

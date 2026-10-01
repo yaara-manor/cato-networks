@@ -1,0 +1,41 @@
+{
+  "query_id": "SC-06-repeat-contact-churn",
+  "variant": "d_shown_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "c40d04b0-0822-4a1f-9bcd-5b7950217bc5",
+    "09705d8b-6556-4992-9087-a9cd4b08e636",
+    "2d6cdb2d-9056-4b08-a533-57992ddc9f79"
+  ],
+  "answer_text": "Disconnections at sites can happen if UDP port 443 is blocked by an ISP or policy. The Socket can be configured to use UDP port 1337 as an alternative to avoid those blocks. See the article on Setting a Different Port to Connect to the Cato PoP for steps to change the port. The KB also notes that hub/spoke configuration changes can cause disconnects, so review any recent hub/spoke changes and the related release notes.",
+  "searches": [
+    {
+      "query": "Socket disconnections",
+      "passage_ids": [
+        "c40d04b0-0822-4a1f-9bcd-5b7950217bc5",
+        "09705d8b-6556-4992-9087-a9cd4b08e636",
+        "2d6cdb2d-9056-4b08-a533-57992ddc9f79",
+        "db3f3edd-26ba-49f2-8751-ec2a3da00fbe",
+        "258b80e8-e3d1-43f9-bda8-c8eb1b37e6f4"
+      ],
+      "scores": [
+        5.4192,
+        5.154,
+        4.6856,
+        2.4201,
+        1.3605
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2323,
+    "output_tokens": 2200,
+    "requests": 2
+  },
+  "latency_s": 16.827,
+  "ts": "2026-09-30T21:36:15+00:00"
+}

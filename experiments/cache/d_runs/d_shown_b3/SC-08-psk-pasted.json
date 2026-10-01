@@ -1,0 +1,58 @@
+{
+  "query_id": "SC-08-psk-pasted",
+  "variant": "d_shown_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "4002a49f-58e7-4c6b-9c92-1ec4edf14d56",
+    "da02b387-e1e8-43a5-a9db-ddf5e52ce65f",
+    "5b61d5af-ee11-4a0a-9562-c79cab5a6c7c"
+  ],
+  "answer_text": "AUTHENTICATION_FAILED for IPsec usually indicates a PSK mismatch between peers—the PSK must match the payloads for the IKE_AUTH exchange. The KB notes that the PSK needs to match these payloads for the connection to be successful, and that mismatches can cause this error. To troubleshoot, review the site IPsec connection history and follow the Resolving IPsec configuration mismatch guidance; packet captures can help you identify where the mismatch occurs.",
+  "searches": [
+    {
+      "query": "IPsec authentication failed PSK",
+      "passage_ids": [
+        "da02b387-e1e8-43a5-a9db-ddf5e52ce65f",
+        "4002a49f-58e7-4c6b-9c92-1ec4edf14d56",
+        "5b61d5af-ee11-4a0a-9562-c79cab5a6c7c",
+        "2de2e303-2729-42a7-879d-238c8cb06c11",
+        "35466795-7812-41bf-b374-008f1a575f39"
+      ],
+      "scores": [
+        4.7561,
+        4.7182,
+        3.5143,
+        2.5407,
+        1.4521
+      ]
+    },
+    {
+      "query": "PSK mismatch",
+      "passage_ids": [
+        "4002a49f-58e7-4c6b-9c92-1ec4edf14d56",
+        "034e883f-904c-4fd4-b5c3-0d1c319d68a1",
+        "ae88d582-b0a6-46d6-b09a-f0580328f046",
+        "e62f69f5-3370-4e8f-b8a1-104e3234c228",
+        "545035a8-c2c2-41e5-b7e9-2b0128feaf53"
+      ],
+      "scores": [
+        5.9556,
+        0.9769,
+        -1.91,
+        -2.7211,
+        -2.9455
+      ]
+    }
+  ],
+  "n_searches": 2,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 6074,
+    "output_tokens": 4116,
+    "requests": 3
+  },
+  "latency_s": 28.532,
+  "ts": "2026-09-30T21:36:38+00:00"
+}

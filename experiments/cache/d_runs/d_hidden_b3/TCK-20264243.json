@@ -1,0 +1,41 @@
+{
+  "query_id": "TCK-20264243",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "25018bf7-7d83-4e4e-a40e-c3c630189d58",
+    "5b5cee94-f126-4dc0-9844-182db2f07df1",
+    "0330d61a-3248-498e-80d8-b7b039ab1b1e"
+  ],
+  "answer_text": "Not Ready (In HA Failover) indicates the CMA reports the site HA status as Not Ready, which means the redundancy and failover may not function as expected. This is not necessarily “broken,” but it is not a healthy HA state, and you should not leave a manual failover in that state. Promptly return HA to Ready, and ensure prerequisites before triggering a manual failover (both Sockets on 24+ and CMA showing Ready). If Not Ready persists, follow the Not Ready resolution steps in the HA playbook to resolve the issue.",
+  "searches": [
+    {
+      "query": "Not Ready (In HA Failover)",
+      "passage_ids": [
+        "25018bf7-7d83-4e4e-a40e-c3c630189d58",
+        "18b5074e-5155-4687-8b43-55a306645cd9",
+        "11a8e9ce-64e9-4d28-979c-9e98279ee12c",
+        "0330d61a-3248-498e-80d8-b7b039ab1b1e",
+        "5b5cee94-f126-4dc0-9844-182db2f07df1"
+      ],
+      "scores": [
+        8.4994,
+        7.2688,
+        6.6399,
+        6.2492,
+        5.4395
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2004,
+    "output_tokens": 2682,
+    "requests": 2
+  },
+  "latency_s": 19.374,
+  "ts": "2026-09-30T21:30:17+00:00"
+}

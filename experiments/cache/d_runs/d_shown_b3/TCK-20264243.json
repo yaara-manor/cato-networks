@@ -1,0 +1,41 @@
+{
+  "query_id": "TCK-20264243",
+  "variant": "d_shown_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "25018bf7-7d83-4e4e-a40e-c3c630189d58",
+    "0330d61a-3248-498e-80d8-b7b039ab1b1e",
+    "5b5cee94-f126-4dc0-9844-182db2f07df1"
+  ],
+  "answer_text": "Not Ready (In HA Failover) is a known HA status. The KB describes Not Ready as a state where the redundancy/failover may not function as expected, which can occur during a manual HA failover used for maintenance or validation. Manual failovers should be used for validation and you should return the HA to Ready promptly. If the Not Ready state persists beyond the expected window, consult the Not Ready resolution guidance in the KB playbook and verify prerequisites (HA state Ready in CMA and that both Sockets meet the version requirement) before re-running or exiting the test.",
+  "searches": [
+    {
+      "query": "Not Ready (In HA Failover)",
+      "passage_ids": [
+        "25018bf7-7d83-4e4e-a40e-c3c630189d58",
+        "18b5074e-5155-4687-8b43-55a306645cd9",
+        "11a8e9ce-64e9-4d28-979c-9e98279ee12c",
+        "0330d61a-3248-498e-80d8-b7b039ab1b1e",
+        "5b5cee94-f126-4dc0-9844-182db2f07df1"
+      ],
+      "scores": [
+        8.4994,
+        7.2688,
+        6.6399,
+        6.2492,
+        5.4395
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2226,
+    "output_tokens": 3330,
+    "requests": 2
+  },
+  "latency_s": 22.509,
+  "ts": "2026-09-30T21:37:43+00:00"
+}

@@ -1,0 +1,42 @@
+{
+  "query_id": "ADJ04",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "ce84ab5e-5a78-4b8d-a294-da51037082e1",
+    "f6070e6c-8929-4a97-83e9-404f7aa5f659",
+    "2df8a7a3-95f2-4e5a-9e37-ac25c22c6fa8",
+    "c7f4b045-2513-4848-9dc5-b21facb9e838"
+  ],
+  "answer_text": "You can connect a SonicWall NSa 3700 to Cato using an IPsec IKEv2 site. The Cato Cloud supports IPsec sites for third‑party devices, and IKEv2 is the recommended option when possible. When configuring an IPsec IKEv2 site, you can choose who initiates the VPN: Responder Only (the site initiates from the SonicWall to a Cato PoP) or Firewall Init (the firewall initiates). In the Cato Management Application, create the IPsec IKEv2 site for your SonicWall and use the site parameters provided by Cato; then configure the SonicWall to use those same IKEv2 settings. If your environment only supports IKEv1, you can use the Cato‑initiated connection type instead. For device‑specific steps, refer to SonicWall documentation and the general IPsec site configuration guidance in the KB.",
+  "searches": [
+    {
+      "query": "SonicWall NSa 3700 IPsec IKEv2 site to site Cato",
+      "passage_ids": [
+        "ce84ab5e-5a78-4b8d-a294-da51037082e1",
+        "90325d78-c496-4ec3-9b46-ad7b201c675f",
+        "f6070e6c-8929-4a97-83e9-404f7aa5f659",
+        "2df8a7a3-95f2-4e5a-9e37-ac25c22c6fa8",
+        "c7f4b045-2513-4848-9dc5-b21facb9e838"
+      ],
+      "scores": [
+        4.496,
+        4.283,
+        4.1413,
+        4.0633,
+        3.9671
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2279,
+    "output_tokens": 4173,
+    "requests": 2
+  },
+  "latency_s": 28.823,
+  "ts": "2026-09-30T21:46:39+00:00"
+}

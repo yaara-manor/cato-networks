@@ -1,0 +1,39 @@
+{
+  "query_id": "TCK-20264251",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "e7d9043e-d5ee-4c30-90c3-c897c0278bea"
+  ],
+  "answer_text": "No. The Socket does not support jumbo frames on LAN ports. If a packet larger than 1500 bytes arrives on a LAN port, the Socket will fragment it to 1500 bytes as long as the Do Not Fragment (DF) bit is not set; if the DF bit is set, the Socket drops the packet and returns an ICMP Fragmentation Needed message.",
+  "searches": [
+    {
+      "query": "jumbo frames Socket LAN",
+      "passage_ids": [
+        "e7d9043e-d5ee-4c30-90c3-c897c0278bea",
+        "e63e0b70-9334-4d96-bb41-413436a00e3a",
+        "b9d5682e-275e-4058-9da6-383d4a83837d",
+        "bd95b275-97d3-41de-a9b5-f0fb1d1efe32",
+        "dbaf23f6-6aa1-4d8a-97fa-a661395b36d8"
+      ],
+      "scores": [
+        7.1888,
+        -3.1569,
+        -4.4852,
+        -4.8377,
+        -5.2008
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2162,
+    "output_tokens": 1434,
+    "requests": 2
+  },
+  "latency_s": 11.798,
+  "ts": "2026-09-30T21:44:58+00:00"
+}

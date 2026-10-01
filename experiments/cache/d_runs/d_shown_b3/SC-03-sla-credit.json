@@ -1,0 +1,37 @@
+{
+  "query_id": "SC-03-sla-credit",
+  "variant": "d_shown_b3",
+  "decision": "ASK_CUSTOMER",
+  "final_decision": "ASK_CUSTOMER",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "Per our ILMM Service Terms, Service Level Credits are calculated as a percentage of the total ILMM fees for the affected Site(s) in the applicable month, with a cap of 15% of the fees per site per month. The KB does not list a fixed credit amount for a specific outage (e.g., Aug 21 INC-4471). To confirm the exact credit, please provide the affected Site(s) and the outage severity/impact per our SLA, and I’ll verify the credit amount for Aug 21 right away.",
+  "searches": [
+    {
+      "query": "service credit outage",
+      "passage_ids": [
+        "0996c6ed-d63c-4d18-9c90-c370945c029f",
+        "ad56aba0-5a8d-4a80-a443-bf1fff110900",
+        "d8334539-fb96-4f89-bfb9-0fb81bd9c6ce",
+        "2627d260-66ec-4417-801c-b61e32a69af7",
+        "37b9f85d-63f9-43d0-8fab-40ef95228659"
+      ],
+      "scores": [
+        -0.8046,
+        -1.0627,
+        -1.1202,
+        -2.5716,
+        -4.4718
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2311,
+    "output_tokens": 2925,
+    "requests": 2
+  },
+  "latency_s": 20.999,
+  "ts": "2026-09-30T21:35:59+00:00"
+}

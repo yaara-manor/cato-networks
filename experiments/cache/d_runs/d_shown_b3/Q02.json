@@ -1,0 +1,39 @@
+{
+  "query_id": "Q02",
+  "variant": "d_shown_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "e7d9043e-d5ee-4c30-90c3-c897c0278bea"
+  ],
+  "answer_text": "Cato Sockets do not support jumbo frames on LAN ports. For a 9000-byte frame received on a LAN port, the Socket checks the DF (Don’t Fragment) bit: if DF is not set, the packet is accepted and fragmented to conform to the 1500-byte MTU; if DF is set, the packet is dropped and an ICMP Fragmentation Needed message is returned to the sender.",
+  "searches": [
+    {
+      "query": "jumbo frames LAN Cato Sockets",
+      "passage_ids": [
+        "e7d9043e-d5ee-4c30-90c3-c897c0278bea",
+        "4c3410e8-5ed9-48b3-9f4f-1b76bb37a678",
+        "e6ce816c-536b-42eb-8d3a-28aabab1aeb5",
+        "81c97efe-294e-4ac5-82db-eaa663f8afa9",
+        "2194abae-618f-4003-bdbb-d3c7524304df"
+      ],
+      "scores": [
+        7.8399,
+        2.3607,
+        1.2327,
+        0.9401,
+        0.294
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2261,
+    "output_tokens": 1435,
+    "requests": 2
+  },
+  "latency_s": 14.449,
+  "ts": "2026-09-30T21:32:51+00:00"
+}

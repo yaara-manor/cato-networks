@@ -1,0 +1,50 @@
+{
+  "query_id": "TCK-20264218",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "3048b10d-13a0-4b6a-af1c-849b9d4b0a45",
+    "0c2f7a7e-5b78-416d-8ed9-2a9fb7521057"
+  ],
+  "answer_text": "IPS Geo Restriction is based on IP geolocation, not domain, so allowlisting a partner’s domain will not bypass a Brazil block. To permit access, use IP-based rules: create an IPS Allowlist rule and specify the partner’s IP Range as the Destination in the rule. If you’re working with a Geo Restriction rule, ensure the inbound direction is configured to allow Brazil and remember that IPS Geo Restriction does not apply to traffic from Cato SDP Clients.",
+  "searches": [
+    {
+      "query": "Geo Restriction Brazil allowlist IPS domain",
+      "passage_ids": [
+        "3048b10d-13a0-4b6a-af1c-849b9d4b0a45",
+        "0c2f7a7e-5b78-416d-8ed9-2a9fb7521057",
+        "5b376429-830c-4afa-9206-7752addcd149",
+        "bea3b2ad-dde4-46a0-befc-c31f56b8338b",
+        "fccd11e0-c824-4a2d-b87a-1c55bc71bb08",
+        "57d26b58-a49b-4643-81a4-3c66ec200a04",
+        "6a813c5f-8995-4db1-b175-3bee9e2dd112",
+        "c71a7adc-92b3-49c2-817b-b6aeda782a9a",
+        "62c566bb-1f16-4e2a-9352-111d625ac98a",
+        "fa23fe43-8f4e-48b8-8b36-86b01a0f2bbf"
+      ],
+      "scores": [
+        4.0373,
+        3.5037,
+        3.1019,
+        0.7638,
+        0.6136,
+        -0.7612,
+        -1.2565,
+        -1.4538,
+        -1.8417,
+        -2.0423
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 3052,
+    "output_tokens": 3172,
+    "requests": 2
+  },
+  "latency_s": 21.913,
+  "ts": "2026-09-30T21:59:46+00:00"
+}

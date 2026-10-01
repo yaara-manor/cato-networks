@@ -1,0 +1,47 @@
+{
+  "query_id": "SC-07-multisite-outage-tier-claim",
+  "variant": "d_hidden_b3_k10",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn’t locate an escalation procedure for Premium customers in the knowledge base. The KB does reference the Status Page as a source for ongoing PoP incidents, including Frankfurt. Please check the Status Page for any active Frankfurt PoP incident and follow your organization’s internal escalation process with Cato Support.",
+  "searches": [
+    {
+      "query": "Frankfurt PoP outage",
+      "passage_ids": [
+        "bef83579-b1c6-486d-859e-861b3007f0a5",
+        "44c239cb-437b-40e0-9254-e04c6e002fc2",
+        "04de7fde-e533-4d3a-ba56-0ba05435edc1",
+        "2811961e-2538-47fb-8b2a-2e585c1c63b7",
+        "41f56dac-0785-42ec-838f-1cd2970dd72a",
+        "d6e9dad8-834b-45a6-8a3d-c09e489aa389",
+        "0f876a1c-8e31-451c-933c-2b9fd6eb344a",
+        "355143f6-9a6e-4344-86d4-f6ae7302ae87",
+        "f0041a61-b9d7-4bea-ade5-eaafb4b8edd9",
+        "a788f0d4-8c0a-4daa-a638-a9916533b79f"
+      ],
+      "scores": [
+        3.4603,
+        1.0554,
+        -1.0105,
+        -3.2268,
+        -5.1033,
+        -6.4411,
+        -7.0682,
+        -7.4432,
+        -8.3222,
+        -8.6568
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 3225,
+    "output_tokens": 2958,
+    "requests": 2
+  },
+  "latency_s": 22.12,
+  "ts": "2026-09-30T21:58:30+00:00"
+}

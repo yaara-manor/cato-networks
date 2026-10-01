@@ -1,0 +1,40 @@
+{
+  "query_id": "SC-09-no-kb-coverage",
+  "variant": "d_shown_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "4788070b-6647-4cc7-8358-a87585137fe2",
+    "4c24c679-7745-43ef-832b-34b05eb5bf3d"
+  ],
+  "answer_text": "Yes. Cato supports IPv6-only branch sites. The Cato Client supports last-mile IPv6-only connections (with NAT64 to translate IPv6 addresses to IPv4 for the Cato Cloud). Socket sites can operate with IPv6-only Internet connectivity (IPv6-only WAN) using IPv4-over-IPv6 mechanisms as needed. Roadmap details with dates for next year are not available in the knowledge base.",
+  "searches": [
+    {
+      "query": "IPv6-only branch sites",
+      "passage_ids": [
+        "4788070b-6647-4cc7-8358-a87585137fe2",
+        "3360a0b1-bdee-4619-a556-5cec6a13516a",
+        "67d7235f-6070-4f0f-a0c9-a30ad9be9637",
+        "4c24c679-7745-43ef-832b-34b05eb5bf3d",
+        "4871a8f4-064a-4586-9931-a0541e305a88"
+      ],
+      "scores": [
+        4.3159,
+        3.2134,
+        1.8464,
+        1.4511,
+        -2.6613
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2227,
+    "output_tokens": 2731,
+    "requests": 2
+  },
+  "latency_s": 18.521,
+  "ts": "2026-09-30T21:36:29+00:00"
+}

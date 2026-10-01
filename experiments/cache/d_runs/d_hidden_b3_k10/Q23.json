@@ -1,0 +1,50 @@
+{
+  "query_id": "Q23",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "4488fedc-db41-496b-9fb6-4c8ff1c5a6ea",
+    "dd9c5fe4-fd09-4b81-933f-76ef12070b02"
+  ],
+  "answer_text": "HA Not Ready is generated when any of these Socket HA Not Ready conditions occur: 1) Connected is not ready for 5 minutes; 2) Keepalive is not ready for 60 minutes; 3) Compatible version is not ready. The KB does not specify when an HA becomes Ready (HA Ready) after Not Ready, so that timing isn’t documented here.",
+  "searches": [
+    {
+      "query": "HA Not Ready connectivity event conditions",
+      "passage_ids": [
+        "4488fedc-db41-496b-9fb6-4c8ff1c5a6ea",
+        "25018bf7-7d83-4e4e-a40e-c3c630189d58",
+        "dd9c5fe4-fd09-4b81-933f-76ef12070b02",
+        "18b5074e-5155-4687-8b43-55a306645cd9",
+        "b683c7e2-fab8-471a-9179-b61f5a2c8f1e",
+        "ef0b144a-d30b-4fb3-8102-332b148486c3",
+        "1d701026-8cb1-4ab6-935d-e48d26c34ed2",
+        "7b05a1da-7148-41ed-84df-124d4e3c9f75",
+        "11a8e9ce-64e9-4d28-979c-9e98279ee12c",
+        "3cdf9042-15cb-41c3-a9aa-7c50cde8fc39"
+      ],
+      "scores": [
+        6.6508,
+        5.0783,
+        2.9832,
+        2.5597,
+        2.3447,
+        0.9778,
+        0.8969,
+        0.4469,
+        0.394,
+        -3.5754
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2601,
+    "output_tokens": 2668,
+    "requests": 2
+  },
+  "latency_s": 24.206,
+  "ts": "2026-09-30T21:56:33+00:00"
+}

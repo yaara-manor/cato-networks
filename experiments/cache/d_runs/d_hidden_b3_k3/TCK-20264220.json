@@ -1,0 +1,36 @@
+{
+  "query_id": "TCK-20264220",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "e4dde5df-e443-4063-ad08-b3c052fe996d",
+    "c4a868d0-f842-457b-bd31-6519eb4db531"
+  ],
+  "answer_text": "Yes. Some cloud providers cap the number of prefixes you can receive/advertise, and 1,100 prefixes can exceed those limits. For example, Azure has a limit of about 1,000 routes. To work around this, you can use BGP summary routes to reduce the total number of advertised prefixes, or apply BGP filtering to limit which routes are accepted/advertised. If you’re hitting the limit, you may see session resets or intermittent blackholing as you described.",
+  "searches": [
+    {
+      "query": "BGP prefix limit 1100 routes disappear blackhole session resets limit",
+      "passage_ids": [
+        "e4dde5df-e443-4063-ad08-b3c052fe996d",
+        "1dc4d146-dde1-49b0-a541-a4d8c6cc1c33",
+        "c4a868d0-f842-457b-bd31-6519eb4db531"
+      ],
+      "scores": [
+        1.3487,
+        -0.5884,
+        -1.2572
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1762,
+    "output_tokens": 1648,
+    "requests": 2
+  },
+  "latency_s": 20.254,
+  "ts": "2026-09-30T21:52:19+00:00"
+}

@@ -1,0 +1,41 @@
+{
+  "query_id": "TCK-20264202",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "9ff894b0-62d7-45e5-b292-fc79e63831b2",
+    "5d32c955-9f10-46e3-9186-115bde4c3d2b",
+    "1eaa75dc-d399-4b24-bf39-e26f09bef596"
+  ],
+  "answer_text": "VoIP call drops when the egress IP changes are a known issue if your UCaaS blocks a changing source IP. Enable the Preferred IP for SIP Traffic so VoIP and SIP traffic always egress from the same IP address. To enable it: open Resources > Advanced Configuration for the account (or Network > Sites > [site] > Site Advanced Configuration) and enable “Preferred IP for SIP Traffic.” Note that if the egress IP is temporarily unavailable (e.g., PoP maintenance), packets may be dropped and existing SIP flows may keep using the old IP until a new flow is created; after enabling the setting, reboot the IP phones to trigger new SIP flows using the current egress IP.",
+  "searches": [
+    {
+      "query": "VoIP egress IP change",
+      "passage_ids": [
+        "7c5c2f83-e204-4868-874a-df323f457735",
+        "5d32c955-9f10-46e3-9186-115bde4c3d2b",
+        "2a29c140-cdf3-4771-9aad-34427ae0d709",
+        "1eaa75dc-d399-4b24-bf39-e26f09bef596",
+        "9ff894b0-62d7-45e5-b292-fc79e63831b2"
+      ],
+      "scores": [
+        7.0671,
+        6.6231,
+        6.3686,
+        6.0889,
+        6.0087
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2279,
+    "output_tokens": 2376,
+    "requests": 2
+  },
+  "latency_s": 20.694,
+  "ts": "2026-09-30T21:31:03+00:00"
+}

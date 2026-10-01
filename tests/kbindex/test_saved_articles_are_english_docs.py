@@ -9,7 +9,7 @@ ROOT = REPO / "data" / "kb_ingestion"
 
 
 def test_saved_articles_are_english_docs():
-    crawl_dir = sorted(path for path in ROOT.iterdir() if path.is_dir())[-1]
+    crawl_dir = max(path for path in ROOT.iterdir() if path.is_dir())
     manifest = json.loads((crawl_dir / "manifest.json").read_text())
     for article in manifest["articles"]:
         slug = article["slug"]

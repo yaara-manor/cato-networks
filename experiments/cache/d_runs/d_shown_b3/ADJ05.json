@@ -1,0 +1,37 @@
+{
+  "query_id": "ADJ05",
+  "variant": "d_shown_b3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn’t locate any information in the Cato knowledge base about early termination fees for canceling a subscription before the contract term ends. This detail is typically defined in your signed contract or terms of service. Please contact your Cato account representative or sales team to confirm any early termination fees and the exact terms for your subscription.",
+  "searches": [
+    {
+      "query": "early termination fee",
+      "passage_ids": [
+        "216f2c15-366b-481b-a0ee-ba8049164b6e",
+        "6f0e87c2-b118-465a-9936-53a5e9e8422b",
+        "0032beeb-8efa-4ac5-8fba-d9bcca0a8653",
+        "0996c6ed-d63c-4d18-9c90-c370945c029f",
+        "74089d4d-bdc2-4123-a3e2-e28c4bb6f4e3"
+      ],
+      "scores": [
+        -8.6267,
+        -8.7845,
+        -9.9825,
+        -10.7533,
+        -10.8041
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2141,
+    "output_tokens": 1178,
+    "requests": 2
+  },
+  "latency_s": 9.603,
+  "ts": "2026-09-30T21:39:04+00:00"
+}

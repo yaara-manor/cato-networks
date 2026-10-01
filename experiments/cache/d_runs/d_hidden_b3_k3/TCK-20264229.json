@@ -1,0 +1,35 @@
+{
+  "query_id": "TCK-20264229",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "8bea93d0-0242-43c5-8039-28618dbef953"
+  ],
+  "answer_text": "On PPPoE links, some connectivity issues can manifest as stalled large-file transfers. Our KB indicates that disabling Energy Efficient Ethernet (EEE) for the site can resolve such PPPoE-related issues. Please contact Support to have EEE disabled for your Toronto site to test if the transfers stop stalling.",
+  "searches": [
+    {
+      "query": "PPPoE MTU",
+      "passage_ids": [
+        "ffffac75-40fd-4248-99fa-92dc33cd0799",
+        "8bea93d0-0242-43c5-8039-28618dbef953",
+        "4513d968-3c0c-48f1-96a5-d3ec685d63ed"
+      ],
+      "scores": [
+        4.4715,
+        4.2549,
+        3.4737
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1965,
+    "output_tokens": 1822,
+    "requests": 2
+  },
+  "latency_s": 14.14,
+  "ts": "2026-09-30T21:51:28+00:00"
+}

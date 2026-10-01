@@ -1,0 +1,41 @@
+{
+  "query_id": "Q19",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "e1d794f5-d513-4a17-ae6b-faa755989f64",
+    "c4680935-9916-4fac-ae44-eb0ef4594245",
+    "1d701026-8cb1-4ab6-935d-e48d26c34ed2"
+  ],
+  "answer_text": "The secondary Socket runs in HA standby and continuously monitors the primary’s state (heartbeat). When the primary becomes unreachable, the secondary promotes itself to the Master and starts handling traffic. Immediately after takeover, the new master issues a gratuitous ARP broadcast and then begins to respond to ARP requests for the site LAN IP, ensuring traffic is directed to the new Master.",
+  "searches": [
+    {
+      "query": "Socket HA takeover",
+      "passage_ids": [
+        "e1d794f5-d513-4a17-ae6b-faa755989f64",
+        "731275f4-2b50-4378-9ed7-60a4a381d316",
+        "c4680935-9916-4fac-ae44-eb0ef4594245",
+        "5f2f882d-01ce-48eb-9ada-f2cc98f6c793",
+        "1d701026-8cb1-4ab6-935d-e48d26c34ed2"
+      ],
+      "scores": [
+        3.0786,
+        2.4396,
+        1.9056,
+        1.1855,
+        1.0384
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2051,
+    "output_tokens": 1889,
+    "requests": 2
+  },
+  "latency_s": 14.134,
+  "ts": "2026-09-30T21:41:33+00:00"
+}

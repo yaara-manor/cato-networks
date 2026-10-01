@@ -1,0 +1,35 @@
+{
+  "query_id": "Q02",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "e7d9043e-d5ee-4c30-90c3-c897c0278bea"
+  ],
+  "answer_text": "No. Cato Sockets do not support jumbo frames on Socket LAN ports. For a LAN-port frame larger than 1500 bytes, the Socket checks the Do Not Fragment (DF) bit: if DF is not set, the packet is accepted and fragmented to the 1500-byte limit; if DF is set, the packet is dropped and an ICMP Fragmentation Needed message is sent back to the sender.",
+  "searches": [
+    {
+      "query": "jumbo frames LAN Cato Sockets",
+      "passage_ids": [
+        "e7d9043e-d5ee-4c30-90c3-c897c0278bea",
+        "4c3410e8-5ed9-48b3-9f4f-1b76bb37a678",
+        "e6ce816c-536b-42eb-8d3a-28aabab1aeb5"
+      ],
+      "scores": [
+        7.8399,
+        2.3607,
+        1.2327
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1765,
+    "output_tokens": 1300,
+    "requests": 2
+  },
+  "latency_s": 15.31,
+  "ts": "2026-09-30T21:47:15+00:00"
+}

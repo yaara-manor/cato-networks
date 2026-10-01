@@ -1,0 +1,57 @@
+{
+  "query_id": "Q32",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "28ef0908-9689-440c-a1e6-96c17bdeb515",
+    "d0351544-4c18-4ab3-8d3d-4cb5c3b862bc"
+  ],
+  "answer_text": "IPS allowlist rules match differently from firewall rules: all matching IPS allowlist rules are applied to the traffic, and each matching rule can generate an event; this is different from an ordered firewall rulebase, where only the first matching rule is applied. To create an IPS allowlist rule directly from a block event, use Event Discovery to locate the IPS signature that blocked traffic, then click the signature ID in the event to open a window to configure a new IPS allowlist rule, which is added to Security > IPS. ",
+  "searches": [
+    {
+      "query": "IPS allowlist vs firewall matching",
+      "passage_ids": [
+        "28ef0908-9689-440c-a1e6-96c17bdeb515",
+        "b4a7f83b-8f7f-4f5a-aedf-aab54d84eb43",
+        "9caa1e5b-f80f-46ed-8bd5-121aca56445b",
+        "f99221d4-3bda-445d-ad47-866922096c70",
+        "3767a882-6d65-462d-bc08-cc46252878f2"
+      ],
+      "scores": [
+        8.3454,
+        5.0215,
+        3.024,
+        2.0677,
+        1.2416
+      ]
+    },
+    {
+      "query": "block event create allowlist rule",
+      "passage_ids": [
+        "d0351544-4c18-4ab3-8d3d-4cb5c3b862bc",
+        "28ef0908-9689-440c-a1e6-96c17bdeb515",
+        "dece9b5f-f264-4401-b4c1-f28dc0000ba2",
+        "8fcfc8c1-4874-411a-92ee-fe9f54dc82b7",
+        "0b6cf63a-bb9a-45c6-abfb-70d19da5fa2c"
+      ],
+      "scores": [
+        8.4994,
+        5.4039,
+        4.7752,
+        4.5788,
+        4.5586
+      ]
+    }
+  ],
+  "n_searches": 2,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 5548,
+    "output_tokens": 3050,
+    "requests": 3
+  },
+  "latency_s": 22.482,
+  "ts": "2026-09-30T21:28:02+00:00"
+}

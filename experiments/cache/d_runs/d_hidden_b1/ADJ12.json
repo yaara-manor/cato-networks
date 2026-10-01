@@ -1,0 +1,37 @@
+{
+  "query_id": "ADJ12",
+  "variant": "d_hidden_b1",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "The knowledge base does not contain information about PoP openings for Q1 2027.",
+  "searches": [
+    {
+      "query": "Q1 2027 PoP locations",
+      "passage_ids": [
+        "17cf74d4-e08f-42b6-8c30-ea37d5145c8f",
+        "a253f83a-40bf-40d7-9d45-531ec64b9233",
+        "dbfc28ac-2b0d-44e0-82fd-19078327cb2b",
+        "918e9aed-518f-4e8a-9d43-7e02dd72f04f",
+        "cb010ba0-8f63-4410-be81-64ff351060b4"
+      ],
+      "scores": [
+        2.2407,
+        0.7498,
+        0.0375,
+        -0.2432,
+        -0.3271
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2104,
+    "output_tokens": 1167,
+    "requests": 2
+  },
+  "latency_s": 10.783,
+  "ts": "2026-09-30T21:46:54+00:00"
+}

@@ -1,0 +1,37 @@
+{
+  "query_id": "ADJ10",
+  "variant": "d_shown_b3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn't locate Windows Client version 9.2 release notes in the knowledge base. The KB currently covers Windows Client releases such as v5.16, v5.17, and newer v6.x releases. If you can confirm the exact build or provide a link to the release notes, I can help summarize them.",
+  "searches": [
+    {
+      "query": "Cato Windows Client 9.2 release notes",
+      "passage_ids": [
+        "7b30cc54-7614-4f70-912f-9979179a8b78",
+        "222b2aef-57a5-444a-ac77-6d5556b98640",
+        "3c1c3bc6-1076-4ee7-9156-39270296f378",
+        "7bc38a33-b84c-40fa-ae81-69e31bffe724",
+        "5594f476-23d9-45d1-acf8-58569e6fb26d"
+      ],
+      "scores": [
+        2.9693,
+        2.8894,
+        2.3975,
+        1.9187,
+        1.4876
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2334,
+    "output_tokens": 942,
+    "requests": 2
+  },
+  "latency_s": 10.408,
+  "ts": "2026-09-30T21:39:29+00:00"
+}

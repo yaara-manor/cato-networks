@@ -1,0 +1,40 @@
+{
+  "query_id": "Q24",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "e7c5b96b-f7c8-4880-806b-8340f2768f27",
+    "732cdda5-b953-45ed-8578-80b803adf828"
+  ],
+  "answer_text": "Disconnected: Generated if the tunnel remains disconnected for 2.5 minutes or longer. If the disconnection lasts less than 2.5 minutes, a Reconnected event is generated instead of separate Disconnected and Connected events. Connected: Generated after a tunnel is connected to the PoP for 30 seconds (assuming the link is Active).",
+  "searches": [
+    {
+      "query": "Disconnected connectivity event duration",
+      "passage_ids": [
+        "e7c5b96b-f7c8-4880-806b-8340f2768f27",
+        "ce9c31b8-aa15-4ef8-9bb9-8136e338dce0",
+        "c7bacae7-8bb0-4897-b668-e8c8f48df58c",
+        "732cdda5-b953-45ed-8578-80b803adf828",
+        "844cf01e-62e9-4980-8fe0-58bf22dd3c83"
+      ],
+      "scores": [
+        5.4638,
+        4.8431,
+        4.537,
+        3.3056,
+        2.4797
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2260,
+    "output_tokens": 3333,
+    "requests": 2
+  },
+  "latency_s": 23.64,
+  "ts": "2026-09-30T21:27:09+00:00"
+}

@@ -1,0 +1,47 @@
+{
+  "query_id": "OOD02",
+  "variant": "d_hidden_b3_k10",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn't locate information in the knowledge base about resetting a Microsoft 365 mailbox password. The KB I have access to covers password resets for SDP-licensed users but does not include Microsoft 365 mailbox password reset steps. If you can share more detail about your setup (e.g., whether you're using a Cato Microsoft 365 connector), I can help you interpret the documented options.",
+  "searches": [
+    {
+      "query": "Microsoft 365 password reset",
+      "passage_ids": [
+        "a6c26e10-4d22-4345-b748-0ea59afa3a85",
+        "2e720825-1142-457c-91ac-34bd67540d5f",
+        "e564059a-417d-40f2-b5d1-8e3c41ab49fe",
+        "871e10c8-7bcf-41c1-af67-44d75d4d2190",
+        "e6e1a497-94aa-4725-82fb-6e8f7fa0c5c5",
+        "2137afae-0d59-4979-9f7e-2304537ec25a",
+        "e0d6f9d6-44e7-4578-b295-9b7aa52bb0ed",
+        "a884401a-ecba-4be8-af74-72dc00e0f650",
+        "96d48fe3-9001-4cdb-944b-2571e012ec85",
+        "1131ddc9-90a7-4b98-a524-9d692b638e13"
+      ],
+      "scores": [
+        3.635,
+        3.3681,
+        3.2119,
+        3.192,
+        2.8738,
+        2.3055,
+        1.3552,
+        0.3199,
+        0.1392,
+        0.1306
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 3279,
+    "output_tokens": 2058,
+    "requests": 2
+  },
+  "latency_s": 18.807,
+  "ts": "2026-09-30T22:01:02+00:00"
+}

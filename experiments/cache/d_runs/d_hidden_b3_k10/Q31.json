@@ -1,0 +1,50 @@
+{
+  "query_id": "Q31",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "29b519d9-2d93-41cb-8c37-9f32e1cf5182",
+    "195b7910-765d-483d-a1da-1119a26ec9fb"
+  ],
+  "answer_text": "Certificate warnings on blocked HTTPS sites typically happen when the client devices don’t trust Cato’s TLS inspection root certificate. Install and trust the Cato root certificate on all endpoints (via GPO/MDM) and verify the full certificate chain; this is mandatory for TLS inspection and prevents browsers from flagging Cato-issued certificates. If you plan to block/redirect HTTPS traffic, enable TLS inspection and ensure the root cert is installed so the browser sees a trusted, Cato-issued certificate during TLS negotiation.",
+  "searches": [
+    {
+      "query": "certificate warnings TLS inspection blocked HTTPS",
+      "passage_ids": [
+        "cc9acccf-a047-42ad-aecb-e4c1b670528e",
+        "10bb542a-ab9c-406e-a221-7cac97084651",
+        "2572a6ca-d06f-410f-b264-97dc4f295006",
+        "29b519d9-2d93-41cb-8c37-9f32e1cf5182",
+        "aa6348fc-77c2-4080-a3a4-1808e968fa57",
+        "01d6a8dd-928d-4285-9251-e39056b4e32d",
+        "7cebf724-7683-4379-8f3a-1cb796678c36",
+        "d3e97261-c4b9-436c-88e6-436460b27b0d",
+        "195b7910-765d-483d-a1da-1119a26ec9fb",
+        "508022b0-2fb4-4d30-9319-33c51b791a04"
+      ],
+      "scores": [
+        6.3433,
+        6.3387,
+        6.2732,
+        6.2404,
+        6.0143,
+        5.8687,
+        5.7592,
+        5.3406,
+        4.8942,
+        4.8748
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2758,
+    "output_tokens": 2316,
+    "requests": 2
+  },
+  "latency_s": 21.722,
+  "ts": "2026-09-30T21:57:16+00:00"
+}

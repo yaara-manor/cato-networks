@@ -1,0 +1,35 @@
+{
+  "query_id": "SC-08-psk-pasted",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "4002a49f-58e7-4c6b-9c92-1ec4edf14d56"
+  ],
+  "answer_text": "AUTHENTICATION_FAILED in an IPsec tunnel typically means a PSK or authentication payload mismatch between Cato and the FortiGate. The PSK must match these payloads for the connection to succeed. Please review the IPsec site connectivity troubleshooting and check the Site IPsec Connection History to identify where the mismatch lies, then align your FortiGate phase1/phase2 settings and PSK with the Cato side.",
+  "searches": [
+    {
+      "query": "IPsec AUTHENTICATION_FAILED Fortigate PSK",
+      "passage_ids": [
+        "36bddd3a-5243-4ae2-b182-a36cf25a2fda",
+        "4002a49f-58e7-4c6b-9c92-1ec4edf14d56",
+        "a065018f-4396-44b9-a794-383384df32cb"
+      ],
+      "scores": [
+        2.8626,
+        2.6209,
+        2.3835
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2154,
+    "output_tokens": 2442,
+    "requests": 2
+  },
+  "latency_s": 17.745,
+  "ts": "2026-09-30T21:50:51+00:00"
+}

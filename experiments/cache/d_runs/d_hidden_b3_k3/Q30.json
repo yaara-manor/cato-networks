@@ -1,0 +1,38 @@
+{
+  "query_id": "Q30",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [
+    "71d70dc8-5972-44a6-ac27-b73d2534ac9"
+  ],
+  "citations": [
+    "71d70dc8-5972-44a6-ac27-b73d2534ac9",
+    "7a0e4d22-7e1f-4248-8a6c-b66103eed4d1"
+  ],
+  "answer_text": "Cato recommends bypassing certificate-pinned apps from TLS inspection by adding them to the TLS inspection bypass rules. If a pinned app still fails due to pinning or strict certificate validation, configure a targeted TLS inspection bypass for that app. The KB also notes default bypass rules for well-known applications and platforms, but it does not provide a specific list of operating systems that are automatically bypassed. When enforcing TLS inspection on platforms such as Android or Linux, validate compatibility carefully.",
+  "searches": [
+    {
+      "query": "pinned banking app TLS inspection bypass OS",
+      "passage_ids": [
+        "7a0e4d22-7e1f-4248-8a6c-b66103eed4d1",
+        "71d70dc8-5972-44a6-ac27-b73d2534ac9e",
+        "61b52301-3cb8-4d67-98ab-07ca86a39871"
+      ],
+      "scores": [
+        5.8875,
+        5.0536,
+        4.2154
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1763,
+    "output_tokens": 2548,
+    "requests": 2
+  },
+  "latency_s": 19.635,
+  "ts": "2026-09-30T21:49:43+00:00"
+}

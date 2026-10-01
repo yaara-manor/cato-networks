@@ -1,0 +1,40 @@
+{
+  "query_id": "TCK-20264202",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "2a29c140-cdf3-4771-9aad-34427ae0d709",
+    "b3b40211-d100-4751-a7d4-6a98bbe5d428"
+  ],
+  "answer_text": "VoIP calls dropping when the egress IP changes is typically caused by using more than one egress IP for SIP traffic. The SIP flow should egress from a single IP; two egress IPs can cause the SIP path to NAT to a different IP, leading to mid-call drops. Enable the Preferred IP for SIP Traffic feature so VoIP/SIP traffic always uses the same egress IP and ensure the VoIP network rule uses 1, and only 1, egress IP. If the egress IP becomes unavailable (PoP maintenance) packets can be dropped; rebooting the VoIP phones after enabling the feature can help establish new SIP flows.",
+  "searches": [
+    {
+      "query": "VoIP egress IP drop",
+      "passage_ids": [
+        "9ff894b0-62d7-45e5-b292-fc79e63831b2",
+        "b3b40211-d100-4751-a7d4-6a98bbe5d428",
+        "1eaa75dc-d399-4b24-bf39-e26f09bef596",
+        "7c5c2f83-e204-4868-874a-df323f457735",
+        "2a29c140-cdf3-4771-9aad-34427ae0d709"
+      ],
+      "scores": [
+        6.044,
+        5.3512,
+        4.0163,
+        3.8072,
+        2.8181
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2227,
+    "output_tokens": 2254,
+    "requests": 2
+  },
+  "latency_s": 18.447,
+  "ts": "2026-09-30T21:45:34+00:00"
+}

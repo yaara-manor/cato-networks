@@ -1,0 +1,37 @@
+{
+  "query_id": "TCK-20264238",
+  "variant": "d_shown_b3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn’t locate a Cato KB article that covers duplicate invoice charges or refunds. Please contact Cato Billing directly with the August invoice details (invoice numbers, dates, and amounts) so they can investigate and arrange a refund if warranted. They can also confirm the outcome and any timeline for resolution.",
+  "searches": [
+    {
+      "query": "charged twice invoice",
+      "passage_ids": [
+        "618c8a41-9324-410c-aaf5-16ca502e663b",
+        "d0b7ced4-9585-4595-9641-12fe027707f1",
+        "8615a0da-edf6-4b7a-ab63-e2acddb76bb4",
+        "c589c6bf-3483-4af7-84f2-d513269e09b1",
+        "0032beeb-8efa-4ac5-8fba-d9bcca0a8653"
+      ],
+      "scores": [
+        -8.9384,
+        -9.2593,
+        -10.0369,
+        -10.3911,
+        -10.4936
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2286,
+    "output_tokens": 1405,
+    "requests": 2
+  },
+  "latency_s": 10.98,
+  "ts": "2026-09-30T21:37:59+00:00"
+}

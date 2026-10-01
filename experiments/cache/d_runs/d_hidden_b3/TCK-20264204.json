@@ -1,0 +1,43 @@
+{
+  "query_id": "TCK-20264204",
+  "variant": "d_hidden_b3",
+  "decision": "ASK_CUSTOMER",
+  "final_decision": "ASK_CUSTOMER",
+  "invalid_citations": [
+    "b96f38bd-47f3-4f85-adfc-bf0e30f8bcb6c"
+  ],
+  "citations": [
+    "f89a9d18-2d14-41ba-8d16-683f80d1c1df",
+    "b96f38bd-47f3-4f85-adfc-bf0e30f8bcb6c",
+    "5b61d5af-ee11-4a0a-9562-c79cab5a6c7c"
+  ],
+  "answer_text": "IPsec tunnels dropping on a fixed schedule isn’t a typical behavior. Our KB notes that DPD (dead peer detection) can monitor tunnel health with a maximum interval of 35 seconds, and you can enable BFD to improve convergence for IPsec sites. For step-by-step diagnostics, see Troubleshooting IPsec Connectivity, which covers verifying configuration, collecting logs, and ruling out common causes. To tailor the next steps, please confirm the IKE version used at both ends (IKEv1 or IKEv2), whether DPD or BFD is enabled, and share any tunnel logs or precise timestamps around the drop.",
+  "searches": [
+    {
+      "query": "IPsec tunnel drops every 8 hours",
+      "passage_ids": [
+        "239ea939-1388-4482-9481-4225d9f6bb8a",
+        "f89a9d18-2d14-41ba-8d16-683f80d1c1df",
+        "b96f38bd-47f3-4f85-adfc-bf0e30f8bcb6",
+        "5b61d5af-ee11-4a0a-9562-c79cab5a6c7c",
+        "da28349c-2819-4b16-b609-6c8ff22609ec"
+      ],
+      "scores": [
+        0.5899,
+        -0.2448,
+        -0.7371,
+        -1.1384,
+        -1.3307
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2263,
+    "output_tokens": 3369,
+    "requests": 2
+  },
+  "latency_s": 24.253,
+  "ts": "2026-09-30T21:30:27+00:00"
+}

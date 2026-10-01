@@ -1,0 +1,37 @@
+{
+  "query_id": "ADJ01",
+  "variant": "d_shown_b3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "UniFi Dream Machine Pro–specific steps are not in the Cato KB. The KB does state that Cato supports both IKEv1 and IKEv2 and that you should choose the IKE version that matches your edge device; if your device cannot support the same IKEv2 parameters used by Cato, use IKEv1. For UniFi-specific guidance, please refer to Ubiquiti's documentation or contact UniFi support.",
+  "searches": [
+    {
+      "query": "UniFi Dream Machine Pro IPsec IKEv2 Cato",
+      "passage_ids": [
+        "c7f1bcb3-6b76-41bc-b1ee-95985aa77236",
+        "94c79749-9ad6-455d-b87b-220f42902322",
+        "90325d78-c496-4ec3-9b46-ad7b201c675f",
+        "6b87d78d-9206-4df8-ac08-ce75e4890209",
+        "a065018f-4396-44b9-a794-383384df32cb"
+      ],
+      "scores": [
+        2.3697,
+        2.1057,
+        1.8941,
+        1.8231,
+        1.7323
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2482,
+    "output_tokens": 2102,
+    "requests": 2
+  },
+  "latency_s": 15.501,
+  "ts": "2026-09-30T21:38:55+00:00"
+}

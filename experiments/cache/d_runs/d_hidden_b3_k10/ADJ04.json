@@ -1,0 +1,79 @@
+{
+  "query_id": "ADJ04",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "f6070e6c-8929-4a97-83e9-404f7aa5f659",
+    "8fb3b323-91df-4c8f-832d-bc458407d37e",
+    "2df8a7a3-95f2-4e5a-9e37-ac25c22c6fa8",
+    "d72b5a43-16e9-4eb9-bb54-471efdc8d033"
+  ],
+  "answer_text": "Use IPsec Site with IKEv2 in the Cato Management App to connect to Cato. For connection type, you can choose Bidirectional or Responder Only (use Responder Only if the edge device has a dynamic IP or sits behind NAT). If the NSa 3700 cannot match the IKEv2 parameters available in Cato, you can fall back to IKEv1. For high availability, configure a second tunnel with a different Cato IP. Prerequisites include routing to the Cato IP addresses and, if your IPsec site bandwidth is 100 Mbps or more, using AES-GCM-16 (or AES-256-GCM-16). After creating the site, edit the IPsec settings to align with your firewall, and you can verify configuration using diagnostic tools such as a PCAP as needed.",
+  "searches": [
+    {
+      "query": "SonicWall IKEv2 Cato",
+      "passage_ids": [
+        "3da7b238-94a4-4785-8015-e669d861177c",
+        "c7f1bcb3-6b76-41bc-b1ee-95985aa77236",
+        "2df8a7a3-95f2-4e5a-9e37-ac25c22c6fa8",
+        "c7f4b045-2513-4848-9dc5-b21facb9e838",
+        "6d0705c9-590e-428e-a6ba-a6aa057de7ee",
+        "41cb79a4-67f8-4068-ace8-c07b864d4e97",
+        "6fce1410-f15c-4cb3-ae8c-b41a5864af73",
+        "a065018f-4396-44b9-a794-383384df32cb",
+        "75375d13-2430-4389-885e-51c5de087149",
+        "8fb3b323-91df-4c8f-832d-bc458407d37e"
+      ],
+      "scores": [
+        4.6542,
+        4.1472,
+        3.4771,
+        3.168,
+        2.7133,
+        2.4323,
+        1.9147,
+        1.9021,
+        1.733,
+        1.3053
+      ]
+    },
+    {
+      "query": "SonicWall NSa 3700 IPsec Cato",
+      "passage_ids": [
+        "ce84ab5e-5a78-4b8d-a294-da51037082e1",
+        "9ab12e1a-5d6d-4f3c-8d67-7afa587ee970",
+        "a58f4f6c-d4b6-41c2-8fe0-0e833f954951",
+        "2df8a7a3-95f2-4e5a-9e37-ac25c22c6fa8",
+        "765a650e-16ff-40f5-b2bb-1b1b4a003e85",
+        "f6070e6c-8929-4a97-83e9-404f7aa5f659",
+        "c7f4b045-2513-4848-9dc5-b21facb9e838",
+        "d72b5a43-16e9-4eb9-bb54-471efdc8d033",
+        "f61d28bd-21a3-40a5-800b-0868ef9ca588",
+        "0330b60b-e915-4686-97fb-f9023cebc96d"
+      ],
+      "scores": [
+        0.0014,
+        -0.6333,
+        -0.7735,
+        -1.1405,
+        -1.2465,
+        -1.3737,
+        -1.4004,
+        -1.4168,
+        -1.461,
+        -2.2357
+      ]
+    }
+  ],
+  "n_searches": 2,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 7917,
+    "output_tokens": 4972,
+    "requests": 3
+  },
+  "latency_s": 41.754,
+  "ts": "2026-09-30T22:02:03+00:00"
+}

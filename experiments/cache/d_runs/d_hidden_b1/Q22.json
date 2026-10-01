@@ -1,0 +1,40 @@
+{
+  "query_id": "Q22",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "5b5cee94-f126-4dc0-9844-182db2f07df1",
+    "a890dbe5-c6a6-4f14-bc69-c7b1afa61c89"
+  ],
+  "answer_text": "Prerequisites: - Both Sockets are running Socket version 24 or higher - The HA state is Ready in the CMA. About two minutes after triggering the manual failover, the CMA shows Status: Not Ready (In HA Failover), indicating the Secondary has taken over as Master. (During the transition, both Sockets may appear as Master in a brief split-brain state.)",
+  "searches": [
+    {
+      "query": "manual HA failover CMA prerequisites",
+      "passage_ids": [
+        "69ca7470-06c4-498d-a142-55d42f9b51e3",
+        "a890dbe5-c6a6-4f14-bc69-c7b1afa61c89",
+        "5b5cee94-f126-4dc0-9844-182db2f07df1",
+        "e769d707-561d-49df-90db-92b4d6c7624a",
+        "f8322bd3-bb6b-4c66-967d-98de4b52f08d"
+      ],
+      "scores": [
+        6.8931,
+        5.8948,
+        5.7483,
+        3.9873,
+        3.458
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1948,
+    "output_tokens": 1581,
+    "requests": 2
+  },
+  "latency_s": 16.376,
+  "ts": "2026-09-30T21:41:50+00:00"
+}

@@ -1,0 +1,37 @@
+{
+  "query_id": "TCK-20264209",
+  "variant": "d_hidden_b1",
+  "decision": "ASK_CUSTOMER",
+  "final_decision": "ASK_CUSTOMER",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "Thanks for the details on INC-4471. Our KB indicates SLA service credits are percentage-based by incident severity (for example, 5% for a Critical incident). The exact credit amount for INC-4471 depends on the severity and scope of the outage, so your $3,600 calculation cannot be confirmed from the KB alone. Please confirm the incident severity and the services affected so we can determine the correct credit and process it this week.",
+  "searches": [
+    {
+      "query": "SLA credit outage",
+      "passage_ids": [
+        "d8334539-fb96-4f89-bfb9-0fb81bd9c6ce",
+        "aff45b2d-54f6-4384-8ce0-014da05ae13c",
+        "ce6af09e-3e89-496c-8af0-ec47f617e91f",
+        "d9c4dad6-4232-40ce-8866-579e0151083f",
+        "ad56aba0-5a8d-4a80-a443-bf1fff110900"
+      ],
+      "scores": [
+        2.0455,
+        -2.4296,
+        -3.0082,
+        -3.009,
+        -3.061
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2299,
+    "output_tokens": 3073,
+    "requests": 2
+  },
+  "latency_s": 23.291,
+  "ts": "2026-09-30T21:44:15+00:00"
+}

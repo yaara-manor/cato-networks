@@ -1,0 +1,41 @@
+{
+  "query_id": "SC-06-repeat-contact-churn",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "2d6cdb2d-9056-4b08-a533-57992ddc9f79",
+    "c40d04b0-0822-4a1f-9bcd-5b7950217bc5",
+    "1c39d1a0-f6b6-4cf2-ab27-989387512958"
+  ],
+  "answer_text": "I understand how frustrating this is. The knowledge base notes that Socket disconnections can be caused by hub-and-spoke configurations on the Socket site infrastructure, which can lead to degraded states and disconnects/restarts. If your ISP blocks UDP traffic on port 443, the Socket can disconnect; you can configure it to use UDP port 1337 instead. Reconnection events can also occur due to PoP maintenance, Socket restarts, or changes in the service node, which may look like random disconnects. ",
+  "searches": [
+    {
+      "query": "Socket disconnection Chicago",
+      "passage_ids": [
+        "2d6cdb2d-9056-4b08-a533-57992ddc9f79",
+        "c40d04b0-0822-4a1f-9bcd-5b7950217bc5",
+        "258b80e8-e3d1-43f9-bda8-c8eb1b37e6f4",
+        "db3f3edd-26ba-49f2-8751-ec2a3da00fbe",
+        "1c39d1a0-f6b6-4cf2-ab27-989387512958"
+      ],
+      "scores": [
+        -0.374,
+        -0.5235,
+        -1.9912,
+        -2.3185,
+        -4.3131
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1972,
+    "output_tokens": 2521,
+    "requests": 2
+  },
+  "latency_s": 20.803,
+  "ts": "2026-09-30T21:43:39+00:00"
+}

@@ -1,0 +1,33 @@
+{
+  "query_id": "ADJ03",
+  "variant": "d_hidden_b3_k3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "Sorry, I can’t find information about a Cato Socket X1900 release date or its WAN port specs in the knowledge base. The documented lifecycle data covers only Cato Socket X1500A and X1700A, and there’s no mention of an X1900. If you want, I can flag this for a product team check or help you with the X1500A/X1700A options in the meantime.",
+  "searches": [
+    {
+      "query": "Cato Socket X1900 release date",
+      "passage_ids": [
+        "95d2c7df-0a7d-4552-a57a-e1ef5e8b96b9",
+        "43c766cd-9807-42e7-8d27-c3677bf8c5ea",
+        "a43a5aab-1efc-4482-a6e7-6169fd280ff6"
+      ],
+      "scores": [
+        6.5842,
+        5.5376,
+        5.1897
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1905,
+    "output_tokens": 1870,
+    "requests": 2
+  },
+  "latency_s": 15.984,
+  "ts": "2026-09-30T21:53:20+00:00"
+}

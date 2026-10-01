@@ -1,0 +1,39 @@
+{
+  "query_id": "TCK-20264251",
+  "variant": "d_shown_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "e7d9043e-d5ee-4c30-90c3-c897c0278bea"
+  ],
+  "answer_text": "No. Jumbo frames are not supported on Socket LAN ports. The Socket does not support a 9000-byte MTU on LAN interfaces; if a larger packet arrives without the DF bit set, it will be fragmented to 1500 bytes. If the DF bit is set, the Socket will drop the packet and send an ICMP Fragmentation Needed message. For inter-VLAN replication, you should use standard 1500-byte frames on the Socket LAN ports.",
+  "searches": [
+    {
+      "query": "jumbo frames Socket LAN",
+      "passage_ids": [
+        "e7d9043e-d5ee-4c30-90c3-c897c0278bea",
+        "e63e0b70-9334-4d96-bb41-413436a00e3a",
+        "b9d5682e-275e-4058-9da6-383d4a83837d",
+        "bd95b275-97d3-41de-a9b5-f0fb1d1efe32",
+        "dbaf23f6-6aa1-4d8a-97fa-a661395b36d8"
+      ],
+      "scores": [
+        7.1888,
+        -3.1569,
+        -4.4852,
+        -4.8377,
+        -5.2008
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2274,
+    "output_tokens": 1251,
+    "requests": 2
+  },
+  "latency_s": 9.885,
+  "ts": "2026-09-30T21:37:38+00:00"
+}

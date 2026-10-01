@@ -1,0 +1,39 @@
+{
+  "query_id": "TCK-20264240",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "15180f6a-d2c7-40c0-b22c-c3d556bc5907"
+  ],
+  "answer_text": "Geolocation for Cato traffic is IP-based and tied to the PoP through which the traffic is routed. The Geo-Localized IPs listing shows which IP ranges are serviced through which PoP; for example, some IP ranges are mapped to Paris, while other ranges may appear to originate from different locations (the table includes an entry showing a Paris-mapped range that is geographically associated with Benin). If Google is reporting Germany, your Paris users may be exiting through an IP range that is not localized to Paris. To investigate, compare the IPs used by your Paris users against the Geo-Localized IPs table and confirm they originate from the Paris PoP ranges listed there.",
+  "searches": [
+    {
+      "query": "GeoIP Paris Germany",
+      "passage_ids": [
+        "8916a626-ecb3-4e4d-b578-aaaf03b54629",
+        "0cdae5b9-30c7-4a9b-a318-ac4b330ec1e0",
+        "15180f6a-d2c7-40c0-b22c-c3d556bc5907",
+        "44c239cb-437b-40e0-9254-e04c6e002fc2",
+        "93432dae-5c15-4c1b-ae70-690fa47e73a3"
+      ],
+      "scores": [
+        -4.439,
+        -4.4754,
+        -5.7918,
+        -7.102,
+        -7.8738
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2398,
+    "output_tokens": 3433,
+    "requests": 2
+  },
+  "latency_s": 24.659,
+  "ts": "2026-09-30T21:44:47+00:00"
+}

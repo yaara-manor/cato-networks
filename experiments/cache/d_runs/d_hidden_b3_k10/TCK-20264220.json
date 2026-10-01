@@ -1,0 +1,77 @@
+{
+  "query_id": "TCK-20264220",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "c4a868d0-f842-457b-bd31-6519eb4db531",
+    "cdbd00c6-467e-423e-b140-80cc81718c93"
+  ],
+  "answer_text": "KB notes that some cloud providers impose limits on the number of received BGP prefixes (for example, Azure up to 1000). If you’re advertising about 1,100 prefixes, you may reduce the total advertised prefixes by using BGP summary routes to overcome such limits. Cato Socket deployments support multiple BGP neighbors, but the KB does not publish a hard per-Socket prefix limit. If you’re seeing intermittent blackholes, aggregating routes with a summary could help and ensure the BGP session remains stable.",
+  "searches": [
+    {
+      "query": "prefix limit",
+      "passage_ids": [
+        "c4a868d0-f842-457b-bd31-6519eb4db531",
+        "84804941-51f0-4d71-8ef0-1bac04c8990c",
+        "f72a28fd-2812-4d7e-80af-1f0d37a7a651",
+        "665d3523-2fab-4092-8945-fce1684f23f3",
+        "cd5865ef-0134-4073-a364-ea6a1211dc63",
+        "076129e6-a923-4a1b-83d5-dd9209aa3906",
+        "9b0b5878-6961-4de3-8f2a-0fda8f690128",
+        "cdbdcf67-5336-455e-ad4f-767923e5766b",
+        "a5ab69c4-59eb-4928-b990-cbd37a9bbc5b",
+        "21ee3067-9966-4e0a-8b00-64d2fb93af89"
+      ],
+      "scores": [
+        2.555,
+        -1.6207,
+        -2.2253,
+        -2.2665,
+        -3.2396,
+        -4.3735,
+        -5.8338,
+        -6.4697,
+        -6.5166,
+        -6.8231
+      ]
+    },
+    {
+      "query": "Cato Socket BGP limit",
+      "passage_ids": [
+        "cdbd00c6-467e-423e-b140-80cc81718c93",
+        "e34cd47b-f1f7-4cc0-a522-f67df1e442b1",
+        "7e78d44e-945d-469b-b696-127907f4ce6f",
+        "2ee231af-7eac-42b0-96ae-1c2bcc979271",
+        "90daa2ef-eb87-4e2c-abbc-e67fc88de5e0",
+        "1744d790-5820-4970-b7f7-b3448379bdd5",
+        "4204a71d-a0d7-442c-afaa-42ccee7f3180",
+        "9bc7600f-7495-4815-a7a2-fb3c630de5c9",
+        "3e782136-7433-4114-a8e7-5db96ad2ea08",
+        "38aa2896-7538-4940-8f7f-eaff9435da85"
+      ],
+      "scores": [
+        4.4892,
+        4.0427,
+        3.0174,
+        2.904,
+        2.7329,
+        2.5261,
+        2.3768,
+        1.8745,
+        1.6946,
+        1.2612
+      ]
+    }
+  ],
+  "n_searches": 2,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 7886,
+    "output_tokens": 2492,
+    "requests": 3
+  },
+  "latency_s": 20.572,
+  "ts": "2026-09-30T22:00:25+00:00"
+}

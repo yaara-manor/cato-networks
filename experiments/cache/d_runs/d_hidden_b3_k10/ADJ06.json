@@ -1,0 +1,104 @@
+{
+  "query_id": "ADJ06",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "0ae5534d-ed82-4c05-b72e-3172673a1549",
+    "1744d790-5820-4970-b7f7-b3448379bdd5"
+  ],
+  "answer_text": "Yes. Cato Socket supports BGP peering for Socket sites, including MikroTik RouterOS v7. Configure the BGP neighbor by entering the neighbor’s IP address reachable from the Socket to establish the BGP session; ensure that IP is reachable from the Socket. A Socket can have multiple BGP neighbors, and you can control what routes are advertised or accepted (for example default or all routes) in the BGP neighbor settings. Finally, ensure the Socket has the required connectivity to the neighbor to establish and maintain the BGP session.",
+  "searches": [
+    {
+      "query": "MikroTik RouterOS v7 BGP",
+      "passage_ids": [
+        "6df44cb0-a17f-47af-899b-80c6cf26e8eb",
+        "34347f78-7016-434e-9381-ca550c8f4968",
+        "f0ad7352-627f-48de-b3c5-70cf0e41089c",
+        "a87ac58a-ef0c-4a91-a24f-6a18a5fd845d",
+        "76988b17-a3db-4673-917c-84c2536a0a5a",
+        "38aa2896-7538-4940-8f7f-eaff9435da85",
+        "0ae5534d-ed82-4c05-b72e-3172673a1549",
+        "1744d790-5820-4970-b7f7-b3448379bdd5",
+        "12226386-7e34-4528-8415-8df9d696f5e5",
+        "1dc4d146-dde1-49b0-a541-a4d8c6cc1c33"
+      ],
+      "scores": [
+        -1.7811,
+        -1.7826,
+        -2.6198,
+        -2.7988,
+        -2.8633,
+        -3.633,
+        -3.8245,
+        -4.2207,
+        -4.4194,
+        -4.4965
+      ]
+    },
+    {
+      "query": "Defining a BGP Neighbor Cato Socket",
+      "passage_ids": [
+        "cdbd00c6-467e-423e-b140-80cc81718c93",
+        "84753c37-c427-4b71-9511-86948bc9f739",
+        "35dadd4a-7366-44db-a2d8-baa8794c7d4c",
+        "468faabe-36bd-4c29-bc57-a2d1d08a5d53",
+        "4204a71d-a0d7-442c-afaa-42ccee7f3180",
+        "ac1887fe-5bb4-4c8b-8cf0-b980f123fb84",
+        "1744d790-5820-4970-b7f7-b3448379bdd5",
+        "90daa2ef-eb87-4e2c-abbc-e67fc88de5e0",
+        "a7ca62bd-5ab8-46d1-8dc0-6bdd17bc2bfc",
+        "12226386-7e34-4528-8415-8df9d696f5e5"
+      ],
+      "scores": [
+        7.8838,
+        7.3977,
+        7.1633,
+        7.1017,
+        6.4064,
+        5.9605,
+        5.7859,
+        5.5497,
+        4.919,
+        4.8308
+      ]
+    },
+    {
+      "query": "MikroTik RouterOS v7 BGP Cato Socket",
+      "passage_ids": [
+        "1222aec7-86ad-4a88-82b0-ff6bd5db35e3",
+        "2194abae-618f-4003-bdbb-d3c7524304df",
+        "1744d790-5820-4970-b7f7-b3448379bdd5",
+        "90daa2ef-eb87-4e2c-abbc-e67fc88de5e0",
+        "38aa2896-7538-4940-8f7f-eaff9435da85",
+        "4c3410e8-5ed9-48b3-9f4f-1b76bb37a678",
+        "c6e815dc-6d40-4600-a4a4-237463f7eb55",
+        "639e842b-2b7a-454d-b5b7-2bc2103404ea",
+        "c20d0099-1765-4e94-b49d-92e960f8921c",
+        "fb4dc08d-2fbd-42d1-9224-28d485f6c576"
+      ],
+      "scores": [
+        1.4199,
+        0.415,
+        0.3002,
+        -0.0471,
+        -0.3118,
+        -0.5725,
+        -0.7376,
+        -1.1898,
+        -1.3579,
+        -1.4993
+      ]
+    }
+  ],
+  "n_searches": 3,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 14709,
+    "output_tokens": 3799,
+    "requests": 4
+  },
+  "latency_s": 39.467,
+  "ts": "2026-09-30T22:02:10+00:00"
+}

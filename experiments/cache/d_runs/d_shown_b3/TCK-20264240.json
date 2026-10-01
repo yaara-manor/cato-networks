@@ -1,0 +1,37 @@
+{
+  "query_id": "TCK-20264240",
+  "variant": "d_shown_b3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn't find a Cato knowledge base article that directly explains why Google geolocation shows Paris as Germany after migrating to Cato, or how to fix it. The only related items in the KB reference Paris FR PoP IP ranges (e.g., 159.117.224.0/24; newer 159.117.234.0/24) and that a Paris site's countryCode should be FR. There isn't a documented remediation in the KB; please contact Cato Support to investigate this issue.",
+  "searches": [
+    {
+      "query": "GeoIP France Paris Google de geolocation Cato",
+      "passage_ids": [
+        "75b52219-3f99-469b-9131-a704e8bf8a44",
+        "355143f6-9a6e-4344-86d4-f6ae7302ae87",
+        "52a803ad-42dd-4020-b573-99fc10f7d589",
+        "5884bfc0-1f7a-4ecf-8ea2-9f61346e89b9",
+        "ba01b88b-b05e-4685-a6b7-15ab3d5769d8"
+      ],
+      "scores": [
+        -2.1911,
+        -4.1193,
+        -4.2761,
+        -6.1466,
+        -6.1466
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2322,
+    "output_tokens": 4483,
+    "requests": 2
+  },
+  "latency_s": 29.835,
+  "ts": "2026-09-30T21:37:30+00:00"
+}

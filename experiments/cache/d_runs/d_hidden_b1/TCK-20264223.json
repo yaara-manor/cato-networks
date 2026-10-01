@@ -1,0 +1,39 @@
+{
+  "query_id": "TCK-20264223",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "5089736e-a172-476c-acf6-1d2ed5fdeb85"
+  ],
+  "answer_text": "Yes. To reset MFA for a user: in the Cato Management Application, go to Access > Users. In the User list, select the user. From the Actions dropdown, choose Reset MFA. In the confirmation window, click OK. The user will receive an email with a link to the Cato User Portal to complete the reset.",
+  "searches": [
+    {
+      "query": "MFA reset",
+      "passage_ids": [
+        "5089736e-a172-476c-acf6-1d2ed5fdeb85",
+        "6bc4f7c7-f97d-41f5-8656-901a1f698d9c",
+        "e7f25ee5-3ee8-40ae-bee1-b9dd23e5a442",
+        "75e9ca5f-5906-45e5-aa50-21b07fda6e58",
+        "8ce60069-794a-497f-a612-8bf5c86a636f"
+      ],
+      "scores": [
+        7.9199,
+        7.6547,
+        2.6366,
+        2.1303,
+        1.9808
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2375,
+    "output_tokens": 2161,
+    "requests": 2
+  },
+  "latency_s": 16.956,
+  "ts": "2026-09-30T21:44:21+00:00"
+}

@@ -1,0 +1,104 @@
+{
+  "query_id": "Q20",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "ad4774c3-630c-43d9-9559-8483fae1305c",
+    "6d390fae-9fae-4cca-a7a4-052a6bcf7ce4"
+  ],
+  "answer_text": "An HA split-brain condition is when both Sockets have the Master role at the same time, usually caused by a LAN connectivity issue that stops HA keepalive messages from reaching the secondary. In CMA you recognise this on the Socket page: both the primary and secondary Sockets are shown as Master and the Keepalive status is indicated. During a split-brain, the traffic for the site is handled by the secondary Socket (downstream traffic is routed to the secondary, and upstream traffic follows depending on the Master status).",
+  "searches": [
+    {
+      "query": "HA split-brain CMA",
+      "passage_ids": [
+        "1d66a8c2-3f4a-412a-b688-347763f880c9",
+        "0d6c07a1-7614-40bb-8bf5-5f47f805a099",
+        "69ca7470-06c4-498d-a142-55d42f9b51e3",
+        "ad4774c3-630c-43d9-9559-8483fae1305c",
+        "a890dbe5-c6a6-4f14-bc69-c7b1afa61c89",
+        "6b03a05f-e2bf-4b4f-bbd9-5eb2b16b9b34",
+        "affb8dd3-a2a5-478e-9d75-19850d3f01f2",
+        "51f72892-0845-47cf-a09b-3e91238ff3cf",
+        "e4fa496f-2863-42c5-b38b-b7318b3fcbc2",
+        "7cc66a7c-220d-4958-96c7-e15a7954e2e4"
+      ],
+      "scores": [
+        6.8568,
+        6.7132,
+        5.4773,
+        5.1607,
+        4.996,
+        3.4563,
+        2.1341,
+        1.9378,
+        1.8989,
+        1.611
+      ]
+    },
+    {
+      "query": "split-brain which socket carries traffic CMA",
+      "passage_ids": [
+        "6d390fae-9fae-4cca-a7a4-052a6bcf7ce4",
+        "1d66a8c2-3f4a-412a-b688-347763f880c9",
+        "bd95b275-97d3-41de-a9b5-f0fb1d1efe32",
+        "affb8dd3-a2a5-478e-9d75-19850d3f01f2",
+        "ad4774c3-630c-43d9-9559-8483fae1305c",
+        "e4fa496f-2863-42c5-b38b-b7318b3fcbc2",
+        "7b9f1436-e2ed-4ea1-abbb-e781245624ad",
+        "c3ac9520-314a-4b4e-a9c0-2fa6605d5340",
+        "71c2d03b-e6c2-46d9-81ab-8f77ea1b5686",
+        "ffa44c11-3a85-4d1f-99be-5195582265ee"
+      ],
+      "scores": [
+        5.1653,
+        3.2093,
+        3.0459,
+        2.9808,
+        2.4004,
+        0.7461,
+        0.1835,
+        -0.2811,
+        -0.7844,
+        -1.3138
+      ]
+    },
+    {
+      "query": "Site Traffic During Split-Brain Condition",
+      "passage_ids": [
+        "6d390fae-9fae-4cca-a7a4-052a6bcf7ce4",
+        "6b03a05f-e2bf-4b4f-bbd9-5eb2b16b9b34",
+        "ad4774c3-630c-43d9-9559-8483fae1305c",
+        "e4fa496f-2863-42c5-b38b-b7318b3fcbc2",
+        "7842b1ac-7002-4a36-916f-f688411e12a6",
+        "a0be87b8-600e-4a06-885b-b0df4df0036d",
+        "726aa16f-2f8d-442a-bc47-1eeed7f28274",
+        "038c2255-75cf-4c90-9040-c165df85e9e6",
+        "90567414-b34b-48f3-97b6-9f1cf478c175",
+        "3521f087-3216-4716-b4c7-dbf8073b6a8d"
+      ],
+      "scores": [
+        7.4194,
+        6.0159,
+        1.8017,
+        1.095,
+        -3.51,
+        -7.2515,
+        -9.0628,
+        -9.3754,
+        -9.584,
+        -9.5874
+      ]
+    }
+  ],
+  "n_searches": 3,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 22811,
+    "output_tokens": 3723,
+    "requests": 5
+  },
+  "latency_s": 34.109,
+  "ts": "2026-09-30T21:56:17+00:00"
+}

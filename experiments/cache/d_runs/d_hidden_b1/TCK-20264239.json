@@ -1,0 +1,41 @@
+{
+  "query_id": "TCK-20264239",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "ead32a31-a8aa-4e50-9128-5169d762489d",
+    "5c836020-4016-48bd-ae27-cdfe87db5746",
+    "786e6753-0b54-4e50-b818-6ca03426aa9a"
+  ],
+  "answer_text": "Hotels and similar networks often block UDP port 443, which can prevent the Cato Client from connecting. When UDP 443 is blocked, you can configure the Cato Client to use UDP port 1337 as an alternative (see the Configuring a Different UDP Port for the Cato Client article). If UDP remains blocked, the client will automatically fall back to a TCP tunnel over port 443 (the TCP Fallback for UDP Tunnel behavior). Try switching to UDP 1337 as a workaround; the fallback behavior is documented if the UDP option fails.",
+  "searches": [
+    {
+      "query": "Cato Client 408 Connecting hotel",
+      "passage_ids": [
+        "ead32a31-a8aa-4e50-9128-5169d762489d",
+        "f2290b57-0dd7-4b6e-94d6-9aa5299cdcf4",
+        "5c836020-4016-48bd-ae27-cdfe87db5746",
+        "786e6753-0b54-4e50-b818-6ca03426aa9a",
+        "988938bd-2703-49ac-bd8f-b3f52c4ed4b7"
+      ],
+      "scores": [
+        3.8582,
+        3.3099,
+        2.9988,
+        2.8094,
+        0.9614
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2059,
+    "output_tokens": 2390,
+    "requests": 2
+  },
+  "latency_s": 18.03,
+  "ts": "2026-09-30T21:44:22+00:00"
+}

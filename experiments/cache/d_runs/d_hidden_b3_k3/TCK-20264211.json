@@ -1,0 +1,37 @@
+{
+  "query_id": "TCK-20264211",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "f74c7c57-6e72-4685-bdd2-23e698a9418e",
+    "db67089e-501c-4a96-b382-5f7d78416c70",
+    "123dc701-b3d3-4226-a326-f4bce6fdc2db"
+  ],
+  "answer_text": "Best practice is to put guest Wi‑Fi on a VLAN on the Socket (X1600). The Socket can act as the default gateway and DHCP for that VLAN, and you can isolate it quickly by applying a WAN firewall rule or by deleting the VLAN’s default gateway, all from the Cato Management App. You can also configure an Internet‑only SSID on the Socket so guest devices access only the Internet while still being processed by the Cato security stack.",
+  "searches": [
+    {
+      "query": "Guest Wi-Fi VLAN Socket",
+      "passage_ids": [
+        "f74c7c57-6e72-4685-bdd2-23e698a9418e",
+        "db67089e-501c-4a96-b382-5f7d78416c70",
+        "123dc701-b3d3-4226-a326-f4bce6fdc2db"
+      ],
+      "scores": [
+        5.0861,
+        4.5076,
+        4.0286
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1963,
+    "output_tokens": 1985,
+    "requests": 2
+  },
+  "latency_s": 15.285,
+  "ts": "2026-09-30T21:52:05+00:00"
+}

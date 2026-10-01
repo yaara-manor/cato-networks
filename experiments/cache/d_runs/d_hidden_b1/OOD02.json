@@ -1,0 +1,37 @@
+{
+  "query_id": "OOD02",
+  "variant": "d_hidden_b1",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn't locate any Cato Knowledge Base article that covers resetting a Microsoft 365 mailbox password. This topic is not in our KB. If you need to reset a Microsoft 365 password, please follow Microsoft's password reset process or contact your Microsoft 365 administrator for the proper steps.",
+  "searches": [
+    {
+      "query": "Microsoft 365 password reset",
+      "passage_ids": [
+        "a6c26e10-4d22-4345-b748-0ea59afa3a85",
+        "2e720825-1142-457c-91ac-34bd67540d5f",
+        "e564059a-417d-40f2-b5d1-8e3c41ab49fe",
+        "871e10c8-7bcf-41c1-af67-44d75d4d2190",
+        "e6e1a497-94aa-4725-82fb-6e8f7fa0c5c5"
+      ],
+      "scores": [
+        3.635,
+        3.3681,
+        3.2119,
+        3.192,
+        2.8738
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2349,
+    "output_tokens": 1697,
+    "requests": 2
+  },
+  "latency_s": 16.284,
+  "ts": "2026-09-30T21:45:48+00:00"
+}

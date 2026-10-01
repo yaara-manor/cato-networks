@@ -1,0 +1,37 @@
+{
+  "query_id": "ADJ09",
+  "variant": "d_hidden_b1",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn't locate any KB article that specifies the exact ML-KEM parameter set negotiated by the Cato Client with the PoP when PQC is enabled (512, 768, or 1024). This detail isn't documented in the current knowledge base. Please reach out to your Cato support contact or open a ticket so we can confirm the exact handshake parameters for your account.",
+  "searches": [
+    {
+      "query": "ML-KEM parameter set 512 768 1024 Cato PoP PQC",
+      "passage_ids": [
+        "06fe0ab4-5024-4c4b-84cb-564af3653c16",
+        "8e24586c-373b-4d89-b314-5f9af360c743",
+        "3da7b238-94a4-4785-8015-e669d861177c",
+        "626b0cfd-16a5-43f7-874e-0e6e1090a7d8",
+        "0a53f2ef-e330-41a8-a8ae-9aeb1a1e8b9a"
+      ],
+      "scores": [
+        -1.5792,
+        -1.7346,
+        -3.5909,
+        -5.4261,
+        -5.4975
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2146,
+    "output_tokens": 1436,
+    "requests": 2
+  },
+  "latency_s": 12.096,
+  "ts": "2026-09-30T21:46:47+00:00"
+}

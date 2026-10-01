@@ -1,0 +1,53 @@
+{
+  "query_id": "TCK-20264243",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "69ca7470-06c4-498d-a142-55d42f9b51e3",
+    "5b5cee94-f126-4dc0-9844-182db2f07df1",
+    "0330d61a-3248-498e-80d8-b7b039ab1b1e",
+    "b683c7e2-fab8-471a-9179-b61f5a2c8f1e",
+    "25018bf7-7d83-4e4e-a40e-c3c630189d58"
+  ],
+  "answer_text": "Not necessarily. Manual HA failover tests are intended to validate your HA setup, and a Not Ready state can appear during the failover process. Before running such tests, ensure prerequisites are met (Socket version 24 or higher and CMA showing Ready) and remember not to leave manual failover active longer than needed, returning HA to a Ready state promptly. If the Not Ready condition persists after the test window, run the HA Status Not Ready playbook to diagnose and resolve the issue; the playbook describes steps to resolve Not Ready when CMA reports it. ",
+  "searches": [
+    {
+      "query": "Not Ready (In HA Failover)",
+      "passage_ids": [
+        "25018bf7-7d83-4e4e-a40e-c3c630189d58",
+        "18b5074e-5155-4687-8b43-55a306645cd9",
+        "11a8e9ce-64e9-4d28-979c-9e98279ee12c",
+        "0330d61a-3248-498e-80d8-b7b039ab1b1e",
+        "5b5cee94-f126-4dc0-9844-182db2f07df1",
+        "69ca7470-06c4-498d-a142-55d42f9b51e3",
+        "1d701026-8cb1-4ab6-935d-e48d26c34ed2",
+        "b683c7e2-fab8-471a-9179-b61f5a2c8f1e",
+        "3a30663f-c86d-4da4-be3a-fb2a34adccdb",
+        "6449389f-d6f5-4a02-becd-be6a90bebfd7"
+      ],
+      "scores": [
+        8.4994,
+        7.2688,
+        6.6399,
+        6.2492,
+        5.4395,
+        4.9558,
+        4.9175,
+        4.7596,
+        4.121,
+        3.6658
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2810,
+    "output_tokens": 4317,
+    "requests": 2
+  },
+  "latency_s": 27.499,
+  "ts": "2026-09-30T22:00:04+00:00"
+}

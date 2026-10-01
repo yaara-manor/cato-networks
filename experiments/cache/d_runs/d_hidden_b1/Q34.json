@@ -1,0 +1,40 @@
+{
+  "query_id": "Q34",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "8615a0da-edf6-4b7a-ab63-e2acddb76bb4",
+    "d924dd90-7f10-48e9-8b41-9b72301fd0d8"
+  ],
+  "answer_text": "Cato MFA tokens are time-based and valid within a 30-second window from generation. On a trusted device (the “Don’t ask me again on this device/computer” option), MFA isn’t required as long as the token duration is still valid and your geolocation hasn’t changed to a different country; if the window expires or your location changes, you’ll be prompted for MFA again.",
+  "searches": [
+    {
+      "query": "MFA token validity Cato",
+      "passage_ids": [
+        "8615a0da-edf6-4b7a-ab63-e2acddb76bb4",
+        "cfbe4db1-6bc8-4d6b-bf41-7c5108deb852",
+        "d924dd90-7f10-48e9-8b41-9b72301fd0d8",
+        "25acd733-f34a-409f-8933-746788983711",
+        "e7f25ee5-3ee8-40ae-bee1-b9dd23e5a442"
+      ],
+      "scores": [
+        7.5662,
+        7.2733,
+        7.1148,
+        6.8826,
+        4.6193
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2071,
+    "output_tokens": 2317,
+    "requests": 2
+  },
+  "latency_s": 18.597,
+  "ts": "2026-09-30T21:42:52+00:00"
+}

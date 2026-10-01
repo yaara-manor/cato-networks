@@ -1,0 +1,76 @@
+{
+  "query_id": "TCK-20264205",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "3f47abbe-cb73-47a0-87b0-40eb6e66d96f"
+  ],
+  "answer_text": "Azure tunnel up but no traffic to the new AKS subnet can occur if the CMA Native Range and the Azure VNet LAN subnet don’t align. The LAN subnet must correlate with the Native Range configured for the site in CMA, and all subnets (LAN/WAN/Management) must reside within the VNet address space. If the AKS 10.61.0.0/16 range was added, verify it is reflected in CMA as the Native Range and that your VNet LAN subnet matches that range; then traffic should route.",
+  "searches": [
+    {
+      "query": "Azure tunnel AKS address space 10.61.0.0/16",
+      "passage_ids": [
+        "89266834-aafc-4a5c-b872-3faadf0fa965",
+        "de717739-dce3-4bc7-87ef-8961c478522f",
+        "f61d28bd-21a3-40a5-800b-0868ef9ca588",
+        "9653fe23-0d4d-4206-a563-3197fcf81ce2",
+        "88929565-c8b1-479e-b94f-605279fb6dc8",
+        "1507bf99-23e4-4656-b08a-272bd3dcfea3",
+        "2a09dad1-95e4-4062-87a7-e44190d04777",
+        "4871a8f4-064a-4586-9931-a0541e305a88",
+        "db1b4371-e14d-4520-9a46-a525ddeb1840",
+        "dc690e82-1dd1-4389-9576-ddb17d7c60f0"
+      ],
+      "scores": [
+        -6.8023,
+        -7.1134,
+        -7.617,
+        -8.1386,
+        -8.714,
+        -9.5596,
+        -9.7402,
+        -10.0469,
+        -10.4907,
+        -10.6117
+      ]
+    },
+    {
+      "query": "Azure address space 10.61.0.0/16",
+      "passage_ids": [
+        "817a708e-e536-45bd-b02b-424236614900",
+        "42d71353-ebe9-4124-acf4-e2b5f35836ae",
+        "3f47abbe-cb73-47a0-87b0-40eb6e66d96f",
+        "45e16402-e070-469e-b806-bd03f8526a82",
+        "1507bf99-23e4-4656-b08a-272bd3dcfea3",
+        "2a09dad1-95e4-4062-87a7-e44190d04777",
+        "9fe593bc-abe3-414a-a334-3f52a6978130",
+        "b8353d12-c873-45e0-8947-0a7377945eee",
+        "e60ebb5f-dc5d-4e17-9b54-cceea78e61cf",
+        "dc650269-db37-4956-9b87-44c117668864"
+      ],
+      "scores": [
+        -0.6787,
+        -1.747,
+        -3.7533,
+        -5.1005,
+        -6.5647,
+        -7.0708,
+        -8.7739,
+        -8.9876,
+        -9.6224,
+        -10.4674
+      ]
+    }
+  ],
+  "n_searches": 2,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 7811,
+    "output_tokens": 2921,
+    "requests": 3
+  },
+  "latency_s": 24.715,
+  "ts": "2026-09-30T22:00:44+00:00"
+}

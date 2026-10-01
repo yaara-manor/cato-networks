@@ -1,0 +1,39 @@
+{
+  "query_id": "Q29",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "79d612fa-113f-4dd3-9e73-5422779a5604"
+  ],
+  "answer_text": "Upstream TLS inspection: HTTPS traffic from the Socket’s WAN IP address must be excluded. For a gradual upgrade on an X1700, the KB notes there are different connectivity requirements for gradual upgrades but does not list the exact port numbers in the cited article excerpt.",
+  "searches": [
+    {
+      "query": "Socket upgrade upstream TLS inspection X1700 ports",
+      "passage_ids": [
+        "79d612fa-113f-4dd3-9e73-5422779a5604",
+        "b00f9e84-b701-4d1b-bc53-a9b3d91a45e5",
+        "cc030328-ae3a-4131-8ea8-b44df03680c6",
+        "1ef75699-333f-4e42-9b0b-26e804eae858",
+        "5976d28a-5f11-4a76-a0f9-a17c0a629528"
+      ],
+      "scores": [
+        6.7326,
+        3.7919,
+        2.0844,
+        1.8911,
+        1.6889
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2216,
+    "output_tokens": 2658,
+    "requests": 2
+  },
+  "latency_s": 22.578,
+  "ts": "2026-09-30T21:42:29+00:00"
+}

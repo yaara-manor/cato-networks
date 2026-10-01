@@ -1,0 +1,39 @@
+{
+  "query_id": "TCK-20264209",
+  "variant": "d_hidden_b3",
+  "decision": "ASK_CUSTOMER",
+  "final_decision": "ASK_CUSTOMER",
+  "invalid_citations": [],
+  "citations": [
+    "d8334539-fb96-4f89-bfb9-0fb81bd9c6ce"
+  ],
+  "answer_text": "Our SLA for NOCaaS defines a Service Level Credit, with a 5% credit listed for Critical outages. To confirm the exact credit for INC-4471, we must verify the outage severity and apply the applicable credit to your account. Please provide the account ID and confirm how INC-4471 was categorized (e.g., Critical or another level) so we can calculate the credit and advise on timing.",
+  "searches": [
+    {
+      "query": "SLA credit outage INC-4471",
+      "passage_ids": [
+        "d8334539-fb96-4f89-bfb9-0fb81bd9c6ce",
+        "60005c04-eb5a-43de-8021-c073e8611341",
+        "aff45b2d-54f6-4384-8ce0-014da05ae13c",
+        "ce6af09e-3e89-496c-8af0-ec47f617e91f",
+        "28b0164d-0572-41b5-ae88-1bd9c938f000"
+      ],
+      "scores": [
+        -2.0888,
+        -5.2279,
+        -5.3879,
+        -6.8844,
+        -7.3536
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2276,
+    "output_tokens": 2339,
+    "requests": 2
+  },
+  "latency_s": 17.426,
+  "ts": "2026-09-30T21:29:32+00:00"
+}

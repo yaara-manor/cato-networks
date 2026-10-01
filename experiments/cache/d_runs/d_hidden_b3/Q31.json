@@ -1,0 +1,41 @@
+{
+  "query_id": "Q31",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "373b156d-e4fe-4a2d-9f95-5e62c817bc87",
+    "cc9acccf-a047-42ad-aecb-e4c1b670528e",
+    "29b519d9-2d93-41cb-8c37-9f32e1cf5182"
+  ],
+  "answer_text": "Why: Cato blocks access to websites that present an untrusted or self-signed certificate even when TLS inspection is disabled. When TLS inspection is off, HTTPS traffic is not inspected and the browser may show certificate warnings because the site’s cert is not trusted. This behavior is by design for untrusted certs. What to do: enable TLS inspection and install the Cato Root Certificate on end-user devices so Cato can present a trusted certificate for HTTPS sites. If you cannot enable TLS inspection, ensure the site uses a certificate from a trusted CA or otherwise obtain an exception via trusted configuration.",
+  "searches": [
+    {
+      "query": "certificate warnings TLS inspection disabled blocked HTTPS sites",
+      "passage_ids": [
+        "cc9acccf-a047-42ad-aecb-e4c1b670528e",
+        "7cebf724-7683-4379-8f3a-1cb796678c36",
+        "373b156d-e4fe-4a2d-9f95-5e62c817bc87",
+        "29b519d9-2d93-41cb-8c37-9f32e1cf5182",
+        "10bb542a-ab9c-406e-a221-7cac97084651"
+      ],
+      "scores": [
+        6.5783,
+        5.8228,
+        5.7493,
+        5.6018,
+        5.2526
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1896,
+    "output_tokens": 2650,
+    "requests": 2
+  },
+  "latency_s": 19.19,
+  "ts": "2026-09-30T21:27:52+00:00"
+}

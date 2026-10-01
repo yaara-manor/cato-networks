@@ -1,0 +1,80 @@
+{
+  "query_id": "TCK-20264211",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "123dc701-b3d3-4226-a326-f4bce6fdc2db",
+    "133b0cc2-6e19-4ad3-9d16-a78463d37b57",
+    "db67089e-501c-4a96-b382-5f7d78416c70",
+    "2c0904ee-08c9-45db-96ce-baf1a5b3b30e",
+    "4ea13376-c19d-45dd-8bc3-44affa45caa2"
+  ],
+  "answer_text": "Best practice is to put guest Wi‑Fi on a VLAN that lives on the Socket rather than a routed range behind an L3 switch. The Socket can act as the gateway and DHCP for each VLAN, and you can isolate a VLAN quickly with a WAN firewall rule or by removing its default gateway from CMA. For guests, configure an Internet‑only VLAN/range so they can reach only the Internet and not internal resources. Example: create a VLAN-enabled range named “Guest WIFI” with VLAN 100, subnet 10.1.0.0/24 and gateway 10.1.0.1 on the Socket (this is supported and can be managed from CMA).",
+  "searches": [
+    {
+      "query": "guest wifi isolation VLAN Socket routed range",
+      "passage_ids": [
+        "123dc701-b3d3-4226-a326-f4bce6fdc2db",
+        "fc6c6de1-0d14-4c91-91c3-ef8838bdc3ee",
+        "2c0904ee-08c9-45db-96ce-baf1a5b3b30e",
+        "4ea13376-c19d-45dd-8bc3-44affa45caa2",
+        "db67089e-501c-4a96-b382-5f7d78416c70",
+        "133b0cc2-6e19-4ad3-9d16-a78463d37b57",
+        "90abbca3-034f-46a7-a5e5-fff67c3bbc17",
+        "9a3c3735-39c9-49f6-bc4f-21b2179d3ee1",
+        "5d86fe59-b0fd-40c8-be49-49336365e422",
+        "5bd32908-430e-4591-8c4e-dbe97e78808d"
+      ],
+      "scores": [
+        5.0013,
+        3.1152,
+        1.079,
+        0.4774,
+        -0.154,
+        -0.627,
+        -1.2868,
+        -1.6699,
+        -2.4343,
+        -3.0272
+      ]
+    },
+    {
+      "query": "Socket Best Practice VLANs vs Routed Ranges guest wifi",
+      "passage_ids": [
+        "133b0cc2-6e19-4ad3-9d16-a78463d37b57",
+        "ed35ae6e-0956-4f3f-83d4-1fbe671485f8",
+        "90abbca3-034f-46a7-a5e5-fff67c3bbc17",
+        "2c0904ee-08c9-45db-96ce-baf1a5b3b30e",
+        "123dc701-b3d3-4226-a326-f4bce6fdc2db",
+        "9a3c3735-39c9-49f6-bc4f-21b2179d3ee1",
+        "db67089e-501c-4a96-b382-5f7d78416c70",
+        "5d86fe59-b0fd-40c8-be49-49336365e422",
+        "78cb8976-2f23-4c07-aba5-feadd99be91b",
+        "be66365c-ac37-4431-ab2d-626d81e1a746"
+      ],
+      "scores": [
+        6.2973,
+        4.604,
+        2.8025,
+        2.7126,
+        2.5766,
+        -1.3554,
+        -1.5841,
+        -2.7111,
+        -5.4527,
+        -7.5428
+      ]
+    }
+  ],
+  "n_searches": 2,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 8323,
+    "output_tokens": 4078,
+    "requests": 3
+  },
+  "latency_s": 33.142,
+  "ts": "2026-09-30T22:00:19+00:00"
+}

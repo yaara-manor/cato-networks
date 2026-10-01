@@ -1,0 +1,47 @@
+{
+  "query_id": "OOD01",
+  "variant": "d_hidden_b3_k10",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "The Cato knowledge base does not contain Cisco Catalyst 9300 VLAN configuration steps. It covers VLAN tagging/trunking related to Cato Sockets but not vendor-specific commands for Cisco Catalyst switches. Please refer to Cisco's official documentation or your network administrator for configuring VLANs on a Catalyst 9300.",
+  "searches": [
+    {
+      "query": "Cisco Catalyst 9300 VLAN configuration",
+      "passage_ids": [
+        "5d86fe59-b0fd-40c8-be49-49336365e422",
+        "9a3c3735-39c9-49f6-bc4f-21b2179d3ee1",
+        "86bb36e3-4011-4887-b90b-dfd1eac9847a",
+        "1ebb27bd-76b3-4236-b8eb-968b295854bf",
+        "34411f17-7d7f-4168-8b2c-4f0dfadf5c76",
+        "2c0904ee-08c9-45db-96ce-baf1a5b3b30e",
+        "58510935-9d78-4357-b9d7-9fb428bf4f40",
+        "90abbca3-034f-46a7-a5e5-fff67c3bbc17",
+        "98c64ffb-6253-4fdf-8095-1e32516e3665",
+        "123dc701-b3d3-4226-a326-f4bce6fdc2db"
+      ],
+      "scores": [
+        -0.7574,
+        -1.9803,
+        -2.0705,
+        -2.3625,
+        -2.9991,
+        -3.1811,
+        -3.5194,
+        -5.0397,
+        -5.5527,
+        -5.7348
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 3073,
+    "output_tokens": 1442,
+    "requests": 2
+  },
+  "latency_s": 11.686,
+  "ts": "2026-09-30T22:00:43+00:00"
+}

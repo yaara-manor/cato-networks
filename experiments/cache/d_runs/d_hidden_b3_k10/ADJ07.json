@@ -1,0 +1,47 @@
+{
+  "query_id": "ADJ07",
+  "variant": "d_hidden_b3_k10",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "Not found in the knowledge base: Juniper SRX chassis cluster failover behind a Cato Socket HA pair. The available articles cover Socket HA behavior in general (for example, failover can be triggered by keepalive failures between the primary and secondary Socket, with traffic moving to the secondary’s WAN links). If you can share more details (SRX version, cluster topology, and exact failover symptoms), we can look for more relevant guidance in future updates.",
+  "searches": [
+    {
+      "query": "Juniper SRX chassis cluster failover Cato Socket",
+      "passage_ids": [
+        "1692bd4f-0b55-4dac-959b-9479e02b4aca",
+        "bd25df34-20ab-46d3-bf90-beb5a367076f",
+        "639e842b-2b7a-454d-b5b7-2bc2103404ea",
+        "0d58dbb1-4034-442e-a77a-5d9565897e61",
+        "abd1e436-e187-423d-b33b-8aed396006d5",
+        "fb4dc08d-2fbd-42d1-9224-28d485f6c576",
+        "d7e777d2-5445-470d-9f77-0797c282c703",
+        "2194abae-618f-4003-bdbb-d3c7524304df",
+        "1c39d1a0-f6b6-4cf2-ab27-989387512958",
+        "af348b74-716b-4c07-9b9c-b8983f341e66"
+      ],
+      "scores": [
+        0.4585,
+        -2.1343,
+        -2.8409,
+        -2.9581,
+        -3.0596,
+        -3.0672,
+        -3.3667,
+        -3.4123,
+        -3.6037,
+        -3.7603
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2900,
+    "output_tokens": 2684,
+    "requests": 2
+  },
+  "latency_s": 22.614,
+  "ts": "2026-09-30T22:02:04+00:00"
+}

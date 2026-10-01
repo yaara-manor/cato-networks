@@ -1,0 +1,57 @@
+{
+  "query_id": "Q16",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "48595747-d893-4c4b-8ffe-74354da12d51",
+    "066ea2c2-a18d-4af7-97b5-a4e16e189188"
+  ],
+  "answer_text": "IP Overlapping requirements: - You can only enable IP Overlapping on accounts that do NOT use Static Range Translation. - One IP range must be smaller and fully contained within the other range. - All sockets in the account must be version 6.1 or higher. - Each site must have a unique IP address for the Native Range (no duplicates across sites). Default Cato System Range: By default, Cato reserves the private IP prefix 10.254.254.0/24 as the internal System Range for your account.",
+  "searches": [
+    {
+      "query": "IP Overlapping between sites Cato",
+      "passage_ids": [
+        "034ae7a1-f684-426e-87d1-8e1f0a3a129c",
+        "48595747-d893-4c4b-8ffe-74354da12d51",
+        "552bf47f-3ad0-4bf9-ad82-57a55c8a2978",
+        "589e8be3-0414-4949-913c-43bdc9c29c96",
+        "26093124-c35f-4adf-83e1-5fca68d83d9e"
+      ],
+      "scores": [
+        8.0426,
+        7.9064,
+        5.4576,
+        5.3501,
+        5.2736
+      ]
+    },
+    {
+      "query": "default system range Cato",
+      "passage_ids": [
+        "5b14167d-1f0d-4eae-addc-22501beb1d82",
+        "066ea2c2-a18d-4af7-97b5-a4e16e189188",
+        "41157a40-896f-4bd2-8b09-b6a87b493a66",
+        "3a42f3aa-0116-41a3-b69e-f8dc4580f7cd",
+        "ed524947-e77b-444d-bdf6-eeb648f7a66e"
+      ],
+      "scores": [
+        10.0796,
+        8.701,
+        7.6878,
+        7.0573,
+        6.9982
+      ]
+    }
+  ],
+  "n_searches": 2,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 5176,
+    "output_tokens": 2756,
+    "requests": 3
+  },
+  "latency_s": 25.868,
+  "ts": "2026-09-30T21:26:28+00:00"
+}

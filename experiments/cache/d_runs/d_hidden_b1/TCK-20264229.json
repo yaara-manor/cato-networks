@@ -1,0 +1,39 @@
+{
+  "query_id": "TCK-20264229",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "8bea93d0-0242-43c5-8039-28618dbef953"
+  ],
+  "answer_text": "PPPoE connectivity issues on Cato often improve when Energy Efficient Ethernet (EEE) is disabled at the PPPoE site. Since large file transfers stall over your Toronto PPPoE link, have EEE disabled for that site. Please contact Cato Support to have EEE disabled for the PPPoE site to see if that resolves the stalls.",
+  "searches": [
+    {
+      "query": "PPPoE throughput Cato Networks",
+      "passage_ids": [
+        "8bea93d0-0242-43c5-8039-28618dbef953",
+        "3c6ef353-56b9-48e6-82af-06388c176120",
+        "ca8f4067-da0b-4ec5-ba9d-35bb6440c323",
+        "2fac0b50-fe7f-49ae-829f-ba2fcfb05847",
+        "03f5475f-4350-4fb1-85b4-473d8ddf165b"
+      ],
+      "scores": [
+        6.1207,
+        4.7069,
+        4.3216,
+        4.1965,
+        2.6173
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2237,
+    "output_tokens": 1575,
+    "requests": 2
+  },
+  "latency_s": 14.053,
+  "ts": "2026-09-30T21:44:35+00:00"
+}

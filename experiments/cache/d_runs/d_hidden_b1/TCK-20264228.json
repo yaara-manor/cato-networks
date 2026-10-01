@@ -1,0 +1,39 @@
+{
+  "query_id": "TCK-20264228",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "541abf81-6362-4154-b32f-d32e96dc039b"
+  ],
+  "answer_text": "HA requires two Sockets of the same type. A site cannot mix X1600 with X1600 LTE in the same HA pair. So a spare X1600 LTE cannot serve as the secondary for an X1600 in HA. To enable HA, you’d need a second Socket of the same type as the primary (e.g., another X1600, or another X1600 LTE).",
+  "searches": [
+    {
+      "query": "X1600 HA pairing",
+      "passage_ids": [
+        "541abf81-6362-4154-b32f-d32e96dc039b",
+        "a4fb5836-870f-4605-8a01-b070ba3288f6",
+        "b5981eaf-f994-4a5f-9156-511d116d687b",
+        "bd4313f6-25fc-4eca-840a-0d3259932fed",
+        "670fb5b3-8ed3-4220-bc51-cd7c13b7aedc"
+      ],
+      "scores": [
+        5.619,
+        5.382,
+        3.4608,
+        3.0616,
+        1.7657
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2234,
+    "output_tokens": 2658,
+    "requests": 2
+  },
+  "latency_s": 22.275,
+  "ts": "2026-09-30T21:44:58+00:00"
+}

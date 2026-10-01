@@ -1,0 +1,33 @@
+{
+  "query_id": "TCK-20264209",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ASK_CUSTOMER",
+  "final_decision": "ASK_CUSTOMER",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "Per the NOCaaS SLA, a service level credit of 5% applies to Critical incidents. With an $18,000 monthly fee, that would equate to a $900 credit if INC-4471 qualifies as Critical. To confirm the credit this week, please confirm the incident severity (e.g., Critical) and the exact outage window per the SLA.",
+  "searches": [
+    {
+      "query": "SLA credit outage",
+      "passage_ids": [
+        "d8334539-fb96-4f89-bfb9-0fb81bd9c6ce",
+        "aff45b2d-54f6-4384-8ce0-014da05ae13c",
+        "ce6af09e-3e89-496c-8af0-ec47f617e91f"
+      ],
+      "scores": [
+        2.0455,
+        -2.4296,
+        -3.0082
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1984,
+    "output_tokens": 4046,
+    "requests": 2
+  },
+  "latency_s": 26.92,
+  "ts": "2026-09-30T21:51:26+00:00"
+}

@@ -1,0 +1,47 @@
+{
+  "query_id": "OOD05",
+  "variant": "d_hidden_b3_k10",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn’t locate information in the knowledge base about discounts for renewing a Cato contract for three years. Please reach out to your Cato account team or sales representative for current renewal discount terms.",
+  "searches": [
+    {
+      "query": "renewal discount three year contract",
+      "passage_ids": [
+        "f742d6fe-9900-4f35-9446-3930a5da5d38",
+        "8165e7ed-88ef-49b3-be40-755a6fb3e3ad",
+        "3c1c3bc6-1076-4ee7-9156-39270296f378",
+        "5a43eddc-547b-4131-9105-f04aa53c6c2e",
+        "dcdf553b-f812-481f-a785-897f02a81171",
+        "618c8a41-9324-410c-aaf5-16ca502e663b",
+        "d0b7ced4-9585-4595-9641-12fe027707f1",
+        "98df9be9-d010-4885-962f-419be5b2be2e",
+        "ee4c8707-64ba-4b4d-b284-67c0015b5884",
+        "639e842b-2b7a-454d-b5b7-2bc2103404ea"
+      ],
+      "scores": [
+        -3.4885,
+        -10.3519,
+        -10.6074,
+        -10.6235,
+        -10.6981,
+        -10.8116,
+        -10.8866,
+        -10.9069,
+        -10.9661,
+        -11.137
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2889,
+    "output_tokens": 1127,
+    "requests": 2
+  },
+  "latency_s": 10.265,
+  "ts": "2026-09-30T22:01:01+00:00"
+}

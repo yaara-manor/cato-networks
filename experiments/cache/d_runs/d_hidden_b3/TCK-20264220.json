@@ -1,0 +1,78 @@
+{
+  "query_id": "TCK-20264220",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [
+    "c4a868d0-f842-457e-bd31-6519eb4db531"
+  ],
+  "citations": [
+    "c4a868d0-f842-457e-bd31-6519eb4db531",
+    "12226386-7e34-4528-8415-8df9d696f5e5",
+    "325d51a3-cb69-463e-bd32-b05e92441dd6",
+    "18a7fb94-4af0-46e4-aee7-272e887eba00"
+  ],
+  "answer_text": "Yes. There are several limits to be aware of when advertising prefixes to a Cato Socket. Some cloud providers (e.g., Azure) limit the number of routes you can receive to about 1000; this can affect you if you’re advertising around 1100 prefixes. You can mitigate this by using BGP summarized (aggregated) routes (up to 256 summary routes per BGP peer and up to 5 BGP communities per summary route) and by applying route filtering to remove non-essential prefixes. Note that the BGP status view has a 1024-route limit that may affect visibility of larger advertisements.",
+  "searches": [
+    {
+      "query": "prefix limit 1100 prefixes Socket",
+      "passage_ids": [
+        "cd5865ef-0134-4073-a364-ea6a1211dc63",
+        "a75de1a8-9fb8-42f8-af02-1c53aef71775",
+        "8f4cec56-a078-4d50-9c02-9f97af1cd9e6",
+        "8f3ee6c6-e5ae-4a9b-9b4e-f27c7db867d0",
+        "6621f430-cd12-4742-b4a2-05be3cf8d869"
+      ],
+      "scores": [
+        -5.4323,
+        -9.429,
+        -9.4669,
+        -9.755,
+        -9.8261
+      ]
+    },
+    {
+      "query": "prefixes advertised limit Socket BGP Routes blackhole",
+      "passage_ids": [
+        "2bfc4c5d-a149-40c4-9e40-8c35d33c260d",
+        "c4a868d0-f842-457b-bd31-6519eb4db531",
+        "18a7fb94-4af0-46e4-aee7-272e887eba00",
+        "a8453f6d-8e23-4cb8-af7e-7e93558d9fe8",
+        "12226386-7e34-4528-8415-8df9d696f5e5"
+      ],
+      "scores": [
+        4.5,
+        4.4476,
+        1.6659,
+        1.0203,
+        0.7381
+      ]
+    },
+    {
+      "query": "limits number of BGP routes per peer Azure 1000",
+      "passage_ids": [
+        "c4a868d0-f842-457b-bd31-6519eb4db531",
+        "325d51a3-cb69-463e-bd32-b05e92441dd6",
+        "12226386-7e34-4528-8415-8df9d696f5e5",
+        "a727502d-cf6a-43ca-b6a7-21dba0620c8d",
+        "86e3f493-d0e1-4849-b6dd-59493382075c"
+      ],
+      "scores": [
+        5.5924,
+        3.4113,
+        2.7725,
+        2.5496,
+        0.1901
+      ]
+    }
+  ],
+  "n_searches": 3,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 9923,
+    "output_tokens": 4257,
+    "requests": 4
+  },
+  "latency_s": 34.77,
+  "ts": "2026-09-30T21:30:52+00:00"
+}

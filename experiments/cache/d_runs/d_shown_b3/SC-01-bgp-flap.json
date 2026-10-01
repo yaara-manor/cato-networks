@@ -1,0 +1,41 @@
+{
+  "query_id": "SC-01-bgp-flap",
+  "variant": "d_shown_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "3381e933-8d27-431f-b950-83940c8fe6f7",
+    "033bb0ba-95ea-46ae-b8e8-0ddb66d03154",
+    "9b73ca22-7412-4c49-8b88-39285e876c90"
+  ],
+  "answer_text": "BGP Hold Time is negotiated between peers, and the final value used is the lower Hold Time from either side. With your 10/30 timers, make sure the Nexus 9k and the Cato Socket agree on a Hold Time of 30 seconds (the example in our KB shows both sides converge on 30 while keeping the keep-alive at 10). If needed, adjust the Nexus to Hold Time 30 so both ends use 30; keep-alive can remain at 10. If flapping persists, you can enable BFD for BGP neighbors to speed up failure detection. ",
+  "searches": [
+    {
+      "query": "BGP hold timer Nexus 9k Cato",
+      "passage_ids": [
+        "9b73ca22-7412-4c49-8b88-39285e876c90",
+        "3381e933-8d27-431f-b950-83940c8fe6f7",
+        "a06a67c7-3bf7-4236-94bd-86014a9ead8c",
+        "e34cd47b-f1f7-4cc0-a522-f67df1e442b1",
+        "033bb0ba-95ea-46ae-b8e8-0ddb66d03154"
+      ],
+      "scores": [
+        3.1061,
+        1.7701,
+        1.7701,
+        -1.5739,
+        -1.9754
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2441,
+    "output_tokens": 3796,
+    "requests": 2
+  },
+  "latency_s": 26.945,
+  "ts": "2026-09-30T21:35:59+00:00"
+}

@@ -1,0 +1,41 @@
+{
+  "query_id": "Q31",
+  "variant": "d_shown_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "7cebf724-7683-4379-8f3a-1cb796678c36",
+    "373b156d-e4fe-4a2d-9f95-5e62c817bc87",
+    "29b519d9-2d93-41cb-8c37-9f32e1cf5182"
+  ],
+  "answer_text": "Certificate warnings on blocked HTTPS sites can occur even when TLS inspection is off. The KB notes that blocked HTTPS websites can trigger TLS-related warnings, and that Cato will block sites with untrusted certificates even if TLS inspection is disabled. To fix this, enable TLS inspection and install the Cato root certificate on end-user devices so Cato can present a trusted certificate for intercepted traffic. See the root-certificate installation article for the exact steps to install on devices.",
+  "searches": [
+    {
+      "query": "certificate warnings TLS inspection disabled blocked HTTPS sites",
+      "passage_ids": [
+        "cc9acccf-a047-42ad-aecb-e4c1b670528e",
+        "7cebf724-7683-4379-8f3a-1cb796678c36",
+        "373b156d-e4fe-4a2d-9f95-5e62c817bc87",
+        "29b519d9-2d93-41cb-8c37-9f32e1cf5182",
+        "10bb542a-ab9c-406e-a221-7cac97084651"
+      ],
+      "scores": [
+        6.5783,
+        5.8228,
+        5.7493,
+        5.6018,
+        5.2526
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2060,
+    "output_tokens": 3793,
+    "requests": 2
+  },
+  "latency_s": 25.97,
+  "ts": "2026-09-30T21:35:32+00:00"
+}

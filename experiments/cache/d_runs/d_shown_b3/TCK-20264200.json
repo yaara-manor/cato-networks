@@ -1,0 +1,40 @@
+{
+  "query_id": "TCK-20264200",
+  "variant": "d_shown_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "3319d96f-4ccd-415c-aa8f-4cb17e293e09",
+    "37f826bd-d527-4a55-909d-44e8dbfb2792"
+  ],
+  "answer_text": "That pattern (Chicago site drops in CMA while traffic continues over an alternate WAN) often means the tunnel to the Cato Cloud is down. Troubleshoot and re-establish the tunnel connection to the Cato Cloud to restore visibility in CMA. For detailed steps, see Socket-Site-Tunnel-Connectivity-Troubleshooting.",
+  "searches": [
+    {
+      "query": "Chicago site drop CMA",
+      "passage_ids": [
+        "3319d96f-4ccd-415c-aa8f-4cb17e293e09",
+        "37f826bd-d527-4a55-909d-44e8dbfb2792",
+        "98464bb9-e080-4bcd-b7d7-6193b13f8069",
+        "e082950d-f890-4157-91ff-daab4fec9434",
+        "0025b127-48a5-4e97-b79e-e63805764f35"
+      ],
+      "scores": [
+        -4.4359,
+        -4.4359,
+        -5.3246,
+        -5.5357,
+        -5.6503
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2325,
+    "output_tokens": 1807,
+    "requests": 2
+  },
+  "latency_s": 16.342,
+  "ts": "2026-09-30T21:37:10+00:00"
+}

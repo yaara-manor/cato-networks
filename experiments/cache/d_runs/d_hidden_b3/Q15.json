@@ -1,0 +1,40 @@
+{
+  "query_id": "Q15",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "286685a9-1fc4-4518-a49d-46e4a8da4f6e",
+    "4c138e8d-1a5f-40bb-b60d-531f97837884"
+  ],
+  "answer_text": "Azure IPsec with Azure can differ from other providers, and PFS/DH group mismatches are a common cause of rekey failures. The DH group must match on both sides for the IPsec SA to be established and rekeyed; ensure the DH group configured in the Cato Management Application matches Azure’s expected value. In short, verify and align your DH/PFS settings between Cato and Azure to explain and resolve the rekey failure.",
+  "searches": [
+    {
+      "query": "Azure PFS DH rekey",
+      "passage_ids": [
+        "286685a9-1fc4-4518-a49d-46e4a8da4f6e",
+        "4c138e8d-1a5f-40bb-b60d-531f97837884",
+        "db3109d2-f6c9-43eb-a2ce-212b973aeabb",
+        "c625b423-e31e-495e-948b-6ed4881dbbde",
+        "6d0705c9-590e-428e-a6ba-a6aa057de7ee"
+      ],
+      "scores": [
+        2.4239,
+        0.5832,
+        -1.4118,
+        -3.4722,
+        -6.442
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2180,
+    "output_tokens": 1935,
+    "requests": 2
+  },
+  "latency_s": 15.855,
+  "ts": "2026-09-30T21:26:11+00:00"
+}

@@ -1,0 +1,37 @@
+{
+  "query_id": "ADJ08",
+  "variant": "d_hidden_b1",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn't locate the maximum EIRP transmit power or antenna gain (dBi) for the X1600 Wi‑Fi radios in the knowledge base. The articles available cover general X1600 information and supported transceivers but not RF power specifications. If you want, I can escalate to obtain the official data sheet or point you to the product team for the exact numbers.",
+  "searches": [
+    {
+      "query": "X1600 EIRP",
+      "passage_ids": [
+        "670fb5b3-8ed3-4220-bc51-cd7c13b7aedc",
+        "4e60bc59-ff2f-46e5-8ec4-4b6ae53bf12d",
+        "54dd1c95-7f64-4321-85c8-dc19036d9db3",
+        "42ebc31b-c449-4b4c-86ce-b9ee66085d03",
+        "893b0d70-d38e-4d4b-a823-937d4619fcaa"
+      ],
+      "scores": [
+        4.1427,
+        2.8469,
+        2.0755,
+        1.9806,
+        1.6793
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2152,
+    "output_tokens": 1845,
+    "requests": 2
+  },
+  "latency_s": 15.12,
+  "ts": "2026-09-30T21:46:41+00:00"
+}

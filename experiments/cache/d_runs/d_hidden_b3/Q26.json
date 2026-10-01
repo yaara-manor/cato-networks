@@ -1,0 +1,74 @@
+{
+  "query_id": "Q26",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "720b2633-710a-460f-be50-7d093d139581",
+    "b88f994c-f308-4312-9f55-f2a572f5bd5d"
+  ],
+  "answer_text": "- Default behavior: Last Mile Monitoring probes measure the quality of your ISP links. - Probes per rule: Up to 5 probes can be configured per rule. - Default probe interval: not documented in the knowledge base.",
+  "searches": [
+    {
+      "query": "Last Mile Monitoring probe default",
+      "passage_ids": [
+        "720b2633-710a-460f-be50-7d093d139581",
+        "83b0a66d-c4f0-4a8e-972e-e262ee8ea533",
+        "b88f994c-f308-4312-9f55-f2a572f5bd5d",
+        "4a1042b8-0956-4984-9832-26c282e2ca4f",
+        "87802d18-d8e9-4007-a3d8-7a0cabe99b69"
+      ],
+      "scores": [
+        7.3923,
+        7.0603,
+        6.6566,
+        5.677,
+        5.3508
+      ]
+    },
+    {
+      "query": "default probe interval Last Mile Monitoring",
+      "passage_ids": [
+        "b88f994c-f308-4312-9f55-f2a572f5bd5d",
+        "720b2633-710a-460f-be50-7d093d139581",
+        "83b0a66d-c4f0-4a8e-972e-e262ee8ea533",
+        "4a1042b8-0956-4984-9832-26c282e2ca4f",
+        "87802d18-d8e9-4007-a3d8-7a0cabe99b69"
+      ],
+      "scores": [
+        5.9751,
+        5.059,
+        4.3945,
+        3.7299,
+        3.5927
+      ]
+    },
+    {
+      "query": "Last Mile Monitoring interval",
+      "passage_ids": [
+        "87802d18-d8e9-4007-a3d8-7a0cabe99b69",
+        "272d1e5b-c1b9-4e06-93ed-feee9bf82bea",
+        "83b0a66d-c4f0-4a8e-972e-e262ee8ea533",
+        "1211d712-44d8-4326-87f3-550c1b441cbf",
+        "6a05faf6-0786-43ac-8249-5c08c1c55841"
+      ],
+      "scores": [
+        5.7091,
+        4.8962,
+        4.6122,
+        4.5368,
+        4.4134
+      ]
+    }
+  ],
+  "n_searches": 3,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 12442,
+    "output_tokens": 3264,
+    "requests": 5
+  },
+  "latency_s": 29.031,
+  "ts": "2026-09-30T21:27:30+00:00"
+}

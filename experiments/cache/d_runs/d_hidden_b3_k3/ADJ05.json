@@ -1,0 +1,33 @@
+{
+  "query_id": "ADJ05",
+  "variant": "d_hidden_b3_k3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn't find information about early termination fees for Cato subscriptions in the knowledge base. This is a contract/pricing detail not covered here. Please consult your signed contract or contact your Cato account team for the exact terms.",
+  "searches": [
+    {
+      "query": "early termination fee",
+      "passage_ids": [
+        "216f2c15-366b-481b-a0ee-ba8049164b6e",
+        "6f0e87c2-b118-465a-9936-53a5e9e8422b",
+        "0032beeb-8efa-4ac5-8fba-d9bcca0a8653"
+      ],
+      "scores": [
+        -8.6267,
+        -8.7845,
+        -9.9825
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1840,
+    "output_tokens": 1049,
+    "requests": 2
+  },
+  "latency_s": 9.431,
+  "ts": "2026-09-30T21:53:25+00:00"
+}

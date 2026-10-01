@@ -1,0 +1,52 @@
+{
+  "query_id": "SC-06-repeat-contact-churn",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [
+    "09705d8b-6556-4992-9087-a9cd4f08e636"
+  ],
+  "citations": [
+    "09705d8b-6556-4992-9087-a9cd4f08e636",
+    "c40d04b0-0822-4a1f-9bcd-5b7950217bc5"
+  ],
+  "answer_text": "You're not alone—the KB notes that disconnects can occur when an ISP blocks UDP port 443. A recommended workaround is to configure the Socket to use UDP port 1337. See the 'Setting a Different Port to Connect to the Cato PoP' article for steps to apply this change.",
+  "searches": [
+    {
+      "query": "Socket disconnections",
+      "passage_ids": [
+        "c40d04b0-0822-4a1f-9bcd-5b7950217bc5",
+        "09705d8b-6556-4992-9087-a9cd4b08e636",
+        "2d6cdb2d-9056-4b08-a533-57992ddc9f79",
+        "db3f3edd-26ba-49f2-8751-ec2a3da00fbe",
+        "258b80e8-e3d1-43f9-bda8-c8eb1b37e6f4",
+        "87d76f0e-ec41-41a8-9e91-2cb71eb501cd",
+        "1c39d1a0-f6b6-4cf2-ab27-989387512958",
+        "2c245a2f-092e-44c1-8bd3-f2d26c4f79dd",
+        "f1fa7da0-ef09-4717-8087-b08dea534f36",
+        "7316025a-1d65-442f-bd8b-d24f5c774342"
+      ],
+      "scores": [
+        5.4192,
+        5.154,
+        4.6856,
+        2.4201,
+        1.3605,
+        0.199,
+        -1.3062,
+        -3.6448,
+        -3.792,
+        -3.7937
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2796,
+    "output_tokens": 2162,
+    "requests": 2
+  },
+  "latency_s": 15.97,
+  "ts": "2026-09-30T21:58:19+00:00"
+}

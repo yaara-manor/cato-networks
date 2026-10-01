@@ -1,0 +1,74 @@
+{
+  "query_id": "Q22",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "5b5cee94-f126-4dc0-9844-182db2f07df1",
+    "a890dbe5-c6a6-4f14-bc69-c7b1afa61c89"
+  ],
+  "answer_text": "Prerequisites: Before triggering a manual HA failover, ensure both Sockets are running Socket version 24 or higher and the HA state is Ready in the CMA. You trigger the failover from CMA (via the Socket page fail over to the Secondary Socket). About two minutes after triggering, the CMA shows Status: Not Ready (In HA Failover) and displays a note that this behavior is expected and confirms that the Secondary is now active.",
+  "searches": [
+    {
+      "query": "CMA manual failover prerequisites",
+      "passage_ids": [
+        "a890dbe5-c6a6-4f14-bc69-c7b1afa61c89",
+        "69ca7470-06c4-498d-a142-55d42f9b51e3",
+        "df460be8-3e19-4ae8-a6ff-4e1c9d1c2771",
+        "0330d61a-3248-498e-80d8-b7b039ab1b1e",
+        "5007d320-80f2-40ba-b8a9-6d9bf6c3c95c"
+      ],
+      "scores": [
+        5.4984,
+        5.4588,
+        3.6469,
+        0.5586,
+        -0.6953
+      ]
+    },
+    {
+      "query": "Prerequisites manual HA failover CMA",
+      "passage_ids": [
+        "69ca7470-06c4-498d-a142-55d42f9b51e3",
+        "a890dbe5-c6a6-4f14-bc69-c7b1afa61c89",
+        "5b5cee94-f126-4dc0-9844-182db2f07df1",
+        "e769d707-561d-49df-90db-92b4d6c7624a",
+        "f8322bd3-bb6b-4c66-967d-98de4b52f08d"
+      ],
+      "scores": [
+        6.1627,
+        5.2586,
+        5.2219,
+        3.2627,
+        2.5852
+      ]
+    },
+    {
+      "query": "Prerequisites manual HA failover CMA",
+      "passage_ids": [
+        "69ca7470-06c4-498d-a142-55d42f9b51e3",
+        "a890dbe5-c6a6-4f14-bc69-c7b1afa61c89",
+        "5b5cee94-f126-4dc0-9844-182db2f07df1",
+        "e769d707-561d-49df-90db-92b4d6c7624a",
+        "f8322bd3-bb6b-4c66-967d-98de4b52f08d"
+      ],
+      "scores": [
+        6.1627,
+        5.2586,
+        5.2219,
+        3.2627,
+        2.5852
+      ]
+    }
+  ],
+  "n_searches": 3,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 11504,
+    "output_tokens": 3613,
+    "requests": 4
+  },
+  "latency_s": 28.578,
+  "ts": "2026-09-30T21:27:01+00:00"
+}

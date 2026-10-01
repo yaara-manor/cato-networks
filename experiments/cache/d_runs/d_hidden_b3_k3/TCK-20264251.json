@@ -1,0 +1,35 @@
+{
+  "query_id": "TCK-20264251",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "e7d9043e-d5ee-4c30-90c3-c897c0278bea"
+  ],
+  "answer_text": "No. Cato does not support jumbo frames on Socket LAN ports. When a packet larger than 1500 bytes is received on a LAN port, the Socket will fragment it if the DF bit is not set, or drop it with an ICMP Fragmentation Needed message if the DF bit is set. Therefore 9000-byte jumbo frames cannot be enabled on Socket LAN ports for replication.",
+  "searches": [
+    {
+      "query": "jumbo frames Socket LAN",
+      "passage_ids": [
+        "e7d9043e-d5ee-4c30-90c3-c897c0278bea",
+        "e63e0b70-9334-4d96-bb41-413436a00e3a",
+        "b9d5682e-275e-4058-9da6-383d4a83837d"
+      ],
+      "scores": [
+        7.1888,
+        -3.1569,
+        -4.4852
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1752,
+    "output_tokens": 1322,
+    "requests": 2
+  },
+  "latency_s": 10.372,
+  "ts": "2026-09-30T21:51:57+00:00"
+}

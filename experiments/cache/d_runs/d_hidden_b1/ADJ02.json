@@ -1,0 +1,37 @@
+{
+  "query_id": "ADJ02",
+  "variant": "d_hidden_b1",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "Pricing details (list price per Mbps for a 500 Mbps site license on a 3-year term) are not available in the knowledge base. The KB covers how site bandwidth licenses map to capacity (Mbps) but does not publish pricing. Please contact Cato Sales or your account representative for an official quote.",
+  "searches": [
+    {
+      "query": "pricing 500 Mbps site license 3-year",
+      "passage_ids": [
+        "270dd32e-498c-4914-b1a9-6c565acd2bab",
+        "137c45e2-063d-4297-a63a-09efbb148ee5",
+        "945b9998-7be6-4561-a240-00cd466f1a5c",
+        "5b7a0ca4-8e00-4f49-8890-ebef58a8813c",
+        "a845f256-2ea5-4076-bebf-21f6259cac9c"
+      ],
+      "scores": [
+        1.6183,
+        -0.8975,
+        -2.2147,
+        -3.7713,
+        -3.8374
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2326,
+    "output_tokens": 1037,
+    "requests": 2
+  },
+  "latency_s": 10.053,
+  "ts": "2026-09-30T21:46:12+00:00"
+}

@@ -45,10 +45,11 @@ class TicketSeed(TypedDict):
 
 
 def apply_schema(connection: psycopg.Connection) -> None:
-    schema_path = REPO_ROOT / "db" / "migrations" / "20260929_1500_kb-schema.sql"
-    schema_text = cast(LiteralString, schema_path.read_text(encoding="utf-8"))
+    migrations_dir = REPO_ROOT / "db" / "migrations"
     with connection.cursor() as cursor:
-        cursor.execute(psycopg.sql.SQL(schema_text))
+        for migration_path in sorted(migrations_dir.glob("*.sql")):
+            migration_text = cast(LiteralString, migration_path.read_text(encoding="utf-8"))
+            cursor.execute(psycopg.sql.SQL(migration_text))
     connection.commit()
 
 

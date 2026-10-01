@@ -1,0 +1,74 @@
+{
+  "query_id": "Q09",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "2420ddee-8d0d-4369-8ef5-c57c7cbc72bf",
+    "459601c8-d51a-4bbb-a287-a53d957f4fc5"
+  ],
+  "answer_text": "For the CMA side of the BGP Session Disconnected playbook: to find the disconnect reason, use the CMA Events page (Home > Events) with the BGP peers disconnected preset; this shows a history of BGP disconnect events and provides a BGP Disconnect Error Code. To verify the route table, use the CMA Routing Table view (Monitoring > Routing Table); it lists all routes (including BGP routes, which appear as Dynamic), enabling you to confirm how routes are being advertised and which tunnel is affected.",
+  "searches": [
+    {
+      "query": "CMA views playbook BGP disconnect",
+      "passage_ids": [
+        "2ef7dbb3-fab7-4051-b804-fca40e146dcf",
+        "8b834779-80e3-4d82-8f21-990a4330d6b9",
+        "e686414c-763a-4513-82a4-08be342ffce2",
+        "e57c5e1c-548d-42fa-961a-ffe8477a6858",
+        "2420ddee-8d0d-4369-8ef5-c57c7cbc72bf"
+      ],
+      "scores": [
+        3.981,
+        3.9324,
+        2.3965,
+        2.3161,
+        -0.2851
+      ]
+    },
+    {
+      "query": "CMA route table BGP playbook",
+      "passage_ids": [
+        "93fb6211-1cab-4366-9515-d6e03a8a54d5",
+        "36aed810-1d13-44b9-b4e4-5523b4bca645",
+        "363a360d-e176-452b-8f75-ba65437eaf55",
+        "1e1aaa68-9684-40fd-9148-50453b00aa5f",
+        "459601c8-d51a-4bbb-a287-a53d957f4fc5"
+      ],
+      "scores": [
+        4.6699,
+        3.8317,
+        1.5195,
+        0.5421,
+        0.3856
+      ]
+    },
+    {
+      "query": "CMA events BGP peers disconnected",
+      "passage_ids": [
+        "2420ddee-8d0d-4369-8ef5-c57c7cbc72bf",
+        "ab604a9d-8e65-41c0-917b-6d57a997007f",
+        "914b40f0-5898-4055-b3f2-41db869cb279",
+        "db3f3edd-26ba-49f2-8751-ec2a3da00fbe",
+        "1e1aaa68-9684-40fd-9148-50453b00aa5f"
+      ],
+      "scores": [
+        6.5618,
+        5.4411,
+        3.6437,
+        2.6848,
+        2.1355
+      ]
+    }
+  ],
+  "n_searches": 3,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 9422,
+    "output_tokens": 2813,
+    "requests": 4
+  },
+  "latency_s": 27.48,
+  "ts": "2026-09-30T21:25:51+00:00"
+}

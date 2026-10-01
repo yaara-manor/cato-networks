@@ -1,0 +1,41 @@
+{
+  "query_id": "Q30",
+  "variant": "d_shown_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "61b52301-3cb8-4d67-98ab-07ca86a39871",
+    "7a0e4d22-7e1f-4248-8a6c-b66103eed4d1",
+    "6a728f2d-308b-40d0-975f-22ccc40cacf8"
+  ],
+  "answer_text": "For a pinned banking app that breaks with TLS inspection, Cato recommends configuring a targeted TLS Inspection bypass for that app, since certificate pinning or strict validation can cause MITM-based inspection to fail. Ensure the Cato root certificate is deployed to managed devices (via MDM) so other apps continue to function. Cato also ships Default Bypass Rules that automatically exempt certain applications from TLS Inspection; consult the Default Bypass Rules to see the exact list (and note that platforms like Android and Linux may require careful validation when TLS Inspection is enforced).",
+  "searches": [
+    {
+      "query": "TLS inspection pinned banking app OS bypass Cato",
+      "passage_ids": [
+        "7a0e4d22-7e1f-4248-8a6c-b66103eed4d1",
+        "61b52301-3cb8-4d67-98ab-07ca86a39871",
+        "0ab5712c-a88c-4af5-af2b-4402069e21cf",
+        "36d94fa6-bdd8-4d9d-bd5d-9ba16a2b1ccf",
+        "6a728f2d-308b-40d0-975f-22ccc40cacf8"
+      ],
+      "scores": [
+        7.0943,
+        5.615,
+        4.662,
+        4.4426,
+        4.3571
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2036,
+    "output_tokens": 3277,
+    "requests": 2
+  },
+  "latency_s": 25.39,
+  "ts": "2026-09-30T21:35:16+00:00"
+}

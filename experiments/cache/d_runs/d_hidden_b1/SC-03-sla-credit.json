@@ -1,0 +1,40 @@
+{
+  "query_id": "SC-03-sla-credit",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "0996c6ed-d63c-4d18-9c90-c370945c029f",
+    "2627d260-66ec-4417-801c-b61e32a69af7"
+  ],
+  "answer_text": "Per the ILMM Service Levels, Service Level Credits are calculated as a percentage of total ILMM fees for the affected Site and are capped at 15% of the fees payable per Site per month. For a monthly ILMM fee of $18,000, the maximum credit per site per month is $2,700 (15% of $18,000). Therefore, a requested $3,600 credit would exceed the cap and the credit eligible for August would be limited to $2,700, subject to eligibility under the ILMM SLA. If you want, I can escalate this for a formal confirmation against INC-4471 and apply the credit per policy.",
+  "searches": [
+    {
+      "query": "service credit outage",
+      "passage_ids": [
+        "0996c6ed-d63c-4d18-9c90-c370945c029f",
+        "ad56aba0-5a8d-4a80-a443-bf1fff110900",
+        "d8334539-fb96-4f89-bfb9-0fb81bd9c6ce",
+        "2627d260-66ec-4417-801c-b61e32a69af7",
+        "37b9f85d-63f9-43d0-8fab-40ef95228659"
+      ],
+      "scores": [
+        -0.8046,
+        -1.0627,
+        -1.1202,
+        -2.5716,
+        -4.4718
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2294,
+    "output_tokens": 3537,
+    "requests": 2
+  },
+  "latency_s": 27.019,
+  "ts": "2026-09-30T21:43:27+00:00"
+}

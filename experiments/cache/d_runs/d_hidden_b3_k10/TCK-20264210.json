@@ -1,0 +1,74 @@
+{
+  "query_id": "TCK-20264210",
+  "variant": "d_hidden_b3_k10",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I can't find a KB article that specifies an incident commander on a bridge or Sev-1 SLA requirements for outages. The KB covers XOps incident stories and Site Operations for detecting and timeline-tracking outages, but it doesn't define escalation roles. If you can share your incident number or ticket ID and the affected sites, I can help review available KB data and guide you to the appropriate support channel.",
+  "searches": [
+    {
+      "query": "outage incident commander bridge Sev-1",
+      "passage_ids": [
+        "149bbd78-f327-4f96-8f68-a8691c54fcb1",
+        "ed7272a1-b844-449f-9d0f-17bbca6f9b9c",
+        "2ddbfbb2-9855-4659-ae73-c3601ce7ecc2",
+        "50e16668-06c1-44c1-868b-0131edbc9dea",
+        "5be3d795-0d1e-4666-99ed-b072e0ddf616",
+        "e0f41e7f-01d7-42f9-b388-6dbdb784e0a6",
+        "1dd9644f-ca8e-46e9-9969-7c38787f9dfd",
+        "7722ae18-05df-48d3-a4a8-d438b4d7146d",
+        "d78ed388-d0f5-4c94-adab-8e8836f46da1",
+        "1602c241-0b0b-4bcc-91d6-1fba472430d4"
+      ],
+      "scores": [
+        -6.776,
+        -10.7043,
+        -10.7303,
+        -11.1702,
+        -11.1846,
+        -11.2086,
+        -11.2228,
+        -11.2301,
+        -11.3028,
+        -11.3036
+      ]
+    },
+    {
+      "query": "Sev-1 incident Cato Networks",
+      "passage_ids": [
+        "ddcd5103-00ad-478c-9735-f64c4c0ecc28",
+        "33015f1e-ff67-46d3-98cd-6977fba7d17b",
+        "61f873f1-fb82-49b9-85df-98d8752b98a7",
+        "ac343ee9-cdbd-4e4f-b841-3921dc137f68",
+        "e0f41e7f-01d7-42f9-b388-6dbdb784e0a6",
+        "1161c263-d94f-41ae-a668-972ae2411888",
+        "8ee19167-a78f-4da1-b2fb-609b2113f4d7",
+        "5f35a833-35ad-4d55-b442-17e70abe85a9",
+        "9ab12e1a-5d6d-4f3c-8d67-7afa587ee970",
+        "639e842b-2b7a-454d-b5b7-2bc2103404ea"
+      ],
+      "scores": [
+        3.1603,
+        1.4908,
+        1.3204,
+        -0.4967,
+        -0.5512,
+        -1.0193,
+        -1.9201,
+        -2.2396,
+        -2.5926,
+        -3.315
+      ]
+    }
+  ],
+  "n_searches": 2,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 9112,
+    "output_tokens": 3518,
+    "requests": 3
+  },
+  "latency_s": 27.607,
+  "ts": "2026-09-30T22:00:28+00:00"
+}

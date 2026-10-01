@@ -1,0 +1,33 @@
+{
+  "query_id": "TCK-20264239",
+  "variant": "d_hidden_b3_k3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "That specific issue (Cato Client stuck on Connecting with error 408 on a hotel network) is not covered in our knowledge base. I couldn't find an article that directly addresses this scenario. If you can share your client version and OS, and whether the hotel network uses a captive portal or requires any firewall/proxy settings, I can help determine the next steps or escalate to a human agent.",
+  "searches": [
+    {
+      "query": "Cato Client 408",
+      "passage_ids": [
+        "988938bd-2703-49ac-bd8f-b3f52c4ed4b7",
+        "465cf306-e6cb-4a8d-ba36-8e65bf9d727f",
+        "6b49c7eb-3900-4718-9d38-a2ef716039e7"
+      ],
+      "scores": [
+        3.7767,
+        3.472,
+        3.4684
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1780,
+    "output_tokens": 1571,
+    "requests": 2
+  },
+  "latency_s": 13.428,
+  "ts": "2026-09-30T21:51:14+00:00"
+}

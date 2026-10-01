@@ -1,0 +1,54 @@
+{
+  "query_id": "ADJ03",
+  "variant": "d_shown_b3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "The knowledge base does not contain information about a Cato Socket X1900 release date or whether it will include 100G WAN ports. The articles currently documented cover other Socket models (e.g., X1500, X1700, and X1700C) but do not mention an X1900. If you’d like, I can search the KB again for any related updates or roadmap notes.",
+  "searches": [
+    {
+      "query": "Cato Socket X1900 release date 100G",
+      "passage_ids": [
+        "dfa8182e-3fbc-49d4-a271-2bc393228117",
+        "95d2c7df-0a7d-4552-a57a-e1ef5e8b96b9",
+        "a43a5aab-1efc-4482-a6e7-6169fd280ff6",
+        "e9d49721-71f1-4c87-aafc-723f4e37c596",
+        "dba6ffb5-428d-4e90-97ed-71ef7e78d476"
+      ],
+      "scores": [
+        4.378,
+        4.2205,
+        2.9786,
+        2.8592,
+        1.778
+      ]
+    },
+    {
+      "query": "X1900",
+      "passage_ids": [
+        "670fb5b3-8ed3-4220-bc51-cd7c13b7aedc",
+        "43c766cd-9807-42e7-8d27-c3677bf8c5ea",
+        "fbcc645f-7a95-4e1e-a5e2-126668f3e83f",
+        "985d94cb-5c2a-446c-88c8-3ef0a532145d",
+        "b5981eaf-f994-4a5f-9156-511d116d687b"
+      ],
+      "scores": [
+        3.8385,
+        1.4437,
+        1.2428,
+        1.0392,
+        0.4935
+      ]
+    }
+  ],
+  "n_searches": 2,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 5484,
+    "output_tokens": 2060,
+    "requests": 3
+  },
+  "latency_s": 20.807,
+  "ts": "2026-09-30T21:39:08+00:00"
+}

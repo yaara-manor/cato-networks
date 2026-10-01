@@ -1,0 +1,40 @@
+{
+  "query_id": "Q32",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "28ef0908-9689-440c-a1e6-96c17bdeb515",
+    "f99221d4-3bda-445d-ad47-866922096c70"
+  ],
+  "answer_text": "IPS allowlist rules are matched differently than firewall rules: all IPS allowlist rules that match the traffic are applied, whereas in an ordered firewall rulebase only the first matching rule is applied. If a connection matches multiple allowlist rules, each matching rule will generate an event. To create an IPS allowlist rule manually from the UI, use the IPS Allowlisting workflow and set Signature ID to Any so the IPS engine allows all matching traffic; then click Apply to add the rule and Save to store it.",
+  "searches": [
+    {
+      "query": "IPS allowlist matching firewall",
+      "passage_ids": [
+        "28ef0908-9689-440c-a1e6-96c17bdeb515",
+        "b8e41c63-972d-4167-98e3-3d64c1194886",
+        "f99221d4-3bda-445d-ad47-866922096c70",
+        "9caa1e5b-f80f-46ed-8bd5-121aca56445b",
+        "b4a7f83b-8f7f-4f5a-aedf-aab54d84eb43"
+      ],
+      "scores": [
+        8.6845,
+        5.3555,
+        4.2732,
+        3.9913,
+        3.9852
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2001,
+    "output_tokens": 4299,
+    "requests": 2
+  },
+  "latency_s": 31.301,
+  "ts": "2026-09-30T21:43:00+00:00"
+}

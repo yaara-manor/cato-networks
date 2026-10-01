@@ -1,0 +1,47 @@
+{
+  "query_id": "ADJ10",
+  "variant": "d_hidden_b3_k10",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn't locate release notes for Windows Client version 9.2 in the Cato knowledge base. The KB shows Windows Client releases up to v6.8.3, and there isn't a 9.2 entry available.",
+  "searches": [
+    {
+      "query": "Cato Windows Client 9.2 release notes",
+      "passage_ids": [
+        "7b30cc54-7614-4f70-912f-9979179a8b78",
+        "222b2aef-57a5-444a-ac77-6d5556b98640",
+        "3c1c3bc6-1076-4ee7-9156-39270296f378",
+        "7bc38a33-b84c-40fa-ae81-69e31bffe724",
+        "5594f476-23d9-45d1-acf8-58569e6fb26d",
+        "fe445629-a6e3-443c-b3e1-4279eddc1a3f",
+        "dfe731e9-9e36-44c6-89c1-c4a8e1a1d58d",
+        "23c5ed9f-ec08-4490-9f21-f58d87019252",
+        "626b0cfd-16a5-43f7-874e-0e6e1090a7d8",
+        "824d056a-bf1e-47f9-b36f-604f60c93629"
+      ],
+      "scores": [
+        2.9693,
+        2.8894,
+        2.3975,
+        1.9187,
+        1.4876,
+        1.4381,
+        1.0635,
+        1.0226,
+        0.9491,
+        0.7444
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 3032,
+    "output_tokens": 1374,
+    "requests": 2
+  },
+  "latency_s": 13.844,
+  "ts": "2026-09-30T22:02:18+00:00"
+}

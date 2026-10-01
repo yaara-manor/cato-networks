@@ -1,0 +1,35 @@
+{
+  "query_id": "SC-06-repeat-contact-churn",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "2d6cdb2d-9056-4b08-a533-57992ddc9f79"
+  ],
+  "answer_text": "Sorry for the recurring disconnections at Chicago. The KB notes a known issue where applying a hub-and-spoke configuration to the Socket site infrastructure can cause degraded network states and Socket disconnects/restarts. This has been addressed in the v23.0 releases; upgrading to v23.0.19445 or v23.0.19786 (or newer) resolves the problem for affected sites. If you’re not on one of these builds yet, plan an upgrade to a patched release and re-test the Chicago site.",
+  "searches": [
+    {
+      "query": "Chicago site disconnections power-cycle Socket",
+      "passage_ids": [
+        "2d6cdb2d-9056-4b08-a533-57992ddc9f79",
+        "258b80e8-e3d1-43f9-bda8-c8eb1b37e6f4",
+        "d555b911-0c07-47b2-90c8-86bf70ff1b5f"
+      ],
+      "scores": [
+        -2.0167,
+        -2.3119,
+        -2.9745
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1946,
+    "output_tokens": 2011,
+    "requests": 2
+  },
+  "latency_s": 16.727,
+  "ts": "2026-09-30T21:50:38+00:00"
+}

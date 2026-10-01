@@ -1,4 +1,4 @@
-import re
+from collections.abc import Mapping
 from typing import Any, LiteralString, cast
 
 import psycopg
@@ -10,42 +10,12 @@ from core.models import (
     TicketPriority,
     TicketStatus,
 )
+from core.stopwords import EXCLUDED_WORDS
 from services.models import RepeatContactResult
 
-_STOPWORDS: frozenset[str] = frozenset(
-    {
-        "about",
-        "after",
-        "again",
-        "before",
-        "between",
-        "could",
-        "during",
-        "every",
-        "from",
-        "have",
-        "into",
-        "issue",
-        "only",
-        "other",
-        "please",
-        "since",
-        "still",
-        "their",
-        "there",
-        "these",
-        "this",
-        "today",
-        "under",
-        "users",
-        "using",
-        "where",
-        "which",
-        "while",
-        "with",
-        "would",
-    }
-)
+# Space-joined exclusion list, stemmed by postgres on every _stem_texts call so it
+# always matches the 'english' stemmer's own output.
+_EXCLUDED_TEXT: str = " ".join(sorted(EXCLUDED_WORDS))
 
 _TICKET_COLUMNS: LiteralString = (
     "ticket_id, created_at, channel, customer_id, customer_name, "
@@ -73,35 +43,29 @@ def _row_to_ticket(row: tuple[Any, ...]) -> Ticket:
     )
 
 
-def _symptom_stems(text: str) -> set[str]:
-    tokens = re.findall(r"[a-z0-9]+", text.lower())
-    return {tok[:5] for tok in tokens if len(tok) >= 5 and tok not in _STOPWORDS}
-
-
-def _shares_keywords(text_a: str, text_b: str) -> bool:
-    stems_a = _symptom_stems(text_a)
-    stems_b = _symptom_stems(text_b)
+def _shares_stems(stems_a: frozenset[str], stems_b: frozenset[str]) -> bool:
     return len(stems_a & stems_b) >= 2
 
 
 def _matches_area_or_symptom(
     candidate: Ticket,
     product_area: str | None,
-    symptom_text: str | None,
+    symptom_stems: frozenset[str] | None,
+    stems_by_ticket: Mapping[str, frozenset[str]],
     peer_tickets: list[Ticket],
 ) -> bool:
-    candidate_text = f"{candidate.subject} {candidate.body}"
+    candidate_stems = stems_by_ticket[candidate.ticket_id]
     if product_area is not None:
         if candidate.product_area.lower() == product_area.strip().lower():
             return True
-        return bool(symptom_text and _shares_keywords(candidate_text, symptom_text))
-    if symptom_text is not None:
-        return _shares_keywords(candidate_text, symptom_text)
+        return bool(symptom_stems and _shares_stems(candidate_stems, symptom_stems))
+    if symptom_stems is not None:
+        return _shares_stems(candidate_stems, symptom_stems)
     return any(
         peer.ticket_id != candidate.ticket_id
         and (
             peer.product_area.lower() == candidate.product_area.lower()
-            or _shares_keywords(candidate_text, f"{peer.subject} {peer.body}")
+            or _shares_stems(candidate_stems, stems_by_ticket[peer.ticket_id])
         )
         for peer in peer_tickets
     )
@@ -157,6 +121,26 @@ class TicketService:
             rows = cur.fetchall()
         return [_row_to_ticket(row) for row in rows]
 
+    def _stem_texts(self, texts: list[str]) -> list[frozenset[str]]:
+        if not texts:
+            return []
+        with self._conn.cursor() as cur:
+            cur.execute(
+                """
+                select tsvector_to_array(
+                    ts_delete(
+                        to_tsvector('english', t),
+                        tsvector_to_array(to_tsvector('english', %(excluded)s))
+                    )
+                )
+                from unnest(%(texts)s::text[]) with ordinality as x(t, ord)
+                order by ord
+                """,
+                {"texts": texts, "excluded": _EXCLUDED_TEXT},
+            )
+            rows = cur.fetchall()
+        return [frozenset(row[0]) for row in rows]
+
     def detect_repeat_contact(
         self,
         account_id: str,
@@ -169,10 +153,23 @@ class TicketService:
         candidates = [
             t for t in history if exclude_ticket_id is None or t.ticket_id != exclude_ticket_id
         ]
+        texts = [f"{t.subject} {t.body}" for t in candidates]
+        if symptom_text is not None:
+            texts.append(symptom_text)
+        stems = self._stem_texts(texts)
+        if symptom_text is not None:
+            *ticket_stems, symptom_stems = stems
+        else:
+            ticket_stems, symptom_stems = stems, None
+        stems_by_ticket: dict[str, frozenset[str]] = {
+            t.ticket_id: stem for t, stem in zip(candidates, ticket_stems, strict=True)
+        }
         matching = [
             t
             for t in candidates
-            if _matches_area_or_symptom(t, product_area, symptom_text, candidates)
+            if _matches_area_or_symptom(
+                t, product_area, symptom_stems, stems_by_ticket, candidates
+            )
         ]
         prior_closed = [t for t in matching if t.status == "closed"]
 

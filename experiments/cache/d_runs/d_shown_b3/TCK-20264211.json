@@ -1,0 +1,42 @@
+{
+  "query_id": "TCK-20264211",
+  "variant": "d_shown_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "123dc701-b3d3-4226-a326-f4bce6fdc2db",
+    "f74c7c57-6e72-4685-bdd2-23e698a9418e",
+    "db67089e-501c-4a96-b382-5f7d78416c70",
+    "2c0904ee-08c9-45db-96ce-baf1a5b3b30e"
+  ],
+  "answer_text": "Generally, implement the guest Wi‑Fi as a VLAN on the Socket rather than a routed range behind your L3 switch. The Socket can be the default gateway for each VLAN and you can isolate that VLAN quickly (for example, with a WAN firewall rule or by removing the VLAN’s default gateway) from the Cato Management App. VLAN tagging is supported on the Socket for clean segmentation, and for guest networks you can use an Internet‑only SSID to prevent access to internal resources while keeping guest traffic under the Cato security stack.",
+  "searches": [
+    {
+      "query": "guest wifi VLAN Socket isolation",
+      "passage_ids": [
+        "123dc701-b3d3-4226-a326-f4bce6fdc2db",
+        "f74c7c57-6e72-4685-bdd2-23e698a9418e",
+        "db67089e-501c-4a96-b382-5f7d78416c70",
+        "2c0904ee-08c9-45db-96ce-baf1a5b3b30e",
+        "5bd32908-430e-4591-8c4e-dbe97e78808d"
+      ],
+      "scores": [
+        5.9093,
+        2.9889,
+        1.9525,
+        0.8811,
+        0.5276
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2361,
+    "output_tokens": 2425,
+    "requests": 2
+  },
+  "latency_s": 18.011,
+  "ts": "2026-09-30T21:37:48+00:00"
+}

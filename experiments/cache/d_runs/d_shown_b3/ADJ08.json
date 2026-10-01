@@ -1,0 +1,37 @@
+{
+  "query_id": "ADJ08",
+  "variant": "d_shown_b3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn't locate the maximum EIRP transmit power or antenna gain (dBi) for the X1600 Wi‑Fi radios in the Cato knowledge base. This detail isn’t documented in KB. Please refer to the X1600 product datasheet or contact Cato engineering for the precise specifications.",
+  "searches": [
+    {
+      "query": "X1600 EIRP maximum transmit power antenna gain dBi",
+      "passage_ids": [
+        "9841ddd9-9727-4a89-81a9-4e3ad4ef764f",
+        "4e60bc59-ff2f-46e5-8ec4-4b6ae53bf12d",
+        "c36f03c6-c57d-4ecd-a9c2-027bd4223f2a",
+        "639e842b-2b7a-454d-b5b7-2bc2103404ea",
+        "b5981eaf-f994-4a5f-9156-511d116d687b"
+      ],
+      "scores": [
+        -3.5235,
+        -3.5687,
+        -3.8018,
+        -3.8862,
+        -4.0878
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2025,
+    "output_tokens": 1444,
+    "requests": 2
+  },
+  "latency_s": 14.434,
+  "ts": "2026-09-30T21:39:23+00:00"
+}

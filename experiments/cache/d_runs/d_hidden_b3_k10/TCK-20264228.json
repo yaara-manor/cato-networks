@@ -1,0 +1,50 @@
+{
+  "query_id": "TCK-20264228",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "541abf81-6362-4154-b32f-d32e96dc039b",
+    "c4680935-9916-4fac-ae44-eb0ef4594245"
+  ],
+  "answer_text": "Not supported. For Socket HA you must deploy two Sockets of the same Socket type. An X1600 and an X1600 LTE are considered different Socket types, so you cannot pair an X1600 with an X1600 LTE in the same HA site. If you need HA at the Phoenix site, use a second X1600 (base) or two X1600 LTE Sockets if LTE is your HA type. In HA, the secondary Socket is standby and does not handle traffic unless the primary fails.",
+  "searches": [
+    {
+      "query": "X1600 LTE HA pair secondary socket Phoenix clinic",
+      "passage_ids": [
+        "541abf81-6362-4154-b32f-d32e96dc039b",
+        "9841ddd9-9727-4a89-81a9-4e3ad4ef764f",
+        "4e60bc59-ff2f-46e5-8ec4-4b6ae53bf12d",
+        "5b52653b-3002-4114-8e49-e39da02fad37",
+        "54dd1c95-7f64-4321-85c8-dc19036d9db3",
+        "c7ff8916-c674-480e-afc7-6fd9c7808684",
+        "670fb5b3-8ed3-4220-bc51-cd7c13b7aedc",
+        "639e842b-2b7a-454d-b5b7-2bc2103404ea",
+        "c4680935-9916-4fac-ae44-eb0ef4594245",
+        "c36f03c6-c57d-4ecd-a9c2-027bd4223f2a"
+      ],
+      "scores": [
+        1.8833,
+        0.9787,
+        0.8999,
+        -0.1571,
+        -0.1876,
+        -0.5419,
+        -0.957,
+        -1.2514,
+        -1.4788,
+        -2.2376
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2681,
+    "output_tokens": 3123,
+    "requests": 2
+  },
+  "latency_s": 20.998,
+  "ts": "2026-09-30T21:59:46+00:00"
+}

@@ -1,0 +1,37 @@
+{
+  "query_id": "OOD07",
+  "variant": "d_hidden_b3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn't locate a sourdough bread recipe in the Cato knowledge base. This type of cooking recipe isn't covered by our KB. If you want, I can help with Cato-specific topics or point you to general sourdough resources elsewhere.",
+  "searches": [
+    {
+      "query": "sourdough recipe",
+      "passage_ids": [
+        "7dc67f18-ca5f-4579-a1e7-c80ff8a1e830",
+        "7ec8ccd5-f3cd-4745-baea-476aa8f82a8f",
+        "7362c5a8-e8ef-4f0d-90bb-81a342a44707",
+        "511905c5-adea-4d26-91b7-94eff7fb08b6",
+        "e6e60aa9-3511-4204-b90b-324c07173ffe"
+      ],
+      "scores": [
+        -10.9552,
+        -11.08,
+        -11.1468,
+        -11.1748,
+        -11.2392
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2082,
+    "output_tokens": 1131,
+    "requests": 2
+  },
+  "latency_s": 13.002,
+  "ts": "2026-09-30T21:31:34+00:00"
+}

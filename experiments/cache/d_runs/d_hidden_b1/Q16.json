@@ -1,0 +1,41 @@
+{
+  "query_id": "Q16",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "034ae7a1-f684-426e-87d1-8e1f0a3a129c",
+    "48595747-d893-4c4b-8ffe-74354da12d51",
+    "c7697602-f532-440d-9367-183b6f4f1566"
+  ],
+  "answer_text": "IP Overlapping can be enabled only under these requirements: the account must not use Static Range Translation; one IP range must be smaller and fully contained within the other; all sockets in the account must be version 6.1 or higher; and each site must have a unique Native Range IP (no duplicates). To enable it, go to Resources > System Settings > IP Overlapping and choose Enable IP Overlapping between sites (then Save). The feature is permanent once enabled (you cannot disable it from the UI; contact Support to disable). The KB does not specify a default Cato system range.",
+  "searches": [
+    {
+      "query": "IP Overlapping between sites",
+      "passage_ids": [
+        "034ae7a1-f684-426e-87d1-8e1f0a3a129c",
+        "c7697602-f532-440d-9367-183b6f4f1566",
+        "48595747-d893-4c4b-8ffe-74354da12d51",
+        "d5f59e5c-3e04-45a7-be8f-06a97a9d00fb",
+        "c3e8755e-a85f-4648-b7dd-09daf83d8352"
+      ],
+      "scores": [
+        8.2156,
+        7.6476,
+        7.5163,
+        7.3066,
+        6.9683
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2012,
+    "output_tokens": 3237,
+    "requests": 2
+  },
+  "latency_s": 26.168,
+  "ts": "2026-09-30T21:41:23+00:00"
+}

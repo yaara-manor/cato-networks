@@ -1,0 +1,74 @@
+{
+  "query_id": "Q23",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "4488fedc-db41-496b-9fb6-4c8ff1c5a6ea",
+    "697a348e-9bfd-44ac-ba18-cda7d8dcf1ce"
+  ],
+  "answer_text": "HA Not Ready is generated when any of these Socket HA components are not ready: Connected is not ready for 5 minutes, Keepalive is not ready for 60 minutes, or the Compatible Version condition is not met. HA Ready is generated once all HA status indicators are OK, i.e., when the HA status for the site shows Ready only after each status indicator is OK.",
+  "searches": [
+    {
+      "query": "HA Not Ready connectivity event",
+      "passage_ids": [
+        "4488fedc-db41-496b-9fb6-4c8ff1c5a6ea",
+        "25018bf7-7d83-4e4e-a40e-c3c630189d58",
+        "ef0b144a-d30b-4fb3-8102-332b148486c3",
+        "b683c7e2-fab8-471a-9179-b61f5a2c8f1e",
+        "dd9c5fe4-fd09-4b81-933f-76ef12070b02"
+      ],
+      "scores": [
+        6.7957,
+        5.9259,
+        3.7197,
+        3.7175,
+        3.6103
+      ]
+    },
+    {
+      "query": "HA Ready",
+      "passage_ids": [
+        "25018bf7-7d83-4e4e-a40e-c3c630189d58",
+        "b683c7e2-fab8-471a-9179-b61f5a2c8f1e",
+        "dd9c5fe4-fd09-4b81-933f-76ef12070b02",
+        "531a744f-f1c3-4b7e-998d-fc17f08cbbb8",
+        "697a348e-9bfd-44ac-ba18-cda7d8dcf1ce"
+      ],
+      "scores": [
+        7.4578,
+        6.1462,
+        5.8379,
+        5.6944,
+        5.6043
+      ]
+    },
+    {
+      "query": "Socket HA Not Ready conditions",
+      "passage_ids": [
+        "25018bf7-7d83-4e4e-a40e-c3c630189d58",
+        "dd9c5fe4-fd09-4b81-933f-76ef12070b02",
+        "b683c7e2-fab8-471a-9179-b61f5a2c8f1e",
+        "b80915c0-8a30-4877-ab4a-74858de43db9",
+        "0f36ccaa-26ed-452d-9043-f39e98f1e566"
+      ],
+      "scores": [
+        8.7989,
+        7.7346,
+        6.8802,
+        4.8727,
+        4.8579
+      ]
+    }
+  ],
+  "n_searches": 3,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 15735,
+    "output_tokens": 3335,
+    "requests": 5
+  },
+  "latency_s": 42.787,
+  "ts": "2026-09-30T21:27:17+00:00"
+}

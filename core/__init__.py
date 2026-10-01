@@ -2,7 +2,6 @@ from core.clock import DEFAULT_ANCHOR, SimulationClock
 from core.config import REPO_ROOT, Settings, settings
 from core.models import (
     AccountTier,
-    Citation,
     CustomerAccount,
     Ticket,
     TicketPriority,
@@ -10,11 +9,10 @@ from core.models import (
 )
 
 __all__ = [
-    "AccountTier",
-    "Citation",
-    "CustomerAccount",
     "DEFAULT_ANCHOR",
     "REPO_ROOT",
+    "AccountTier",
+    "CustomerAccount",
     "Settings",
     "SimulationClock",
     "Ticket",

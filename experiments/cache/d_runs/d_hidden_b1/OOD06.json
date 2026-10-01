@@ -1,0 +1,37 @@
+{
+  "query_id": "OOD06",
+  "variant": "d_hidden_b1",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "This question isn’t covered by the Cato knowledge base. I don’t have information on the 2026 FIFA World Cup winner. If you have a question about Cato products or support topics, I’m happy to help.",
+  "searches": [
+    {
+      "query": "2026 FIFA World Cup winner",
+      "passage_ids": [
+        "a4c8295c-66bb-415d-9e03-df9f9ffd3875",
+        "946a23d3-89db-4404-a17f-d18c1c97c800",
+        "f2a77680-2824-4f1d-b499-e6087d551594",
+        "fc5b9c24-d388-4331-be90-fa075a615d57",
+        "4d000b39-545d-47dd-aa8f-80d0939949ea"
+      ],
+      "scores": [
+        -2.5416,
+        -4.7239,
+        -4.8563,
+        -5.1271,
+        -5.1346
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2752,
+    "output_tokens": 1236,
+    "requests": 2
+  },
+  "latency_s": 12.584,
+  "ts": "2026-09-30T21:45:59+00:00"
+}

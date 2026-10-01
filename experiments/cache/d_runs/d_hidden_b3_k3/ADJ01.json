@@ -1,0 +1,33 @@
+{
+  "query_id": "ADJ01",
+  "variant": "d_hidden_b3_k3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I can’t find UniFi Dream Machine Pro–specific steps in the Cato knowledge base for configuring an IKEv2 IPsec tunnel to a Cato PoP. The KB only covers generic IPsec IKEv2 site configuration and edge-mode options (Bidirectional and Responder Only) and does not provide device-specific instructions. Please consult UniFi’s documentation for the Dream Machine Pro VPN setup, or share the exact device settings you have so we can discuss them in the context of Cato’s generic site configuration.",
+  "searches": [
+    {
+      "query": "UniFi Dream Machine Pro IKEv2 IPsec Cato PoP",
+      "passage_ids": [
+        "94c79749-9ad6-455d-b87b-220f42902322",
+        "3da7b238-94a4-4785-8015-e669d861177c",
+        "75375d13-2430-4389-885e-51c5de087149"
+      ],
+      "scores": [
+        2.6106,
+        2.5581,
+        2.4853
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1835,
+    "output_tokens": 2256,
+    "requests": 2
+  },
+  "latency_s": 17.611,
+  "ts": "2026-09-30T21:53:16+00:00"
+}

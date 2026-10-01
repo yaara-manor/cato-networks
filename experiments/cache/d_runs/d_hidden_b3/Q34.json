@@ -1,0 +1,58 @@
+{
+  "query_id": "Q34",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "8615a0da-edf6-4b7a-ab63-e2acddb76bb4",
+    "d924dd90-7f10-48e9-8b41-9b72301fd0d8",
+    "25acd733-f34a-409f-8933-746788983711"
+  ],
+  "answer_text": "Cato MFA tokens are time-based and valid in 30-second windows; a token generated within the same 30-second window will be the same across uses. On a trusted device (using the \"Don't ask me again on this device/computer\" option), MFA is not required while the configured token validity period is still valid and your geolocation hasn’t changed to a different country. Administrators can configure the MFA token validity duration in the authentication policy, and when a device is trusted that duration governs when MFA re-prompting occurs.",
+  "searches": [
+    {
+      "query": "MFA token validity Cato",
+      "passage_ids": [
+        "8615a0da-edf6-4b7a-ab63-e2acddb76bb4",
+        "cfbe4db1-6bc8-4d6b-bf41-7c5108deb852",
+        "d924dd90-7f10-48e9-8b41-9b72301fd0d8",
+        "25acd733-f34a-409f-8933-746788983711",
+        "e7f25ee5-3ee8-40ae-bee1-b9dd23e5a442"
+      ],
+      "scores": [
+        7.5662,
+        7.2733,
+        7.1148,
+        6.8826,
+        4.6193
+      ]
+    },
+    {
+      "query": "Cato MFA 30 seconds window",
+      "passage_ids": [
+        "8615a0da-edf6-4b7a-ab63-e2acddb76bb4",
+        "cfbe4db1-6bc8-4d6b-bf41-7c5108deb852",
+        "e7f25ee5-3ee8-40ae-bee1-b9dd23e5a442",
+        "1cbbd5a5-e0d0-4bbb-9be0-1147ed74482e",
+        "3ffdaeab-da87-4b1c-a5e6-0de4782b7e00"
+      ],
+      "scores": [
+        8.0036,
+        2.7957,
+        1.5766,
+        1.5169,
+        1.2815
+      ]
+    }
+  ],
+  "n_searches": 2,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 5660,
+    "output_tokens": 3000,
+    "requests": 3
+  },
+  "latency_s": 28.638,
+  "ts": "2026-09-30T21:28:21+00:00"
+}

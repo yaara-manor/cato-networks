@@ -1,0 +1,46 @@
+{
+  "query_id": "TCK-20264238",
+  "variant": "d_hidden_b3_k3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "This billing issue isn’t covered by the current knowledge base. Please contact Billing/support to review the two August charges (on the 3rd and 5th, $4,200 each) and issue a refund if appropriate. To expedite, include your account ID and the invoice numbers (or transaction IDs) for both charges, and specify that you want the duplicate charge corrected with confirmation by the requested date.",
+  "searches": [
+    {
+      "query": "duplicate invoice charge",
+      "passage_ids": [
+        "0238c77d-9f75-4778-b889-f41f6ff177f8",
+        "cde25197-2c0a-422e-a4ce-805db30e6134",
+        "618c8a41-9324-410c-aaf5-16ca502e663b"
+      ],
+      "scores": [
+        -5.7314,
+        -7.4219,
+        -9.8597
+      ]
+    },
+    {
+      "query": "refund duplicate invoice",
+      "passage_ids": [
+        "0238c77d-9f75-4778-b889-f41f6ff177f8",
+        "85f7b4d5-af07-4e69-811b-2267a70ad439",
+        "8165e7ed-88ef-49b3-be40-755a6fb3e3ad"
+      ],
+      "scores": [
+        -6.1595,
+        -7.1992,
+        -9.935
+      ]
+    }
+  ],
+  "n_searches": 2,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 4705,
+    "output_tokens": 2130,
+    "requests": 3
+  },
+  "latency_s": 18.496,
+  "ts": "2026-09-30T21:52:24+00:00"
+}

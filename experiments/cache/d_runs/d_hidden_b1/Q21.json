@@ -1,0 +1,39 @@
+{
+  "query_id": "Q21",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "541abf81-6362-4154-b32f-d32e96dc039b"
+  ],
+  "answer_text": "No. HA requires the same Socket type in a pair. You cannot mix X1600 with X1600 LTE in the same HA site. You can pairing two Sockets of the same type (X1500, X1600, X1600 LTE, X1600 WiFi, or X1700). Specifically, you can use any two X1500 A/B/C models (e.g., X1500 with X1500B).",
+  "searches": [
+    {
+      "query": "X1600 HA",
+      "passage_ids": [
+        "a4fb5836-870f-4605-8a01-b070ba3288f6",
+        "541abf81-6362-4154-b32f-d32e96dc039b",
+        "b5981eaf-f994-4a5f-9156-511d116d687b",
+        "670fb5b3-8ed3-4220-bc51-cd7c13b7aedc",
+        "4e60bc59-ff2f-46e5-8ec4-4b6ae53bf12d"
+      ],
+      "scores": [
+        7.6475,
+        7.4357,
+        5.3939,
+        4.9114,
+        3.3903
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2148,
+    "output_tokens": 2640,
+    "requests": 2
+  },
+  "latency_s": 19.01,
+  "ts": "2026-09-30T21:41:43+00:00"
+}

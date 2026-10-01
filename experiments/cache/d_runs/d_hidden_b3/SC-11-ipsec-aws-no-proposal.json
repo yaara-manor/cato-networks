@@ -1,0 +1,42 @@
+{
+  "query_id": "SC-11-ipsec-aws-no-proposal",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "04add4d9-1e8f-4c22-a90c-b0ba69997fce",
+    "c875b551-b6e6-4798-a8b0-e7cb56b241af",
+    "56bfb227-4bd4-4415-a359-926472a7ed24",
+    "286685a9-1fc4-4518-a49d-46e4a8da4f6e"
+  ],
+  "answer_text": "NO_PROPOSAL_CHOSEN usually means the IPSec phase-1/phase-2 transforms on the Cato side don’t match what AWS VGW is offering. Check the tunnel timeline in CMA for the NO_PROPOSAL_CHOSEN event and review the logs for p1/p2 transform mismatches (e.g., “The chosen P1 transform is XXX... doesn’t match the current configuration” or “No supported p2 transform”). Use CMA’s IPsec site connectivity troubleshooting and the built-in packet capture tool to collect control traffic and compare the negotiated transforms. Also verify that AWS’s default IPsec settings match Cato’s recommended AWS settings; if a change occurred during maintenance, ensure both sides are aligned with the same phase 1 and phase 2 transforms.",
+  "searches": [
+    {
+      "query": "NO_PROPOSAL_CHOSEN",
+      "passage_ids": [
+        "04add4d9-1e8f-4c22-a90c-b0ba69997fce",
+        "c875b551-b6e6-4798-a8b0-e7cb56b241af",
+        "56bfb227-4bd4-4415-a359-926472a7ed24",
+        "286685a9-1fc4-4518-a49d-46e4a8da4f6e",
+        "4306c540-49f5-463e-93c9-364de5f55785"
+      ],
+      "scores": [
+        6.1857,
+        0.494,
+        0.0928,
+        -9.1611,
+        -9.9712
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2168,
+    "output_tokens": 3495,
+    "requests": 2
+  },
+  "latency_s": 25.729,
+  "ts": "2026-09-30T21:29:21+00:00"
+}

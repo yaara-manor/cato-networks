@@ -1,0 +1,41 @@
+{
+  "query_id": "SC-08-psk-pasted",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "4002a49f-58e7-4c6b-9c92-1ec4edf14d56",
+    "35466795-7812-41bf-b374-008f1a575f39",
+    "da693a4c-984b-4fd3-8606-773f2557a424"
+  ],
+  "answer_text": "I can’t confirm or disclose your PSK. The knowledge base notes that the PSK must match on both sides for the tunnel to authenticate, and AUTHENTICATION_FAILED often indicates a PSK or authentication payload mismatch. To troubleshoot, verify that the FortiGate PSK matches the one used on the Cato side and review the IPsec configuration for mismatches (auth payloads, IKE version, and local/remote IDs) per the IPsec troubleshooting guidance. For FortiGate specifics, ensure the PSK and DH group are configured correctly as described for FortiGate IPSec IKEv2 sites.",
+  "searches": [
+    {
+      "query": "AUTHENTICATION_FAILED IPsec Fortigate PSK",
+      "passage_ids": [
+        "36bddd3a-5243-4ae2-b182-a36cf25a2fda",
+        "4002a49f-58e7-4c6b-9c92-1ec4edf14d56",
+        "a065018f-4396-44b9-a794-383384df32cb",
+        "35466795-7812-41bf-b374-008f1a575f39",
+        "da693a4c-984b-4fd3-8606-773f2557a424"
+      ],
+      "scores": [
+        1.7341,
+        1.5104,
+        1.5092,
+        -0.5109,
+        -1.371
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 4406,
+    "output_tokens": 3058,
+    "requests": 3
+  },
+  "latency_s": 24.307,
+  "ts": "2026-09-30T21:43:51+00:00"
+}

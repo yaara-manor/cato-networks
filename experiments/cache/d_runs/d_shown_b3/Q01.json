@@ -1,0 +1,40 @@
+{
+  "query_id": "Q01",
+  "variant": "d_shown_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "66315e45-47ac-45b9-a1c6-69abd743a266",
+    "c582d80b-e93a-4540-8bee-02b52b069a4e"
+  ],
+  "answer_text": "The effective MTU over the Socket-to-PoP DTLS tunnel is 1383 bytes (DTLS overhead reduces the tunnel MTU from the standard Ethernet value). For Socket sites with multiple WAN links, the downstream MTU is the lowest MTU discovered across WAN links, while the Socket calculates the upstream MTU for the tunnel to the PoP. The KB does not document how an oversized WAN packet with the DF bit set is handled by the Socket.",
+  "searches": [
+    {
+      "query": "DTLS MTU Socket-to-PoP",
+      "passage_ids": [
+        "66315e45-47ac-45b9-a1c6-69abd743a266",
+        "e9157057-2af4-48d6-ac0e-264eebd5955d",
+        "e3cefa0e-5d93-4289-bfea-49dc1a33c399",
+        "c582d80b-e93a-4540-8bee-02b52b069a4e",
+        "d1d4ab9e-2df6-4cd0-842a-baac07b8989b"
+      ],
+      "scores": [
+        7.2438,
+        6.7947,
+        5.467,
+        5.1425,
+        4.5975
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2499,
+    "output_tokens": 4565,
+    "requests": 2
+  },
+  "latency_s": 33.466,
+  "ts": "2026-09-30T21:33:10+00:00"
+}

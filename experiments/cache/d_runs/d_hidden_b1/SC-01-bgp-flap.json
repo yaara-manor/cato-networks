@@ -1,0 +1,40 @@
+{
+  "query_id": "SC-01-bgp-flap",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "3381e933-8d27-431f-b950-83940c8fe6f7",
+    "e34cd47b-f1f7-4cc0-a522-f67df1e442b1"
+  ],
+  "answer_text": "BGP Hold Time is the number of seconds the neighbor is considered down if no BGP messages are received, and the Keep-alive Interval is how often keep-alives are sent. With a 10/30 timer pair, keep-alives occur every 10 seconds and the neighbor is declared down if no messages are received for 30 seconds, which can contribute to flaps if there are delays in your path or processing. If you need to apply BGP policy updates without tearing down the session, Cato supports soft reset to preserve the session while changes are applied.",
+  "searches": [
+    {
+      "query": "BGP hold timer Cato Socket",
+      "passage_ids": [
+        "3381e933-8d27-431f-b950-83940c8fe6f7",
+        "a06a67c7-3bf7-4236-94bd-86014a9ead8c",
+        "e34cd47b-f1f7-4cc0-a522-f67df1e442b1",
+        "90daa2ef-eb87-4e2c-abbc-e67fc88de5e0",
+        "9bc7600f-7495-4815-a7a2-fb3c630de5c9"
+      ],
+      "scores": [
+        4.2894,
+        4.2894,
+        3.8169,
+        2.1589,
+        1.9041
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2255,
+    "output_tokens": 2771,
+    "requests": 2
+  },
+  "latency_s": 22.389,
+  "ts": "2026-09-30T21:43:15+00:00"
+}

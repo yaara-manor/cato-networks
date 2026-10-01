@@ -1,0 +1,40 @@
+{
+  "query_id": "Q12",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "cfb2f235-35b9-472b-9494-5e3b8a9db343",
+    "bfb99778-27bd-4cc9-9f8b-6e206f9b7257"
+  ],
+  "answer_text": "For IPsec sites with bandwidth of 100 Mbps or more, use only the AES 128 GCM-16 or AES 256 GCM-16 algorithms. AES CBC algorithms are only recommended for sites with bandwidth below 100 Mbps. GCM encryption is more efficient and scalable, providing better performance and reliability for high-throughput encrypted traffic; also make sure both peers use the same algorithm to minimize tunnel establishment time.",
+  "searches": [
+    {
+      "query": "IPsec encryption algorithms 100 Mbps",
+      "passage_ids": [
+        "cfb2f235-35b9-472b-9494-5e3b8a9db343",
+        "bfb99778-27bd-4cc9-9f8b-6e206f9b7257",
+        "f89a9d18-2d14-41ba-8d16-683f80d1c1df",
+        "d72b5a43-16e9-4eb9-bb54-471efdc8d033",
+        "02091d62-7c83-4acf-a6ed-525053ac7a02"
+      ],
+      "scores": [
+        8.2651,
+        6.6852,
+        5.7508,
+        4.6159,
+        2.5769
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2210,
+    "output_tokens": 1462,
+    "requests": 2
+  },
+  "latency_s": 13.121,
+  "ts": "2026-09-30T21:26:02+00:00"
+}

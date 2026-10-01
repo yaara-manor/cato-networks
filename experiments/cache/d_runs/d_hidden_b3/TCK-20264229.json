@@ -1,0 +1,40 @@
+{
+  "query_id": "TCK-20264229",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "cdce87a9-72d4-48fe-9052-560a0fe49f3a",
+    "70e9ed01-5858-48be-8068-37229444648e"
+  ],
+  "answer_text": "To address large file transfer stalls, enable TCP acceleration for your file-sharing applications (for example SMB) by applying the feature to the relevant network rules, as Cato recommends. This slowdown symptom is noted under 'Performance issues' for users connected to Cato Cloud, so turning on TCP acceleration often improves throughput.",
+  "searches": [
+    {
+      "query": "large file transfer stall",
+      "passage_ids": [
+        "cdce87a9-72d4-48fe-9052-560a0fe49f3a",
+        "70e9ed01-5858-48be-8068-37229444648e",
+        "a97014a9-b6f3-44be-9d36-2dbf9335ee15",
+        "d8275196-228c-463c-ba25-ea8efb2097bf",
+        "c910c27f-3db3-4b3c-af0c-5a1bbea170e4"
+      ],
+      "scores": [
+        -5.6728,
+        -6.2404,
+        -7.703,
+        -9.8795,
+        -10.3312
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1995,
+    "output_tokens": 2062,
+    "requests": 2
+  },
+  "latency_s": 14.833,
+  "ts": "2026-09-30T21:29:47+00:00"
+}

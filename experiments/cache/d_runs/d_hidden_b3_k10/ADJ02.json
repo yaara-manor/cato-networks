@@ -1,0 +1,47 @@
+{
+  "query_id": "ADJ02",
+  "variant": "d_hidden_b3_k10",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn’t locate list pricing per Mbps for a 500 Mbps Cato site license on a three-year term in the knowledge base. The KB discusses available site-license tiers (e.g., 25, 50, 100, 250, 500 Mbps, etc.) and how bandwidth licenses are calculated, but it does not include pricing details.",
+  "searches": [
+    {
+      "query": "pricing per Mbps",
+      "passage_ids": [
+        "23bca0d1-f110-4bae-b929-0aa59af51a2c",
+        "270dd32e-498c-4914-b1a9-6c565acd2bab",
+        "a4db4bc4-5e64-46c5-a037-b464540544cc",
+        "cb31befe-bc55-47b9-a416-50c693e3d361",
+        "bcdba407-892a-4a71-b32f-c0919a61e5fd",
+        "07fa2330-c5e1-4a14-a8e4-cbdabffa2dab",
+        "5cb853fe-5fa0-4d82-87d3-9340e45c1c00",
+        "137c45e2-063d-4297-a63a-09efbb148ee5",
+        "0dab0376-50bf-4e44-bb81-4b93a9ff0200",
+        "370b7550-4bda-4b61-826a-8d0ee1aaa40a"
+      ],
+      "scores": [
+        -3.0061,
+        -3.0114,
+        -5.0632,
+        -6.0971,
+        -7.0,
+        -7.3872,
+        -7.3872,
+        -7.7594,
+        -8.4354,
+        -9.4742
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2788,
+    "output_tokens": 1612,
+    "requests": 2
+  },
+  "latency_s": 14.325,
+  "ts": "2026-09-30T22:01:29+00:00"
+}

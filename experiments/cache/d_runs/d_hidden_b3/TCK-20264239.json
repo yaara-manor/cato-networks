@@ -1,0 +1,40 @@
+{
+  "query_id": "TCK-20264239",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "ead32a31-a8aa-4e50-9128-5169d762489d",
+    "5c836020-4016-48bd-ae27-cdfe87db5746"
+  ],
+  "answer_text": "Hotel networks often block UDP port 443, which can prevent the Cato Client from establishing a VPN tunnel and cause the Connecting... state followed by error 408. A workaround is to configure the Cato Client to use UDP port 1337 instead of 443, or rely on the client’s built‑in TCP fallback (which uses TCP port 443) when UDP is blocked.",
+  "searches": [
+    {
+      "query": "Cato Client 408 Connecting hotel",
+      "passage_ids": [
+        "ead32a31-a8aa-4e50-9128-5169d762489d",
+        "f2290b57-0dd7-4b6e-94d6-9aa5299cdcf4",
+        "5c836020-4016-48bd-ae27-cdfe87db5746",
+        "786e6753-0b54-4e50-b818-6ca03426aa9a",
+        "988938bd-2703-49ac-bd8f-b3f52c4ed4b7"
+      ],
+      "scores": [
+        3.8582,
+        3.3099,
+        2.9988,
+        2.8094,
+        0.9614
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2098,
+    "output_tokens": 2076,
+    "requests": 2
+  },
+  "latency_s": 15.185,
+  "ts": "2026-09-30T21:29:31+00:00"
+}

@@ -1,0 +1,52 @@
+{
+  "query_id": "TCK-20264229",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "e9157057-2af4-48d6-ac0e-264eebd5955d",
+    "983b9ec9-c7ac-41f6-8448-f93e525c457e",
+    "8bea93d0-0242-43c5-8039-28618dbef953",
+    "cdce87a9-72d4-48fe-9052-560a0fe49f3a"
+  ],
+  "answer_text": "PPPoE overhead reduces the effective WAN MTU, and large transfers can stall if packets require fragmentation. The DTLS-tunneled path used by the Socket can yield an MTU of only about 1383 bytes, so adjust WAN MTU or fragmentation settings accordingly (test with the WebUI Ping Tool to verify path MTU). For PPPoE sites, disabling EEE can resolve PPPoE connectivity quirks, and enabling TCP acceleration can improve SMB/file-transfer throughput.",
+  "searches": [
+    {
+      "query": "PPPoE MTU large file transfer stall",
+      "passage_ids": [
+        "e9157057-2af4-48d6-ac0e-264eebd5955d",
+        "8bea93d0-0242-43c5-8039-28618dbef953",
+        "1dccb569-7892-4d0e-96c0-11dca555a115",
+        "b854885d-004b-4f3b-a1f8-d6466602ed2b",
+        "88eda63a-8fc1-46dd-a117-da8da6c538fb",
+        "dc339974-69ad-4803-a16d-3a9270bf2bf5",
+        "983b9ec9-c7ac-41f6-8448-f93e525c457e",
+        "cdce87a9-72d4-48fe-9052-560a0fe49f3a",
+        "c3584807-c3b3-4f7c-8f87-bf818fc72a78",
+        "a97014a9-b6f3-44be-9d36-2dbf9335ee15"
+      ],
+      "scores": [
+        -2.2755,
+        -4.8293,
+        -7.2224,
+        -7.4039,
+        -7.4039,
+        -8.2916,
+        -8.6195,
+        -9.5853,
+        -9.8366,
+        -10.4914
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2852,
+    "output_tokens": 2662,
+    "requests": 2
+  },
+  "latency_s": 19.018,
+  "ts": "2026-09-30T21:59:25+00:00"
+}

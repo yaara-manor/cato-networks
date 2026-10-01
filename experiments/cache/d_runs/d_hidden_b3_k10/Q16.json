@@ -1,0 +1,76 @@
+{
+  "query_id": "Q16",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "48595747-d893-4c4b-8ffe-74354da12d51"
+  ],
+  "answer_text": "Here are the requirements for enabling IP Overlapping between sites: 1) the account must not use Static Range Translation; 2) one IP range must be smaller and fully contained within the other range; 3) all sockets in the account must be version 6.1 or higher; and 4) each site must have a unique IP address for the Native Range (no duplicates between sites). The KB does not document a default Cato system range.",
+  "searches": [
+    {
+      "query": "IP Overlapping",
+      "passage_ids": [
+        "c3e8755e-a85f-4648-b7dd-09daf83d8352",
+        "c7697602-f532-440d-9367-183b6f4f1566",
+        "48595747-d893-4c4b-8ffe-74354da12d51",
+        "d5f59e5c-3e04-45a7-be8f-06a97a9d00fb",
+        "552bf47f-3ad0-4bf9-ad82-57a55c8a2978",
+        "034ae7a1-f684-426e-87d1-8e1f0a3a129c",
+        "9dc62a94-b099-4256-b744-bf4b9ef2ecc4",
+        "b813789e-d13c-468c-b766-60c8355ea204",
+        "efb062d9-dcf0-47d0-a259-41bc2f279e5b",
+        "7d8c2e48-0e83-4506-8fc5-b5db69007acd"
+      ],
+      "scores": [
+        8.3458,
+        7.8629,
+        7.5013,
+        7.3263,
+        7.2739,
+        6.7336,
+        5.9189,
+        5.6259,
+        2.5627,
+        -1.2616
+      ]
+    },
+    {
+      "query": "IP Overlapping requirements",
+      "passage_ids": [
+        "48595747-d893-4c4b-8ffe-74354da12d51",
+        "c3e8755e-a85f-4648-b7dd-09daf83d8352",
+        "552bf47f-3ad0-4bf9-ad82-57a55c8a2978",
+        "c7697602-f532-440d-9367-183b6f4f1566",
+        "034ae7a1-f684-426e-87d1-8e1f0a3a129c",
+        "d5f59e5c-3e04-45a7-be8f-06a97a9d00fb",
+        "9dc62a94-b099-4256-b744-bf4b9ef2ecc4",
+        "b813789e-d13c-468c-b766-60c8355ea204",
+        "ef034ea5-1823-46ae-8b78-0e3124a99c63",
+        "319d1994-63fd-4998-9b1c-1dc2f1fd4a52"
+      ],
+      "scores": [
+        7.9356,
+        6.0885,
+        4.4275,
+        4.2008,
+        4.0268,
+        3.1089,
+        2.7446,
+        2.4821,
+        1.41,
+        0.1944
+      ]
+    }
+  ],
+  "n_searches": 2,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 7781,
+    "output_tokens": 3081,
+    "requests": 3
+  },
+  "latency_s": 22.263,
+  "ts": "2026-09-30T21:55:35+00:00"
+}

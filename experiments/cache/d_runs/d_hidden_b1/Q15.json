@@ -1,0 +1,40 @@
+{
+  "query_id": "Q15",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "286685a9-1fc4-4518-a49d-46e4a8da4f6e",
+    "4c138e8d-1a5f-40bb-b60d-531f97837884"
+  ],
+  "answer_text": "Azure uses its own default IPsec settings for cloud VPNs, including how it handles PFS. A tunnel that comes up but fails at rekey is commonly caused by a Diffie-Hellman (DH) group mismatch between sides. Make sure the DH/PFS group configured in the Cato Management Application matches Azure’s expectation; configure the DH group parameter to match your edge device configuration so the DH group is the same on both sides.",
+  "searches": [
+    {
+      "query": "Azure PFS DH group rekey",
+      "passage_ids": [
+        "286685a9-1fc4-4518-a49d-46e4a8da4f6e",
+        "4c138e8d-1a5f-40bb-b60d-531f97837884",
+        "db3109d2-f6c9-43eb-a2ce-212b973aeabb",
+        "c625b423-e31e-495e-948b-6ed4881dbbde",
+        "d6795e5a-57d0-4ff0-a4e7-592573995103"
+      ],
+      "scores": [
+        3.2453,
+        2.8451,
+        0.3935,
+        0.0792,
+        -4.3183
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2214,
+    "output_tokens": 2091,
+    "requests": 2
+  },
+  "latency_s": 18.319,
+  "ts": "2026-09-30T21:41:14+00:00"
+}

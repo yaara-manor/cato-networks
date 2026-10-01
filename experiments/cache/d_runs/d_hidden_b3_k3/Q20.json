@@ -1,0 +1,37 @@
+{
+  "query_id": "Q20",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "1d66a8c2-3f4a-412a-b688-347763f880c9",
+    "0d6c07a1-7614-40bb-8bf5-5f47f805a099",
+    "69ca7470-06c4-498d-a142-55d42f9b51e3"
+  ],
+  "answer_text": "HA split-brain occurs when both CMA vSockets independently assume the Master role, i.e., both act as Master because the HA Status is Not Ready and both vSockets are up. In CMA you recognise this by seeing HA Status Not Ready, and you can verify it by checking both vSockets in their WebUI pages to confirm their Master state. The knowledge base does not specify which Socket carries traffic during a split-brain. If you want to observe HA behavior, you can perform a controlled failover using the Socket page to fail over to the Secondary Socket.",
+  "searches": [
+    {
+      "query": "HA split-brain CMA",
+      "passage_ids": [
+        "1d66a8c2-3f4a-412a-b688-347763f880c9",
+        "0d6c07a1-7614-40bb-8bf5-5f47f805a099",
+        "69ca7470-06c4-498d-a142-55d42f9b51e3"
+      ],
+      "scores": [
+        6.8568,
+        6.7132,
+        5.4773
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1794,
+    "output_tokens": 3420,
+    "requests": 2
+  },
+  "latency_s": 22.699,
+  "ts": "2026-09-30T21:48:57+00:00"
+}

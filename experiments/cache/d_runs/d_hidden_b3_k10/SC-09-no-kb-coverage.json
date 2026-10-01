@@ -1,0 +1,51 @@
+{
+  "query_id": "SC-09-no-kb-coverage",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "4788070b-6647-4cc7-8358-a87585137fe2",
+    "3360a0b1-bdee-4619-a556-5cec6a13516a",
+    "67d7235f-6070-4f0f-a0c9-a30ad9be9637"
+  ],
+  "answer_text": "Yes. Cato supports IPv6-only branch sites. For Socket sites, IPv6-only connectivity is supported from Socket v26.0.23517+ and uses IPv4-over-IPv6 mechanisms (IPIP6 Static) to connect the Socket to the Cato Cloud while preserving IPv4 for applications. The knowledge base does not publish roadmap details or dates for next year.",
+  "searches": [
+    {
+      "query": "IPv6-only branch sites",
+      "passage_ids": [
+        "4788070b-6647-4cc7-8358-a87585137fe2",
+        "3360a0b1-bdee-4619-a556-5cec6a13516a",
+        "67d7235f-6070-4f0f-a0c9-a30ad9be9637",
+        "4c24c679-7745-43ef-832b-34b05eb5bf3d",
+        "4871a8f4-064a-4586-9931-a0541e305a88",
+        "625b360e-1b3d-46a0-91ac-d51e2e0c4e2b",
+        "f6fafc2f-5480-4fcc-b184-acc726b23dcf",
+        "9ab53521-20da-463d-85b9-c6bff39c7a6c",
+        "85ceb054-6f6c-474b-8c5a-f9163dd077a8",
+        "c14dfcc7-bc89-461d-af71-4f6499590344"
+      ],
+      "scores": [
+        4.3159,
+        3.2134,
+        1.8464,
+        1.4511,
+        -2.6613,
+        -2.8463,
+        -4.0273,
+        -9.8845,
+        -10.0662,
+        -10.0662
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2552,
+    "output_tokens": 3438,
+    "requests": 2
+  },
+  "latency_s": 23.55,
+  "ts": "2026-09-30T21:58:34+00:00"
+}

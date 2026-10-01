@@ -1,0 +1,49 @@
+{
+  "query_id": "SC-10-c2-whitelist",
+  "variant": "d_hidden_b3_k10",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "39213c7d-4982-4a53-9982-2d6b452a96b0"
+  ],
+  "answer_text": "Yes. Cato supports anti-malware allowlisting to bypass false positives such as C2 traffic. To whitelist a domain account-wide, add it to the anti-malware allowlist following the guidance in the 'Allowlisting Anti-Malware Traffic' article (Managing anti-malware exceptions).",
+  "searches": [
+    {
+      "query": "domain allowlist",
+      "passage_ids": [
+        "c71a7adc-92b3-49c2-817b-b6aeda782a9a",
+        "ba6072fd-7659-403b-9eb3-b609ab13afe6",
+        "c745ea6f-23f8-472c-939c-10b1594de55c",
+        "0d8a89ed-81a8-4f26-a741-d52e6e7e9561",
+        "e16fed88-6fa6-4cac-828f-b29061f1d845",
+        "08935f45-4ef3-4de2-8d2a-3e3c8aed3ba8",
+        "51460bc2-94e3-4e7c-8113-d1f2c69617e2",
+        "d8d32c33-59a1-4fa1-8e12-bfdc572bf0dc",
+        "3767a882-6d65-462d-bc08-cc46252878f2",
+        "39213c7d-4982-4a53-9982-2d6b452a96b0"
+      ],
+      "scores": [
+        5.9104,
+        5.4075,
+        0.952,
+        -0.0849,
+        -0.2535,
+        -0.7737,
+        -0.9222,
+        -0.9236,
+        -1.4667,
+        -1.9969
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2860,
+    "output_tokens": 2469,
+    "requests": 2
+  },
+  "latency_s": 18.489,
+  "ts": "2026-09-30T21:58:37+00:00"
+}

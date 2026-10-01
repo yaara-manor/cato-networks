@@ -1,0 +1,36 @@
+{
+  "query_id": "Q27",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "607828c0-82f3-4fcf-9f1a-6439a24992aa",
+    "acc8bc4a-cd6c-4e80-b30a-bed834d73dc6"
+  ],
+  "answer_text": "Link Quality rules monitor SLA KPIs including packet loss, latency, jitter, congestion, and other related metrics. The health evaluation checks each active WAN link every second and assigns a quality score based on these metrics; if the thresholds are exceeded, a Last-Mile Quality alert is generated. The KB does not specify what to export from a Link Quality SLA story to raise a case with the ISP.",
+  "searches": [
+    {
+      "query": "Link Quality KPI",
+      "passage_ids": [
+        "607828c0-82f3-4fcf-9f1a-6439a24992aa",
+        "a290f0ac-7d21-417d-b3dc-8ed9875d546a",
+        "acc8bc4a-cd6c-4e80-b30a-bed834d73dc6"
+      ],
+      "scores": [
+        5.2686,
+        3.3656,
+        3.0673
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1734,
+    "output_tokens": 3209,
+    "requests": 2
+  },
+  "latency_s": 22.445,
+  "ts": "2026-09-30T21:49:35+00:00"
+}

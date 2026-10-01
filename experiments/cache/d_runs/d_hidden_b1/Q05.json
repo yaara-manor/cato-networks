@@ -1,0 +1,43 @@
+{
+  "query_id": "Q05",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [
+    "12226386",
+    "cdbd00c6"
+  ],
+  "citations": [
+    "12226386",
+    "cdbd00c6"
+  ],
+  "answer_text": "The KB does not publish a hard maximum number of BGP routes that a Socket can accept from a neighbor before the session is affected. It does specify a limit for BGP summary routes: up to 256 summary routes per BGP peer. To reduce the number of routes advertised, use (1) BGP summary routes (configurable up to 256 per peer) and (2) BGP filtering to selectively advertise routes.",
+  "searches": [
+    {
+      "query": "BGP routes per neighbor Socket Cato",
+      "passage_ids": [
+        "35dadd4a-7366-44db-a2d8-baa8794c7d4c",
+        "12226386-7e34-4528-8415-8df9d696f5e5",
+        "cdbd00c6-467e-423e-b140-80cc81718c93",
+        "468faabe-36bd-4c29-bc57-a2d1d08a5d53",
+        "38aa2896-7538-4940-8f7f-eaff9435da85"
+      ],
+      "scores": [
+        6.3178,
+        5.9952,
+        5.8872,
+        5.59,
+        5.4949
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2179,
+    "output_tokens": 4391,
+    "requests": 2
+  },
+  "latency_s": 29.341,
+  "ts": "2026-09-30T21:40:36+00:00"
+}

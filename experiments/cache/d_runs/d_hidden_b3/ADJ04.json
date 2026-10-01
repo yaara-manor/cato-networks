@@ -1,0 +1,41 @@
+{
+  "query_id": "ADJ04",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "ce84ab5e-5a78-4b8d-a294-da51037082e1",
+    "2df8a7a3-95f2-4e5a-9e37-ac25c22c6fa8",
+    "c7f1bcb3-6b76-41bc-b1ee-95985aa77236"
+  ],
+  "answer_text": "Yes. You can connect a SonicWall NSa 3700 to Cato using an IPsec site with IKEv2. In the Cato Management Application, create an IPsec Site and select IKEv2 as the Connection Type (IKEv2 is the recommended option when the device supports it). If your SonicWall does not support the same IKEv2 parameters as Cato, you may need to use IKEv1 instead (Cato-Initiated for IPsec IKEv1).",
+  "searches": [
+    {
+      "query": "SonicWall NSa 3700 IPsec IKEv2 Cato",
+      "passage_ids": [
+        "ce84ab5e-5a78-4b8d-a294-da51037082e1",
+        "2df8a7a3-95f2-4e5a-9e37-ac25c22c6fa8",
+        "6b87d78d-9206-4df8-ac08-ce75e4890209",
+        "c7f1bcb3-6b76-41bc-b1ee-95985aa77236",
+        "a065018f-4396-44b9-a794-383384df32cb"
+      ],
+      "scores": [
+        2.8633,
+        2.5161,
+        2.4411,
+        2.2761,
+        2.1886
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2151,
+    "output_tokens": 2268,
+    "requests": 2
+  },
+  "latency_s": 20.427,
+  "ts": "2026-09-30T21:32:01+00:00"
+}

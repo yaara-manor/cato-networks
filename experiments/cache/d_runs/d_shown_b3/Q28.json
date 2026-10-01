@@ -1,0 +1,56 @@
+{
+  "query_id": "Q28",
+  "variant": "d_shown_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "50e16668-06c1-44c1-868b-0131edbc9dea"
+  ],
+  "answer_text": "The upgrade window grace period is 17 minutes. If you see the event “No open tunnel after grace time,” it means the Socket went offline after that 17-minute upgrade period. On-site personnel should be on-site and follow the steps in Resolving Inaccessible Socket after an Upgrade to remediate the issue (this guidance covers the actions required before rebooting and bringing the Socket back online).",
+  "searches": [
+    {
+      "query": "grace period Socket upgrade",
+      "passage_ids": [
+        "8e61b584-ccab-4337-80e9-c2434d319e88",
+        "ff4198c5-167c-482f-84f4-c81ab5778c06",
+        "e75946a4-d1ee-4200-9c2f-1ee60e5635c7",
+        "2de5cee2-c406-4867-80da-087470eb964f",
+        "bfe8e92a-bc57-44a9-8537-0e4d36210f16"
+      ],
+      "scores": [
+        6.6373,
+        6.1783,
+        1.5521,
+        0.1093,
+        0.0838
+      ]
+    },
+    {
+      "query": "No open tunnel after grace time",
+      "passage_ids": [
+        "50e16668-06c1-44c1-868b-0131edbc9dea",
+        "1602c241-0b0b-4bcc-91d6-1fba472430d4",
+        "eb6b9050-7bda-43c2-9d56-183d4c3c45f9",
+        "73751e3e-8b14-42cf-a7e4-77fc277abd37",
+        "1d36eb6f-3067-4e73-b5ff-5c1fe2b6d4eb"
+      ],
+      "scores": [
+        8.0391,
+        7.6905,
+        -2.3986,
+        -6.5004,
+        -7.3546
+      ]
+    }
+  ],
+  "n_searches": 2,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 5464,
+    "output_tokens": 2753,
+    "requests": 3
+  },
+  "latency_s": 23.228,
+  "ts": "2026-09-30T21:35:08+00:00"
+}

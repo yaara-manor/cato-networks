@@ -1,0 +1,41 @@
+{
+  "query_id": "ADJ07",
+  "variant": "d_shown_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "69ca7470-06c4-498d-a142-55d42f9b51e3",
+    "1692bd4f-0b55-4dac-959b-9479e02b4aca",
+    "30e8e4e4-de75-4410-b194-1f32edc534c7"
+  ],
+  "answer_text": "You can validate and trigger failover for a Cato Socket HA pair behind your Juniper SRX by using the CMA (Cato Management Application). In the Socket page, initiate a manual failover to the Secondary Socket to test that HA is configured and responsive. If the primary Socket stops sending keepalive messages, the Secondary will detect this after the keepalive timeout (about 3 seconds) and promote to Master, with traffic routed through the Secondary’s WAN links. This is a general Socket-HA testing approach described in the KB; there are no Juniper-specific steps documented in the KB.",
+  "searches": [
+    {
+      "query": "Juniper SRX chassis cluster failover Cato Socket HA",
+      "passage_ids": [
+        "69ca7470-06c4-498d-a142-55d42f9b51e3",
+        "1692bd4f-0b55-4dac-959b-9479e02b4aca",
+        "30e8e4e4-de75-4410-b194-1f32edc534c7",
+        "78e5a66f-8871-4c1b-b7a0-185da4270838",
+        "0d58dbb1-4034-442e-a77a-5d9565897e61"
+      ],
+      "scores": [
+        2.3506,
+        1.3014,
+        1.0789,
+        0.0131,
+        -0.049
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2084,
+    "output_tokens": 2936,
+    "requests": 2
+  },
+  "latency_s": 20.7,
+  "ts": "2026-09-30T21:39:25+00:00"
+}

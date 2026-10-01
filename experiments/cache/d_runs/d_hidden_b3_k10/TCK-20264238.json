@@ -1,0 +1,47 @@
+{
+  "query_id": "TCK-20264238",
+  "variant": "d_hidden_b3_k10",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn’t locate a knowledge base article about duplicate invoicing or refunds. This requires billing/account review. Please contact our Billing team or open a support ticket with your account email and the two August invoice numbers (the charges on Aug 3 and Aug 5) so they can investigate and process a refund.",
+  "searches": [
+    {
+      "query": "duplicate invoice refund",
+      "passage_ids": [
+        "0238c77d-9f75-4778-b889-f41f6ff177f8",
+        "85f7b4d5-af07-4e69-811b-2267a70ad439",
+        "8165e7ed-88ef-49b3-be40-755a6fb3e3ad",
+        "942001b6-1fae-415f-bda1-7d46944f2012",
+        "67a9066b-6d99-4770-8bea-4c0f30c0d79c",
+        "18376f3f-9fa2-43d7-850f-0b13cc1be2df",
+        "211964d4-08b0-47d4-944a-81597bc5975b",
+        "22f29e78-9110-46dd-ade7-25c3e2ff3d1e",
+        "2ad6f392-a641-464e-b2b2-beb8f46c7049",
+        "6c4645dc-30be-47f0-bf61-c8cc7c193444"
+      ],
+      "scores": [
+        -5.4654,
+        -8.5865,
+        -10.2281,
+        -10.9291,
+        -11.1724,
+        -11.2658,
+        -11.2658,
+        -11.2658,
+        -11.2658,
+        -11.2658
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2608,
+    "output_tokens": 1913,
+    "requests": 2
+  },
+  "latency_s": 14.549,
+  "ts": "2026-09-30T22:00:32+00:00"
+}

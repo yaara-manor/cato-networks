@@ -1,0 +1,42 @@
+{
+  "query_id": "TCK-20264240",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "44c239cb-437b-40e0-9254-e04c6e002fc2",
+    "15180f6a-d2c7-40c0-b22c-c3d556bc5907",
+    "8916a626-ecb3-4e4d-b578-aaaf03b54629",
+    "0cdae5b9-30c7-4a9b-a318-ac4b330ec1e0"
+  ],
+  "answer_text": "This can happen if egress traffic for Paris is not using the France-localized IP ranges. The Paris PoP has specific IP ranges used for France (for example, 159.117.245.0/24 and 159.117.247.0/24, and 216.252.179.0/24) and these ranges are updated over time. Verify that your Paris users’ outbound IPs come from the Paris PoP IP ranges so the portal and Google see France. Refer to the Paris PoP IP ranges in the Geo-Localized IPs and PoP announcements for the latest ranges.",
+  "searches": [
+    {
+      "query": "geolocation France Paris",
+      "passage_ids": [
+        "0cdae5b9-30c7-4a9b-a318-ac4b330ec1e0",
+        "15180f6a-d2c7-40c0-b22c-c3d556bc5907",
+        "44c239cb-437b-40e0-9254-e04c6e002fc2",
+        "8916a626-ecb3-4e4d-b578-aaaf03b54629",
+        "946a23d3-89db-4404-a17f-d18c1c97c800"
+      ],
+      "scores": [
+        -1.4836,
+        -4.8152,
+        -6.4142,
+        -6.5511,
+        -7.2662
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2594,
+    "output_tokens": 3315,
+    "requests": 2
+  },
+  "latency_s": 21.028,
+  "ts": "2026-09-30T21:29:58+00:00"
+}

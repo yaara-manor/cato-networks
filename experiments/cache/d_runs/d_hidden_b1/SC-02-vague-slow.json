@@ -1,0 +1,42 @@
+{
+  "query_id": "SC-02-vague-slow",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "0142c3f4-e2dc-4f35-b301-10e11248c307",
+    "3477d5a7-682d-458a-8747-9d34d4c3ca47",
+    "ac6b188c-51f2-45f9-9c19-98012df60ee2",
+    "3a0479cc-208e-4181-939f-30800d306cc6"
+  ],
+  "answer_text": "Slow web performance can be caused by sub-optimal routing; run a ping test and traceroute to compare latency when traffic passes through Cato vs bypassing Cato. If the client Wi‑Fi signal is weak (for example around -75 dBm or lower), a warning may explain the slowdown; improving the Wi‑Fi setup (closer AP, better signal) can help. If you suspect Cato Cloud connectivity issues, Recovery via Internet can automatically recover Internet connectivity by routing traffic through your ISP links, temporarily bypassing the Cato Cloud.",
+  "searches": [
+    {
+      "query": "slow internet",
+      "passage_ids": [
+        "0142c3f4-e2dc-4f35-b301-10e11248c307",
+        "3477d5a7-682d-458a-8747-9d34d4c3ca47",
+        "ac6b188c-51f2-45f9-9c19-98012df60ee2",
+        "1b1974f8-e221-4494-bd72-5ecaaef4b9da",
+        "3a0479cc-208e-4181-939f-30800d306cc6"
+      ],
+      "scores": [
+        1.3508,
+        0.1272,
+        -6.1732,
+        -6.3074,
+        -7.0524
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2495,
+    "output_tokens": 3095,
+    "requests": 2
+  },
+  "latency_s": 22.581,
+  "ts": "2026-09-30T21:43:18+00:00"
+}

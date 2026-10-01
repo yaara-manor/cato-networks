@@ -1,0 +1,41 @@
+{
+  "query_id": "Q27",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "607828c0-82f3-4fcf-9f1a-6439a24992aa",
+    "acc8bc4a-cd6c-4e80-b30a-bed834d73dc6",
+    "2ccf7b63-7888-4cfc-99d1-fa352464ba79"
+  ],
+  "answer_text": "Link Quality rule monitors KPIs such as packet loss, latency, and jitter; congestion is also listed as an SLA KPI in the docs. The KB does not specify what to export from a Link Quality SLA story to raise a case with the ISP. For troubleshooting context, review Site Network Analytics to determine which link is affected and whether the issue is upstream or downstream.",
+  "searches": [
+    {
+      "query": "Link Quality KPI",
+      "passage_ids": [
+        "607828c0-82f3-4fcf-9f1a-6439a24992aa",
+        "a290f0ac-7d21-417d-b3dc-8ed9875d546a",
+        "acc8bc4a-cd6c-4e80-b30a-bed834d73dc6",
+        "2ccf7b63-7888-4cfc-99d1-fa352464ba79",
+        "26865461-1135-482b-88a9-b6bd1c26d4c3"
+      ],
+      "scores": [
+        5.2686,
+        3.3656,
+        3.0673,
+        0.3227,
+        0.0142
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2144,
+    "output_tokens": 4087,
+    "requests": 2
+  },
+  "latency_s": 30.357,
+  "ts": "2026-09-30T21:27:40+00:00"
+}

@@ -1,0 +1,37 @@
+{
+  "query_id": "SC-12-socket-offline-after-upgrade",
+  "variant": "d_hidden_b3_k3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "5f1025f2-23bf-463b-9b2a-e74de7883c50",
+    "87d76f0e-ec41-41a8-9e91-2cb71eb501cd",
+    "8e61b584-ccab-4337-80e9-c2434d319e88"
+  ],
+  "answer_text": "First, verify on-site Socket connectivity and CMA status. In CMA, check Account > License > Bandwidth to confirm the license shows Trial or Commercial; if the license status is Scheduled, that can cause the site to appear disconnected. If licensing is fine but the upgrade has not completed, you can retry by manually initiating an upgrade from Site Configuration > Socket > Actions > Upgrade to ensure both HA sockets end up on the same version.",
+  "searches": [
+    {
+      "query": "Socket upgrade stuck CMA site disconnected",
+      "passage_ids": [
+        "5f1025f2-23bf-463b-9b2a-e74de7883c50",
+        "87d76f0e-ec41-41a8-9e91-2cb71eb501cd",
+        "8e61b584-ccab-4337-80e9-c2434d319e88"
+      ],
+      "scores": [
+        5.6911,
+        5.4121,
+        4.4981
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1850,
+    "output_tokens": 2350,
+    "requests": 2
+  },
+  "latency_s": 16.876,
+  "ts": "2026-09-30T21:51:08+00:00"
+}

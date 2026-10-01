@@ -1,0 +1,33 @@
+{
+  "query_id": "ADJ06",
+  "variant": "d_hidden_b3_k3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "The Cato knowledge base does not include MikroTik RouterOS v7 BGP peering steps for a Cato Socket. It only covers general BGP concepts with Cato Socket (e.g., BGP neighbors and prerequisites) and does not provide device-specific configuration instructions. Please consult MikroTik RouterOS v7 documentation for BGP config, or reach out to Cato Support with your topology for guidance on supported configurations.",
+  "searches": [
+    {
+      "query": "MikroTik RouterOS v7 BGP peering Cato Socket",
+      "passage_ids": [
+        "38aa2896-7538-4940-8f7f-eaff9435da85",
+        "1744d790-5820-4970-b7f7-b3448379bdd5",
+        "43634cf8-0971-4bc9-8229-8b78ce2bb93b"
+      ],
+      "scores": [
+        0.4692,
+        0.4589,
+        0.1451
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1816,
+    "output_tokens": 1775,
+    "requests": 2
+  },
+  "latency_s": 15.654,
+  "ts": "2026-09-30T21:53:35+00:00"
+}

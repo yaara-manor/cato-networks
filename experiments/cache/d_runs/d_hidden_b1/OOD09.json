@@ -1,0 +1,37 @@
+{
+  "query_id": "OOD09",
+  "variant": "d_hidden_b1",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "The Cato knowledge base does not contain Oracle database license audit rules. I couldn’t locate Oracle licensing guidance in KB. If you can share more details (Oracle version, license type, audit scope), I can check for related Cato topics; otherwise please consult Oracle’s official licensing resources or your Oracle account team for audit requirements.",
+  "searches": [
+    {
+      "query": "Oracle license audit",
+      "passage_ids": [
+        "31dc48f2-903a-4f91-b4c0-1a61301f262b",
+        "33d4da62-bb3f-4506-9721-4273391736fd",
+        "19b6c57f-c0b2-4e48-a2a1-a104a1aacec3",
+        "2b8ef3f8-77fc-4ce2-8c91-c0c5ffc47371",
+        "1b958515-a200-448a-aabc-a0d3e7299492"
+      ],
+      "scores": [
+        -4.148,
+        -4.6672,
+        -5.044,
+        -5.0885,
+        -5.8964
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2149,
+    "output_tokens": 1536,
+    "requests": 2
+  },
+  "latency_s": 16.09,
+  "ts": "2026-09-30T21:46:07+00:00"
+}

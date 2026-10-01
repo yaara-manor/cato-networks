@@ -1,0 +1,33 @@
+{
+  "query_id": "TCK-20264210",
+  "variant": "d_hidden_b3_k3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I can’t locate any knowledge base entry about Sev-1 incident SLAs or incident commander/bridge procedures for outages. This topic isn’t covered in the KB. Please use your internal Sev-1 escalation channel for an incident commander and share your incident ID so we can route appropriately, or confirm the preferred on-call contact to reach immediately.",
+  "searches": [
+    {
+      "query": "Sev-1 incident response SLA",
+      "passage_ids": [
+        "4f997957-991f-4b21-a6ca-78e1c6e8c367",
+        "bf775917-d429-427d-b8fd-3c363e2bd27c",
+        "e706656c-4c07-49c2-9e4f-585e8ba4c9b8"
+      ],
+      "scores": [
+        -0.2447,
+        -0.3973,
+        -2.1537
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1875,
+    "output_tokens": 1841,
+    "requests": 2
+  },
+  "latency_s": 15.816,
+  "ts": "2026-09-30T21:52:13+00:00"
+}

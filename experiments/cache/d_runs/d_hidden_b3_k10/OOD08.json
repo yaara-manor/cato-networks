@@ -1,0 +1,47 @@
+{
+  "query_id": "OOD08",
+  "variant": "d_hidden_b3_k10",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn't find any knowledge base article about replacing an iPhone battery. This request isn't covered by Cato's knowledge base. Please refer to Apple support or an authorized service provider for battery replacement.",
+  "searches": [
+    {
+      "query": "iPhone battery replacement",
+      "passage_ids": [
+        "f22ac93a-65cf-4736-9d5c-cb3125d56e7a",
+        "0860815e-dc4f-4d61-be00-94b65890d2b8",
+        "01a24733-8bab-45d0-8f55-7e900f1c7c01",
+        "3fd8bcc4-0bee-4e35-a855-80d8a40fd61b",
+        "0f0a57dd-7e1d-4aee-be99-1fcd146c5ec6",
+        "233d3237-ffef-46e5-a4f6-5e402acfdb08",
+        "dad29804-ce53-47b4-9f66-fa47b06ef1de",
+        "c422922b-1fd9-4cf7-8e40-ea63ab685886",
+        "18376f3f-9fa2-43d7-850f-0b13cc1be2df",
+        "211964d4-08b0-47d4-944a-81597bc5975b"
+      ],
+      "scores": [
+        -8.2496,
+        -8.4372,
+        -10.404,
+        -10.9131,
+        -11.0685,
+        -11.0769,
+        -11.1129,
+        -11.1957,
+        -11.2203,
+        -11.2204
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2580,
+    "output_tokens": 1118,
+    "requests": 2
+  },
+  "latency_s": 10.503,
+  "ts": "2026-09-30T22:01:14+00:00"
+}

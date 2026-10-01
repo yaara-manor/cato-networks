@@ -1,0 +1,41 @@
+{
+  "query_id": "TCK-20264214",
+  "variant": "d_hidden_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "0142c3f4-e2dc-4f35-b301-10e11248c307",
+    "3477d5a7-682d-458a-8747-9d34d4c3ca47",
+    "ac6b188c-51f2-45f9-9c19-98012df60ee2"
+  ],
+  "answer_text": "To diagnose and fix slow Internet, perform a ping test and traceroute to compare latency when traffic goes through the Cato Cloud versus bypassing it to detect a sub-optimal routing path. If your Wi‑Fi signal is weak (the client reports -75 dBm or lower), that can cause slow performance and you may see a Poor Wi‑Fi notification. If issues persist, you can enable Recovery via Internet to automatically recover Internet connectivity by using ISP links, temporarily bypassing the Cato Cloud.",
+  "searches": [
+    {
+      "query": "slow internet",
+      "passage_ids": [
+        "0142c3f4-e2dc-4f35-b301-10e11248c307",
+        "3477d5a7-682d-458a-8747-9d34d4c3ca47",
+        "ac6b188c-51f2-45f9-9c19-98012df60ee2",
+        "1b1974f8-e221-4494-bd72-5ecaaef4b9da",
+        "3a0479cc-208e-4181-939f-30800d306cc6"
+      ],
+      "scores": [
+        1.3508,
+        0.1272,
+        -6.1732,
+        -6.3074,
+        -7.0524
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 2107,
+    "output_tokens": 2830,
+    "requests": 2
+  },
+  "latency_s": 19.538,
+  "ts": "2026-09-30T21:29:59+00:00"
+}

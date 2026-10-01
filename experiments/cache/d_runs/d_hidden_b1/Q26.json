@@ -1,0 +1,39 @@
+{
+  "query_id": "Q26",
+  "variant": "d_hidden_b1",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "b88f994c-f308-4312-9f55-f2a572f5bd5d"
+  ],
+  "answer_text": "By default, Last Mile Monitoring uses predefined probes to several destinations (some in China and others globally). You can configure up to 5 probes per rule. The KB does not specify the default probe interval in the available passages.",
+  "searches": [
+    {
+      "query": "Last Mile Monitoring probe default",
+      "passage_ids": [
+        "720b2633-710a-460f-be50-7d093d139581",
+        "83b0a66d-c4f0-4a8e-972e-e262ee8ea533",
+        "b88f994c-f308-4312-9f55-f2a572f5bd5d",
+        "4a1042b8-0956-4984-9832-26c282e2ca4f",
+        "87802d18-d8e9-4007-a3d8-7a0cabe99b69"
+      ],
+      "scores": [
+        7.3923,
+        7.0603,
+        6.6566,
+        5.677,
+        5.3508
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1973,
+    "output_tokens": 2369,
+    "requests": 2
+  },
+  "latency_s": 21.225,
+  "ts": "2026-09-30T21:42:11+00:00"
+}

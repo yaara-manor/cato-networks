@@ -1,0 +1,33 @@
+{
+  "query_id": "OOD04",
+  "variant": "d_hidden_b3_k3",
+  "decision": "NOT_IN_KB",
+  "final_decision": "NOT_IN_KB",
+  "invalid_citations": [],
+  "citations": [],
+  "answer_text": "I couldn't locate the 2027 per-site list price for Cato licensing in the knowledge base. Pricing details aren't available here. Please reach out to your Cato sales contact or your account representative for the latest 2027 pricing.",
+  "searches": [
+    {
+      "query": "Cato pricing per-site 2027",
+      "passage_ids": [
+        "4cb6f980-e54b-459f-a478-956f30cbbdb6",
+        "370b7550-4bda-4b61-826a-8d0ee1aaa40a",
+        "165dd054-a037-4a76-a530-1f397fdd0d60"
+      ],
+      "scores": [
+        0.3003,
+        0.2339,
+        -2.9991
+      ]
+    }
+  ],
+  "n_searches": 1,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 1755,
+    "output_tokens": 1150,
+    "requests": 2
+  },
+  "latency_s": 12.833,
+  "ts": "2026-09-30T21:52:53+00:00"
+}

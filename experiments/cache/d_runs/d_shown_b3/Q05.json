@@ -1,0 +1,73 @@
+{
+  "query_id": "Q05",
+  "variant": "d_shown_b3",
+  "decision": "ANSWER",
+  "final_decision": "ANSWER",
+  "invalid_citations": [],
+  "citations": [
+    "18a7fb94-4af0-46e4-aee7-272e887eba00"
+  ],
+  "answer_text": "Two recommended ways to reduce the number of routes advertised to Cato are: 1) Advertise Aggregated (Summarized) Routes, and 2) Apply Route Filtering. The knowledge base does not publish a specific numeric limit for how many BGP routes a Socket can accept from a neighbor before the session is affected.",
+  "searches": [
+    {
+      "query": "BGP session limit Cato Socket",
+      "passage_ids": [
+        "e34cd47b-f1f7-4cc0-a522-f67df1e442b1",
+        "cdbd00c6-467e-423e-b140-80cc81718c93",
+        "1744d790-5820-4970-b7f7-b3448379bdd5",
+        "4204a71d-a0d7-442c-afaa-42ccee7f3180",
+        "38aa2896-7538-4940-8f7f-eaff9435da85"
+      ],
+      "scores": [
+        5.2798,
+        5.1023,
+        4.5572,
+        3.6349,
+        3.5354
+      ]
+    },
+    {
+      "query": "reduce advertised routes BGP Socket",
+      "passage_ids": [
+        "2bfc4c5d-a149-40c4-9e40-8c35d33c260d",
+        "18a7fb94-4af0-46e4-aee7-272e887eba00",
+        "d2e3e4f2-0d3b-486c-be17-a751fe8f822c",
+        "43d6c3ad-ce75-49fa-8d46-7d2be4d64449",
+        "d41097db-20eb-44a9-b01d-c8d3290157f4"
+      ],
+      "scores": [
+        7.451,
+        6.5868,
+        6.0161,
+        4.4247,
+        4.0977
+      ]
+    },
+    {
+      "query": "Reduce number of BGP routes advertised Socket",
+      "passage_ids": [
+        "18a7fb94-4af0-46e4-aee7-272e887eba00",
+        "2bfc4c5d-a149-40c4-9e40-8c35d33c260d",
+        "c4a868d0-f842-457b-bd31-6519eb4db531",
+        "3db42de9-e422-4b16-9ce0-570c799b88dd",
+        "d2e3e4f2-0d3b-486c-be17-a751fe8f822c"
+      ],
+      "scores": [
+        6.922,
+        6.9126,
+        6.5385,
+        5.994,
+        4.9883
+      ]
+    }
+  ],
+  "n_searches": 3,
+  "model": "openai:gpt-5-nano",
+  "usage": {
+    "input_tokens": 11197,
+    "output_tokens": 5469,
+    "requests": 4
+  },
+  "latency_s": 37.903,
+  "ts": "2026-09-30T21:33:29+00:00"
+}

@@ -378,6 +378,7 @@ The retrieval pipeline (`RetrievalService` in `retrieval/service.py`) implements
    - The RRF top 20 fused candidates are scored locally using `cross-encoder/ms-marco-MiniLM-L-12-v2` (`encoders.rerank.rerank_pairs`).
 4. **Confidence Filter & `KBSearchResult` Envelope**:
    - Candidates with $\text{Rerank Score} \ge \text{RERANK\_MIN\_SCORE}$ populate `KBSearchResult.passages` (top $k$, `status=KBSearchStatus.CONFIDENT`).
+   - `RERANK_MIN_SCORE` defaults to `2.0`, a calibrated safety floor rather than a correctness test (see [threshold calibration](../eval/threshold_calibration.md) and ADR-007).
    - If no candidate meets threshold, `status=KBSearchStatus.LOW_CONFIDENCE_REFUSAL` is returned with `passages=[]` while `candidates` preserves the top $k$ unfiltered chunks and `snapshot_date` for `answers.md` and `traces`.
 
 ---
@@ -504,6 +505,9 @@ The codebase is organized into clean, single-responsibility packages separating 
 │
 ├── retrieval/                         # Online RAG & policy lookup pipeline
 │   └── service.py                     # RetrievalService: single-roundtrip hybrid SQL + RRF + threshold gate + policy lookup
+│
+├── eval/                              # Offline evaluation
+│   └── calibrate_threshold.py         # Rerank-score calibration -> docs/eval/threshold_calibration.md
 │
 ├── core/                              # Central primitives & shared domain models
 │   ├── clock.py                       # SimulationClock frozen at 2026-08-28T17:00:00Z

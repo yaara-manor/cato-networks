@@ -1,5 +1,5 @@
-{"question_id": "OOD01", "question": "How do I configure VLANs on a Cisco Catalyst 9300 switch?"}
-{"question_id": "OOD02", "question": "How do I reset a Microsoft 365 mailbox password?"}
+{"question_id": "OOD01", "question": "How do I set up a Docker Compose healthcheck?"}
+{"question_id": "OOD02", "question": "How do I write a SQL window function?"}
 {"question_id": "OOD03", "question": "How do I set up a Kubernetes ingress controller on AWS EKS?"}
 {"question_id": "OOD04", "question": "What is the per-site list price of Cato licensing in 2027?"}
 {"question_id": "OOD05", "question": "What discount do I get for renewing a Cato contract for three years?"}

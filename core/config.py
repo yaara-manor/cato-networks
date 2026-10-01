@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     embedding_dimensions: int = 384
     reranker_model: str = "cross-encoder/ms-marco-MiniLM-L12-v2"
     reranker_revision: str = "7b0235231ca2674cb8ca8f022859a6eba2b1c968"
-    rerank_min_score: float = 0.0
+    rerank_min_score: float = 2.0  # safety floor, see docs/eval/threshold_calibration.md
     query_prefix: str = "Represent this sentence for searching relevant passages: "
     passage_token_cap: int = 400
     slice_new_tokens: int = 350

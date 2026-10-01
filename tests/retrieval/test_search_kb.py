@@ -7,6 +7,7 @@ import psycopg
 import pytest
 
 from core.config import REPO_ROOT, settings
+from eval.calibrate_threshold import EvalQuestion, load_questions
 from retrieval.models import KBSearchStatus
 from retrieval.service import RetrievalService
 
@@ -171,3 +172,18 @@ def test_cancelled_query_rolls_back_shared_connection() -> None:
             row = cur.fetchone()
             assert row is not None
             assert row[0] == "0"
+
+
+@pytest.mark.parametrize(
+    "question",
+    load_questions(REPO_ROOT / "data/eval/out_of_coverage.jsonl"),
+    ids=lambda q: q.question_id,
+)
+def test_off_domain_questions_are_refused(
+    service: RetrievalService, question: EvalQuestion
+) -> None:
+    result = service.search_kb(question.question)
+
+    assert result.status == KBSearchStatus.LOW_CONFIDENCE_REFUSAL
+    assert result.passages == []
+    assert result.candidates != []

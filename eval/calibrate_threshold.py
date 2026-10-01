@@ -3,7 +3,7 @@ import math
 import statistics
 import time
 from collections.abc import Mapping
-from datetime import date
+from datetime import UTC, date, datetime
 from enum import StrEnum
 from pathlib import Path
 
@@ -73,7 +73,8 @@ class CalibrationReport(BaseModel):
             "",
             "## Decision",
             "",
-            f"- Threshold: **{decision.threshold:.3f}** (answerable vs off-domain: {outcome})",
+            f"- Plan-rule threshold: **{decision.threshold:.3f}** (answerable vs off-domain: {outcome})",
+            f"- Applied `rerank_min_score`: **{settings.rerank_min_score}** (safety floor, see ADR-007)",
             f"- Answerable questions refused: {len(decision.refused_answerable)} ({refused})",
             "",
             "## Score ranges (top-1 rerank score)",
@@ -112,10 +113,12 @@ class CalibrationReport(BaseModel):
         ]
         lines += [
             "",
-            "Partial-coverage rows are informational only (design section 4.3): "
-            "they pass the gate because the KB covers part of the question, and "
-            "declining the uncovered part (roadmap dates) is the agent's "
-            "grounding duty, not the threshold's.",
+            (
+                "Partial-coverage rows are informational only (design section 4.3): "
+                "they pass the gate because the KB covers part of the question, and "
+                "declining the uncovered part (roadmap dates) is the agent's "
+                "grounding duty, not the threshold's."
+            ),
             "",
         ]
         return "\n".join(lines)
@@ -179,7 +182,9 @@ def choose_threshold(
         threshold=threshold,
         separated=separated,
         refused_answerable=sorted(
-            question_id for question_id, score in answerable.items() if score < threshold
+            question_id
+            for question_id, score in answerable.items()
+            if score < threshold
         ),
     )
 
@@ -208,13 +213,13 @@ def main() -> None:
         [s.top1_score for s in off_domain],
     )
     report = CalibrationReport(
-        generated_on=date.today(),
+        generated_on=datetime.now(tz=UTC).date(),
         scores=answerable + off_domain + partial,
         decision=decision,
     )
     _REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
     _REPORT_PATH.write_text(report.to_markdown())
-    print(f"Chosen rerank_min_score threshold: {decision.threshold:.3f}")
+    print(f"Plan-rule threshold: {decision.threshold:.3f} (applied: {settings.rerank_min_score})")
 
 
 if __name__ == "__main__":

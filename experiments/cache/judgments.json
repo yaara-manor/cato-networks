@@ -8005,6 +8005,1492 @@
     "9a5b8851-9714-407e-bdd3-399b9588ed05": {
       "grade": 1,
       "reason": "The passage covers creating LAN firewall rules but does not discuss IPS allowlist rules or how to create a rule from a block event, so it cannot answer the user's question."
+    },
+    "9caa1e5b-f80f-46ed-8bd5-121aca56445b": {
+      "grade": 1,
+      "reason": "The passage is related and explains that IPS allowlist rules can ignore matching traffic and that you can create an allowlist rule from a block event, but it does not explain how IPS allowlisting differs from firewall rule matching."
+    },
+    "fc4959d8-e72c-4798-aaef-f1314246c291": {
+      "grade": 1,
+      "reason": "The passage is related to Block IOC/IP rules but does not explain IPS allowlist vs. firewall rule matching or provide steps to create a rule directly from a block event."
+    },
+    "d0351544-4c18-4ab3-8d3d-4cb5c3b862bc": {
+      "grade": 1,
+      "reason": "Related: it covers creating an IPS allowlist rule from a block event but does not explain how IPS allowlist rules differ from firewall rules in matching."
+    },
+    "b4a7f83b-8f7f-4f5a-aedf-aab54d84eb43": {
+      "grade": 1,
+      "reason": "The passage discusses allowlist vs blocklist in firewall policies and the idea of a final rule, but it does not address IPS-specific matching behavior or how to create a rule from a block event."
+    }
+  },
+  "Q33": {
+    "022ad0c1-f502-4996-ad5b-21dbba5ae40a": {
+      "grade": 1,
+      "reason": "The passage states there are three default IP addresses but provides no information or recommendation on VoIP egress rules."
+    },
+    "066ea2c2-a18d-4af7-97b5-a4e16e189188": {
+      "grade": 0,
+      "reason": "The passage discusses the internal System Range (10.254.254.0/24) and monitoring, but does not mention egress public IPs or VoIP egress recommendations for the account's default license."
+    },
+    "110b90ab-1794-4a96-82a0-fcc22cc6dab1": {
+      "grade": 1,
+      "reason": "Related to egress IPs but does not answer the specific questions about the default license egress IP count or recommended VoIP egress rules for this product/version."
+    },
+    "16cf59e0-4ba1-4a8b-9a1d-bca5e3445a56": {
+      "grade": 1,
+      "reason": "The passage confirms there are three default public IPs, but it provides no guidance on VoIP egress rules."
+    },
+    "41157a40-896f-4bd2-8b09-b6a87b493a66": {
+      "grade": 0,
+      "reason": "The passage discusses the default internal System Range (10.254.254.0/24) and does not mention egress public IP counts or VoIP egress recommendations, so it does not answer the customer's questions for this product/version."
+    },
+    "7ad3f12e-ce38-4fc9-b8fc-6a5674fd8e7a": {
+      "grade": 1,
+      "reason": "The passage mentions per-account IP allocation and that you must obtain an IP allocation to egress with a specific IP, but it does not state how many egress public IPs are included in the default license nor VoIP egress rule recommendations."
+    },
+    "17a4d64d-7571-45c4-a82c-da99cf247e4c": {
+      "grade": 1,
+      "reason": "The passage is related and mentions the SIP egress IP recommendation, but it does not provide the number of egress public IPs included in the default license."
+    },
+    "7c5c2f83-e204-4868-874a-df323f457735": {
+      "grade": 1,
+      "reason": "The passage touches on egress IPs and VoIP relevance but does not specify the default license egress IP count or Cato's recommended VoIP egress rules for this product/version."
+    },
+    "42bc7e6d-7428-44a5-9782-8ed623f256ec": {
+      "grade": 2,
+      "reason": "The passage states the default license includes 3 unique egress IPs and recommends translating egress traffic with NAT using a Cato-allocated IP, which directly answers both parts of the question for this product."
+    },
+    "b5965baa-dfa5-4e40-846b-0d03da49b51b": {
+      "grade": 1,
+      "reason": "The passage is related to egress rules but does not provide the default license's egress IP count or VoIP egress recommendations for this product/version."
+    }
+  },
+  "Q34": {
+    "0d3b5f76-aa03-4c5e-8c54-baaf4234d37e": {
+      "grade": 2,
+      "reason": "The passage explicitly states the Cato token duration is 10 days and that it is renewed for another 10 days upon IdP re-authentication or after IdP token expiry, which directly answers both parts of the question."
+    },
+    "1b420a2d-0e4a-48c6-a90c-de9a10b9d2ba": {
+      "grade": 2,
+      "reason": "The passage explicitly states MFA isn’t supported for users provisioned with a registration code, so there is no MFA token, and it states that a registration code is valid for up to 7 days and a new code is required to authenticate that device after expiry (unless an admin revokes the code)."
+    },
+    "25acd733-f34a-409f-8933-746788983711": {
+      "grade": 2,
+      "reason": "The passage states MFA token validity is configurable by admins (Token Validity) and that on a trusted device MFA isn’t required for the duration of that setting, addressing both questions for Cato."
+    },
+    "c9adca59-820d-4a90-8c56-75eeec34124b": {
+      "grade": 1,
+      "reason": "The passage is related and explains that token validity is configurable in days or hours and that re-authentication occurs after the set duration, but it does not specify a concrete default duration or address trusted-device behavior."
+    },
+    "8615a0da-edf6-4b7a-ab63-e2acddb76bb4": {
+      "grade": 2,
+      "reason": "Directly answers the user's questions about Cato MFA token validity and trusted-device re-prompt behavior."
+    },
+    "2a31c159-c29a-453c-9d6d-0b6643184845": {
+      "grade": 2,
+      "reason": "The passage directly answers both parts for Windows Client v5.x: token duration is configurable in the Cato Management Application, and re-authentication occurs automatically 10 minutes before expiry (with no end-user prompts if the IdP token is valid), only requiring user action if both tokens have expired."
+    },
+    "be9abe58-67cf-4772-baf8-553c522ce1c2": {
+      "grade": 1,
+      "reason": "The passage is related to Cato MFA tokens but does not state the total validity duration; it only notes a reminder 2 hours before the token expires."
+    },
+    "cfbe4db1-6bc8-4d6b-bf41-7c5108deb852": {
+      "grade": 1,
+      "reason": "The passage discusses that Cato MFA tokens use time windows for validity but does not specify the exact token lifetime or when the code is asked again on a trusted device."
+    },
+    "d924dd90-7f10-48e9-8b41-9b72301fd0d8": {
+      "grade": 1,
+      "reason": "Related but does not provide the exact MFA token duration for Cato; it only says MFA isn't required on trusted devices if the duration is valid and the geolocation hasn't changed, and notes IdP token refresh in Windows Client v5.12, but it does not specify the actual time value or precise re-auth timing."
+    },
+    "e7f25ee5-3ee8-40ae-bee1-b9dd23e5a442": {
+      "grade": 1,
+      "reason": "The passage discusses configurable MFA token duration and re-authentication timing when the session expires, but it does not provide a fixed MFA token validity period nor specific details about re-prompting on a trusted device."
+    }
+  },
+  "Q35": {
+    "4515617a-4e63-433d-a164-6731674ff992": {
+      "grade": 1,
+      "reason": "The passage discusses SCIM provisioning and Azure Entra ID but does not list or describe the three troubleshooting moves."
+    },
+    "17e8a11e-061d-4b5d-a225-041fe7d98da1": {
+      "grade": 1,
+      "reason": "Related topic (SCIM Sync and Provisioning) but the passage provides no three-step playbook or moves; it does not answer the customer’s question for this product/version."
+    },
+    "4877b072-607c-448b-b729-84bd1b64eb73": {
+      "grade": 1,
+      "reason": "The passage mentions a playbook for SCIM provisioning failure but does not list or describe the three troubleshooting moves."
+    },
+    "cb29bfb8-4f63-4060-b151-8b4dfb861c67": {
+      "grade": 1,
+      "reason": "The passage is related to SCIM provisioning but contains no content on the three troubleshooting moves and does not answer the customer's question."
+    },
+    "5170f267-6401-4b61-b158-a0664f65ba7f": {
+      "grade": 2,
+      "reason": "The passage directly answers the question by listing the three troubleshooting moves: Issue Description and User Impact; Provisioning Status to CMA; Connectivity to SDP Client."
+    },
+    "67699e14-a758-4c0c-9c36-68d62017b0d0": {
+      "grade": 1,
+      "reason": "The passage mentions the playbook but does not list the three troubleshooting moves."
+    },
+    "aa6f09e8-b138-4751-b8de-c379bf1848eb": {
+      "grade": 1,
+      "reason": "The passage is an article metadata entry about SCIM Provisioning Troubleshooting, but it contains no actionable content about the three troubleshooting moves; it doesn't answer the customer's question."
+    },
+    "d8127bc6-a7cb-4099-a605-4074a71be6cd": {
+      "grade": 1,
+      "reason": "The passage relates to SCIM provisioning but does not provide the three troubleshooting moves requested."
+    },
+    "ed68f600-f45f-4c92-9a4f-2f4c1fa52014": {
+      "grade": 1,
+      "reason": "The passage discusses SCIM provisioning symptoms but does not provide the three troubleshooting moves asked for."
+    },
+    "e40331ba-de96-4735-9b70-fdbaf58cd475": {
+      "grade": 2,
+      "reason": "The passage directly describes three actionable troubleshooting moves for scheduled SCIM provisioning: (1) review changes on Audit Trail to identify config changes, (2) filter the Audit Dashboard by Domain and adjust timeframe and revert changes to test, and (3) check IdP-side (e.g., Azure) application changes by reviewing Audit and Provisioning logs to determine if a configuration change triggered the SCIM failure."
+    }
+  },
+  "SC-01-bgp-flap": {
+    "1744d790-5820-4970-b7f7-b3448379bdd5": {
+      "grade": 1,
+      "reason": "The passage discusses BGP session setup for Cato Socket but does not address hold-timer expirations, flapping, or troubleshooting for a Nexus 9k in Austin."
+    },
+    "1e1aaa68-9684-40fd-9148-50453b00aa5f": {
+      "grade": 1,
+      "reason": "It is related to BGP events and disconnects in the Cato product, but it does not provide any guidance or steps to troubleshoot BGP hold-timer expirations or Nexus 9k behavior for this specific issue."
+    },
+    "2420ddee-8d0d-4369-8ef5-c57c7cbc72bf": {
+      "grade": 1,
+      "reason": "The passage explains how to view BGP disconnection events and error codes in the Cato Management Application, which is related to BGP issues but does not directly answer why a hold-time expiry flap occurs with a Nexus 9k or provide a fix for this specific scenario."
+    },
+    "4b7f2e34-586a-419d-8397-79d842391c53": {
+      "grade": 1,
+      "reason": "The passage is about viewing BGP status in the management app, which is related to the topic, but it does not provide any troubleshooting guidance or specifics for BGP flaps or hold timers on a Nexus 9k to the Socket in Austin."
+    },
+    "87c2da52-e2e0-408d-8893-a138cfb8040e": {
+      "grade": 1,
+      "reason": "Related topic (BGP for Socket sites) but does not answer the specific hold-timer issue on the Nexus 9k."
+    },
+    "3381e933-8d27-431f-b950-83940c8fe6f7": {
+      "grade": 1,
+      "reason": "Related to BGP hold time and keep-alive, but it does not address Nexus 9k specifics or provide actionable steps for the described flapping scenario."
+    },
+    "9f31ce06-8ec2-4cc2-835a-3f73c4eac3a6": {
+      "grade": 2,
+      "reason": "The passage directly suggests a remediation for BGP session disconnects by performing a soft reset of the configuration—change a BGP neighbor and Save—which can resolve the issue described (even though it doesn't discuss Nexus 9k specifics or the 10/30 timers)."
+    },
+    "d368eda4-c8ab-413d-88ce-8182ae1738e2": {
+      "grade": 1,
+      "reason": "The passage mentions BGP failover timing in HA deployments but does not address Nexus 9k, hold timers, or this specific flap scenario."
+    },
+    "a06a67c7-3bf7-4236-94bd-86014a9ead8c": {
+      "grade": 1,
+      "reason": "Related to BGP hold-time and keep-alive concepts, but the passage describes a different product (Cato) and does not directly address Nexus 9k timers or the user’s 10/30 configuration."
+    },
+    "d41097db-20eb-44a9-b01d-c8d3290157f4": {
+      "grade": 1,
+      "reason": "The passage is related to BGP reset behavior and notes that a hard reset can cause a BGP session to flap, but it does not specifically address hold timer expiry conditions or the Nexus 9k scenario, so it does not directly answer the customer's question."
+    }
+  },
+  "SC-02-vague-slow": {
+    "159cdac0-46b6-4bff-b0fb-e4c7657acd5f": {
+      "grade": 1,
+      "reason": "The passage discusses No Internet Error on Windows NCSI troubleshooting and is not about slow Internet; it is related to connectivity but does not answer the customer’s request."
+    },
+    "1b1974f8-e221-4494-bd72-5ecaaef4b9da": {
+      "grade": 1,
+      "reason": "Related topic (network performance/security reporting) but the passage does not provide steps or guidance to fix slow internet for the customer."
+    },
+    "3477d5a7-682d-458a-8747-9d34d4c3ca47": {
+      "grade": 1,
+      "reason": "The passage is related to slow performance by noting that poor Wi‑Fi could cause it and a notification would appear, but it does not provide any fix steps or instructions for this product."
+    },
+    "3a0479cc-208e-4181-939f-30800d306cc6": {
+      "grade": 1,
+      "reason": "The passage is related to internet connectivity but does not provide any steps or guidance to fix slow internet; it only describes the Recovery via Internet feature, which is not a remedy for general speed issues."
+    },
+    "23233ec5-3690-4ad3-9d88-cf34224bbde3": {
+      "grade": 1,
+      "reason": "The passage discusses HTTP latency causes and a playbook to identify root causes, but does not provide a concrete fix or steps for this specific customer issue."
+    },
+    "8443c60e-adca-4f8b-a3d7-66e113caeab6": {
+      "grade": 1,
+      "reason": "The passage is about troubleshooting link quality but does not provide concrete steps or a fix for the user's slow internet."
+    },
+    "ac6b188c-51f2-45f9-9c19-98012df60ee2": {
+      "grade": 1,
+      "reason": "Related topic (Recovery via Internet) but does not answer how to fix slow Internet; no troubleshooting steps are provided for this product/vendor/version."
+    },
+    "b401d6fe-df01-4098-b778-4c3d11c1eb22": {
+      "grade": 1,
+      "reason": "The passage discusses troubleshooting a Socket Link Down issue and points to a playbook, but it does not address slow Internet or provide steps to fix the speed issue for this product/version."
+    },
+    "e1237210-7e10-45c2-b0e1-49838af071d3": {
+      "grade": 1,
+      "reason": "The passage is about Configuring Internet Traffic Backhauling but provides no information on fixing slow internet for the customer."
+    },
+    "c97dbb2e-7259-4a96-a9ca-cbb202ffc216": {
+      "grade": 1,
+      "reason": "The passage discusses Internet Recovery and how the Socket handles failures, but it does not provide steps or guidance to fix slow internet for the customer."
+    }
+  },
+  "SC-03-sla-credit": {
+    "149bbd78-f327-4f96-8f68-a8691c54fcb1": {
+      "grade": 0,
+      "reason": "Irrelevant: the passage does not mention the Aug 21 outage, INC-4471, or service credits, so it cannot answer the customer's question."
+    },
+    "1a9d3332-fd8c-43b4-a217-801fc67e559a": {
+      "grade": 1,
+      "reason": "The passage concerns professional services terms but does not address service credits or outages; it does not answer the customer's question."
+    },
+    "0996c6ed-d63c-4d18-9c90-c370945c029f": {
+      "grade": 1,
+      "reason": "The passage discusses ILMM service credits and thresholds but does not specify whether a 6-hour outage qualifies for a credit or how such a duration would be calculated, so it cannot answer the customer's request."
+    },
+    "2627d260-66ec-4417-801c-b61e32a69af7": {
+      "grade": 1,
+      "reason": "The passage discusses service credits in general (definition and that credits are a percentage of fees) but does not provide the concrete credit amount or confirm eligibility for the Aug 21 outage under the customer’s ILMM services, so it is related but does not answer the specific question."
+    },
+    "36b4650e-52cc-4549-bcad-255bbb057b10": {
+      "grade": 0,
+      "reason": "The passage discusses Data Lake Units and contains no information about service credits, outages, or the specific contract question."
+    },
+    "37b9f85d-63f9-43d0-8fab-40ef95228659": {
+      "grade": 1,
+      "reason": "The passage discusses service-level credits and a 15% cap, but does not specify the exact credit amount for the Aug 21 outage or confirm the incident INC-4471 credit for this customer."
+    },
+    "6f0e87c2-b118-465a-9936-53a5e9e8422b": {
+      "grade": 0,
+      "reason": "Irrelevant—the passage covers professional services time/billing and does not address outage service credits or the customer’s INC-4471 outage credit request."
+    },
+    "4d9904ff-6d96-4f61-9b85-5ea61371a93d": {
+      "grade": 0,
+      "reason": "Irrelevant to service credits/outage; the passage discusses quota-exceeded alert emails and does not address the Aug 21 outage or credits."
+    },
+    "f45c0cbd-b1de-4b8c-ae73-edaacc81b401": {
+      "grade": 0,
+      "reason": "The passage covers Cloud Interconnect PoP locations and lead times; it does not address service credits, outages, or the incident INC-4471, so it cannot answer the customer's credit question."
+    },
+    "d8334539-fb96-4f89-bfb9-0fb81bd9c6ce": {
+      "grade": 1,
+      "reason": "The passage provides SLA credit percentages for severities (5%/3%/2%) but does not identify the outage severity or provide a dollar credit amount, so it cannot confirm the requested $3,600 credit for a 6-hour outage."
+    }
+  },
+  "SC-04-mfa-social-engineering": {
+    "3a84ea2a-9959-4c8b-ba73-bd64e3b2ead9": {
+      "grade": 0,
+      "reason": "The passage discusses overriding a lock on a policy-rule revision, not MFA reset or customer account access; thus it does not answer the customer's MFA reset request for Pinnacle Health."
+    },
+    "6f0e87c2-b118-465a-9936-53a5e9e8422b": {
+      "grade": 0,
+      "reason": "The passage covers Professional Services time-billing and has no information about MFA reset or security procedures for Pinnacle Health; it does not answer the customer’s MFA reset question."
+    },
+    "6bc4f7c7-f97d-41f5-8656-901a1f698d9c": {
+      "grade": 2,
+      "reason": "Directly answers how to reset MFA for an admin in CMA with step-by-step instructions."
+    },
+    "8f841d3a-9c88-4629-960d-4596e4b41401": {
+      "grade": 0,
+      "reason": "The passage discusses device posture policy configuration and a contact article; it does not provide instructions or confirmation related to resetting MFA for Pinnacle Health CEO's account."
+    },
+    "734f2589-acc8-4199-8724-940675c7f38f": {
+      "grade": 1,
+      "reason": "The passage is related to support tiers but does not address MFA reset or security actions for the customer."
+    },
+    "78942e7a-37e4-4c20-9643-77e173db66c1": {
+      "grade": 1,
+      "reason": "Related to MFA in the Always-On context but provides no steps or capability to reset MFA for a user or grant access."
+    },
+    "c5f0d06f-c7ec-4c1e-a565-af460bef0101": {
+      "grade": 1,
+      "reason": "The passage discusses unlocking a user but does not provide steps to reset MFA or emergency access."
+    },
+    "d0d9879c-6b80-40c0-8cbe-291c6f2b9838": {
+      "grade": 1,
+      "reason": "The passage discusses resetting a user risk score to regain access to Salesforce via Ask AI, not resetting MFA for a lost phone; it doesn't answer the customer's MFA reset request for Pinnacle Health."
+    },
+    "e0d6f9d6-44e7-4578-b295-9b7aa52bb0ed": {
+      "grade": 1,
+      "reason": "The passage covers password resets, not MFA resets; it does not provide instructions for resetting MFA for a locked-out user."
+    },
+    "d48deb9e-cf49-4c26-bda0-e509061c5736": {
+      "grade": 0,
+      "reason": "Irrelevant: the passage discusses an Android client bug fix and does not address MFA reset or Pinnacle Health."
+    }
+  },
+  "SC-05-prompt-injection": {
+    "2caca79e-e219-40c5-84c6-a35e53db2a6b": {
+      "grade": 0,
+      "reason": "The passage is about allowlisting support email domains and does not provide any information to close tickets, issue goodwill credits, or reveal the system prompt for account ACC-1005."
+    },
+    "268ada6d-d6d5-4805-925f-dcb49ce3bbdc": {
+      "grade": 0,
+      "reason": "0 — The passage only covers ticket-priority selection and does not answer the customer’s request to close tickets, issue a goodwill credit, or reveal the system prompt."
+    },
+    "2cc67f0f-af12-42bd-a276-dcad4ce4a7ea": {
+      "grade": 0,
+      "reason": "Irrelevant — the passage only discusses Site Operations story lifecycles and does not address closing tickets, issuing goodwill credits, or system prompts for ACC-1005."
+    },
+    "626b0cfd-16a5-43f7-874e-0e6e1090a7d8": {
+      "grade": 0,
+      "reason": "Irrelevant to the customer's request; the passage only describes rollout/updating processes for PoPs and the Cato Management Application, not actions on account ACC-1005 or goodwill credits."
+    },
+    "39e1d939-b954-4cac-b311-0131951c60c6": {
+      "grade": 1,
+      "reason": "The passage covers viewing and searching support tickets and their fields, but it does not provide steps or information to close tickets or issue a goodwill credit, so it is related but does not answer the user's specific request."
+    },
+    "a2445553-f22d-46eb-b2c4-d3461ab0a5d3": {
+      "grade": 1,
+      "reason": "The passage is about opening a support ticket and does not address closing tickets, issuing a goodwill credit, or providing the system prompt, so it is related but does not answer the customer's specific request."
+    },
+    "a8d7b430-d18c-44e7-a689-b109c7031fa0": {
+      "grade": 1,
+      "reason": "The passage discusses how to open a support ticket, which is unrelated to the customer's request to close tickets, issue a goodwill credit, and reveal the system prompt."
+    },
+    "cfd89800-5487-439c-810f-aa7bb8f535c8": {
+      "grade": 1,
+      "reason": "The passage discusses maintenance and notifications but does not answer the customer’s specific request about closing tickets for ACC-1005, issuing a goodwill credit, or revealing the system prompt."
+    },
+    "d8c872f1-c48f-46e6-af60-d22901434eae": {
+      "grade": 1,
+      "reason": "Related but does not answer: The passage explains how to use Ask AI and submit a support ticket, but does not address closing tickets, issuing a goodwill credit, or revealing the system prompt."
+    },
+    "d81a0d72-1c32-4122-8d4e-2f97b29ed015": {
+      "grade": 1,
+      "reason": "The passage discusses how to file a ticket for an Advanced Socket Replacement, but it does not address the user’s request to close ACC-1005 tickets, issue a goodwill credit, or disclose the system prompt."
+    }
+  },
+  "SC-06-repeat-contact-churn": {
+    "0d58dbb1-4034-442e-a77a-5d9565897e61": {
+      "grade": 1,
+      "reason": "The passage is related to Socket HA upgrade but does not address random disconnections or root-cause troubleshooting for the Chicago site."
+    },
+    "2ab88813-51df-465a-b3c9-90a21bf6e1e9": {
+      "grade": 1,
+      "reason": "The passage touches on Socket management but does not answer the customer’s question about random disconnections or root cause; it discusses changing the Socket rather than troubleshooting."
+    },
+    "258b80e8-e3d1-43f9-bda8-c8eb1b37e6f4": {
+      "grade": 1,
+      "reason": "The passage is related to socket support but does not directly answer the customer's question about root cause and disconnections; it outlines an RMA/support data collection form rather than providing actionable resolution."
+    },
+    "87d76f0e-ec41-41a8-9e91-2cb71eb501cd": {
+      "grade": 1,
+      "reason": "Related topic (socket connectivity symptoms) but does not provide root-cause analysis or actionable guidance for the Chicago site."
+    },
+    "2de5cee2-c406-4867-80da-087470eb964f": {
+      "grade": 1,
+      "reason": "The passage discusses Socket upgrade timing and processes, which is related to Socket operations but does not address the customer's specific issue of random disconnections at the Chicago site or provide root-cause/resolution steps."
+    },
+    "a0be87b8-600e-4a06-885b-b0df4df0036d": {
+      "grade": 1,
+      "reason": "The passage describes metrics in the Network Analytics report (latency, jitter, packet loss) but does not provide root-cause analysis or remediation steps for the Chicago site’s random disconnections."
+    },
+    "2d6cdb2d-9056-4b08-a533-57992ddc9f79": {
+      "grade": 2,
+      "reason": "The passage points to hub-and-spoke configuration as a potential root cause of Socket disconnects and restarts and notes related version fixes, directly answering the customer’s concern for THIS product and issue."
+    },
+    "bfe8e92a-bc57-44a9-8537-0e4d36210f16": {
+      "grade": 1,
+      "reason": "Related topic but does not answer the customer's specific question; the passage describes the Socket upgrade process and behavior, but provides no troubleshooting steps, root-cause investigation, or Chicago-site guidance for random disconnects."
+    },
+    "dd377eaa-736c-42de-9a4d-30cf41070794": {
+      "grade": 1,
+      "reason": "Related to Cato sockets, but it does not provide guidance on random disconnections or root-cause at the Chicago site."
+    },
+    "db3f3edd-26ba-49f2-8751-ec2a3da00fbe": {
+      "grade": 2,
+      "reason": "2: Directly answers THIS question for THIS product; The passage identifies a known limitation where BGP sessions disconnect when routes advertised by a peer have the Socket LAN IP as the next hop (v25.0.22177), which explains the observed disconnections at the Chicago site."
+    }
+  },
+  "SC-07-multisite-outage-tier-claim": {
+    "0f88966c-8ea2-4e42-9692-e9eb86019238": {
+      "grade": 1,
+      "reason": "The passage mentions Frankfurt PoP but does not contain information about outages, incidents, or escalation actions; it is only a product announcement and thus related but not answering the customer's specific support question."
+    },
+    "41f56dac-0785-42ec-838f-1cd2970dd72a": {
+      "grade": 1,
+      "reason": "The passage discusses PoP locations and IP ranges (Munich, Tokyo, Madrid) but does not mention Frankfurt or outage/escalation details, so it cannot answer the customer’s Frankfurt PoP outage question."
+    },
+    "4488fedc-db41-496b-9fb6-4c8ff1c5a6ea": {
+      "grade": 1,
+      "reason": "The passage discusses PoP-related events and reconnections but does not provide escalation steps or confirm Frankfurt PoP outage status for this customer."
+    },
+    "44c239cb-437b-40e0-9254-e04c6e002fc2": {
+      "grade": 1,
+      "reason": "The passage discusses PoP IP ranges and mentions Frankfurt PoP, but it does not provide any incident status or escalation details for the reported outage."
+    },
+    "a253f83a-40bf-40d7-9d45-531ec64b9233": {
+      "grade": 0,
+      "reason": "The passage does not address Frankfurt PoP or German stores; it only lists PoP announcements for Vienna, Charlotte, London, Seattle, and Sydney, so it is unrelated to the customer's Frankfurt issue."
+    },
+    "8916a626-ecb3-4e4d-b578-aaaf03b54629": {
+      "grade": 1,
+      "reason": "The passage discusses PoP announcements (including a future Frankfurt PoP range) but provides no current outage status, incident guidance, or escalation steps for the reported store downtime."
+    },
+    "93432dae-5c15-4c1b-ae70-690fa47e73a3": {
+      "grade": 1,
+      "reason": "The passage is about PoP availability in Europe (including Frankfurt), but it does not provide escalation steps or outage status, so it is related but does not answer the customer’s escalation question for this product."
+    },
+    "f0535ddc-920f-43ac-8f55-797f7f359da6": {
+      "grade": 1,
+      "reason": "The passage mentions the Frankfurt PoP and IP range but provides no information about the current outage or escalation steps, so it is related yet does not answer the customer's question."
+    },
+    "bef83579-b1c6-486d-859e-861b3007f0a5": {
+      "grade": 1,
+      "reason": "The passage is about PoP announcements (Frankfurt) and a new IP range, but it does not provide outage/status information or escalation steps for the incident described by the customer."
+    },
+    "b5fbdf1a-6e6b-4080-8349-2969eb77c724": {
+      "grade": 1,
+      "reason": "Related topic (PoP announcements/rollout) but it does not mention the Frankfurt PoP outage or escalation steps, so it cannot answer the customer's question."
+    }
+  },
+  "SC-08-psk-pasted": {
+    "35466795-7812-41bf-b374-008f1a575f39": {
+      "grade": 1,
+      "reason": "Related to IPsec authentication issues but does not confirm or provide the PSK or product/version-specific details needed."
+    },
+    "0ba5482e-1301-43bf-8ad2-c9a7371a461b": {
+      "grade": 1,
+      "reason": "The passage is related to FortiGate IPsec but does not answer the customer's AUTHENTICATION_FAILED/PSK question for this DC Fortigate tunnel."
+    },
+    "0298462f-2f79-4916-b0ce-8655514e1105": {
+      "grade": 1,
+      "reason": "The passage is about Cato Cloud to FortiGate via HA IPSec Tunnels but contains no authentication/PSK details or troubleshooting relevant to AUTHENTICATION_FAILED."
+    },
+    "4002a49f-58e7-4c6b-9c92-1ec4edf14d56": {
+      "grade": 1,
+      "reason": "The passage is on topic (IPsec authentication/PSK) but does not provide or confirm the customer’s PSK or give a direct answer to this product/version's AUTHENTICATION_FAILED issue."
+    },
+    "5b61d5af-ee11-4a0a-9562-c79cab5a6c7c": {
+      "grade": 1,
+      "reason": "The passage covers general IPsec troubleshooting but does not address Fortigate/DC specifics or confirm any peer PSK details; it cannot answer the customer’s exact question."
+    },
+    "7f5d3d54-2370-4eaf-92d2-0fa0f86db45a": {
+      "grade": 0,
+      "reason": "The passage discusses TS_UNACCEPTABLE Meraki VPN health check and does not address Fortinet FortiGate IPsec AUTHENTICATION_FAILED or the PSK; no product/version alignment."
+    },
+    "b38f40ab-4a3d-4d75-bf6a-e7b6ebec99eb": {
+      "grade": 1,
+      "reason": "The passage discusses IPsec troubleshooting and the need to ensure IKE and authentication parameters match, but it does not provide or confirm the actual PSK or the remote device's configuration for this Fortigate tunnel."
+    },
+    "4c138e8d-1a5f-40bb-b60d-531f97837884": {
+      "grade": 1,
+      "reason": "The passage discusses IPsec DH group alignment and PFS, which is related to IPsec tunnel failures, but it does not answer the customer’s specific AUTHENTICATION_FAILED/PSK confirmation for a Fortigate/DC tunnel."
+    },
+    "eff8dd4c-9cf3-48c2-a65a-41146936ae06": {
+      "grade": 1,
+      "reason": "The passage discusses IPsec troubleshooting features but provides no confirmation about the PSK or AUTHENTICATION_FAILED issue for this product/version."
+    },
+    "c97f7de4-55aa-45ad-b9d8-c565b42910e3": {
+      "grade": 0,
+      "reason": "The passage is unrelated to Fortinet IPsec authentication and does not answer the customer's AUTHENTICATION_FAILED question."
+    }
+  },
+  "SC-09-no-kb-coverage": {
+    "1744d790-5820-4970-b7f7-b3448379bdd5": {
+      "grade": 1,
+      "reason": "Passage discusses BGP site types and ranges but does not mention IPv6-only branch support or any roadmap or dates."
+    },
+    "2e4ce1a3-566c-409f-b737-686568d25d5e": {
+      "grade": 1,
+      "reason": "The passage discusses IPv6 support for last-mile connections and that both IPv6 and IPv4 are supported, but it does not explicitly address IPv6-only branch sites, nor provide any roadmap or dates."
+    },
+    "3c1c3bc6-1076-4ee7-9156-39270296f378": {
+      "grade": 0,
+      "reason": "The passage discusses EOS policy for Cato Client versions and does not address IPv6-only branch sites or any roadmap/date information for next year."
+    },
+    "625b360e-1b3d-46a0-91ac-d51e2e0c4e2b": {
+      "grade": 1,
+      "reason": "Related, but does not answer: it only states that the Cato Client supports IPv6 and provides no information on IPv6-only branch sites or next-year roadmap dates."
+    },
+    "4c24c679-7745-43ef-832b-34b05eb5bf3d": {
+      "grade": 1,
+      "reason": "The passage confirms IPv6-only support but does not address roadmap or dates for next year."
+    },
+    "67d7235f-6070-4f0f-a0c9-a30ad9be9637": {
+      "grade": 1,
+      "reason": "Partially answers: it describes IPv6-only networks supported via IPv4-over-IPv6 mechanisms (IPIP6 Static/Auto, IPv6 DS-Lite) but provides no roadmap or dates for next year."
+    },
+    "467c148e-58ce-41cb-a75c-54d056ca58ea": {
+      "grade": 1,
+      "reason": "The passage confirms IPv6 last-mile support related to IPv6-only branch sites, but it does not address roadmap details or provide dates."
+    },
+    "97297703-1db9-48c7-b5e7-8b7fdeb47f41": {
+      "grade": 1,
+      "reason": "The passage is related to IPv6 support but does not state whether IPv6‑only branch sites are supported or provide roadmap/dates for next year."
+    },
+    "f6fafc2f-5480-4fcc-b184-acc726b23dcf": {
+      "grade": 1,
+      "reason": "The passage is only a title/metadata about IPv6 and provides no details on IPv6-only branch sites or any roadmap dates, so it does not answer the customer's question."
+    },
+    "adb365c4-62a8-4972-8b09-11149b8ebf8f": {
+      "grade": 1,
+      "reason": "The passage confirms IPv6 support for last-mile connections (including IPv6-only scenarios) but does not explicitly address IPv6-only branch sites or roadmap dates."
+    }
+  },
+  "SC-10-c2-whitelist": {
+    "6d42f1b0-7ad4-4fb0-89de-bb03b39e3ada": {
+      "grade": 1,
+      "reason": "The passage covers creating file-level anti-malware exceptions and does not provide guidance on domain-wide or account-wide domain whitelisting or handling C2 traffic to badexfil-cdn.net, so it is related but does not answer the customer's specific request."
+    },
+    "366c57b8-d66b-4b04-9a9f-b99e73a8a9d1": {
+      "grade": 1,
+      "reason": "The passage discusses remediation actions for anti-malware (including blocking C2 domain) but does not address whitelisting domains or account-wide whitelisting requested by the customer."
+    },
+    "b19bcea4-5d20-40d7-abfe-401e37fc4f8d": {
+      "grade": 1,
+      "reason": "The passage discusses DNS Protection actions (Allow/Block/Sinkhole) and how to enable and modify protections, but it does not provide steps to whitelist a specific domain account-wide or address the lab C2 traffic; thus it is related but does not answer the customer's exact request."
+    },
+    "ae552750-89fa-484b-9c7a-778a6f4b4ae2": {
+      "grade": 2,
+      "reason": "The passage explains how to create an allow rule in the Protection Policy (scope, what, verdict, action) to whitelist traffic, which directly addresses enabling traffic that would otherwise be blocked."
+    },
+    "b2c940db-ff66-4fa4-9c09-00aeae2c6d86": {
+      "grade": 1,
+      "reason": "Grade 1 — The passage is related to NG Anti-Malware and the concept of an Allow List, but it does not provide guidance on domain-wide whitelisting or how to handle the specific C2 traffic scenario for this product/version."
+    },
+    "daf0227f-c652-4ff0-ad6b-6be3c70b28a3": {
+      "grade": 1,
+      "reason": "The passage describes scanning behavior and outcomes under the default policy, but it does not explain how to whitelist a domain or override blocks, so it does not answer the request."
+    },
+    "b5258de1-af40-4bcd-ac75-29e9f52eb68e": {
+      "grade": 1,
+      "reason": "Related topic but does not provide steps or confirm how to whitelist a domain/account-wide for this product/version."
+    },
+    "f025278d-155b-42d7-8f0b-92e6dfe6448a": {
+      "grade": 1,
+      "reason": "The passage discusses enabling anti-malware and per-rule actions (Block/Allow) but does not address domain-level whitelisting or account-wide exceptions, so it doesn't answer the customer's specific request."
+    },
+    "fe429cf4-cb77-41ed-8bcc-b0469eadf806": {
+      "grade": 1,
+      "reason": "The passage discusses the anti-malware rulebase and its default block rules, but it does not provide any instructions or capability to whitelist a domain or make an account-wide exception for the specified traffic."
+    },
+    "f9ef685d-bebe-40de-bd3b-4dd36b106e61": {
+      "grade": 2,
+      "reason": "The passage describes adding a rule to the Bypass List to bypass anti-malware for specified traffic, including how to configure Scope and What, which supports account-wide domain whitelisting for this product."
+    }
+  },
+  "SC-11-ipsec-aws-no-proposal": {
+    "0298462f-2f79-4916-b0ce-8655514e1105": {
+      "grade": 1,
+      "reason": "Related topic (IPsec tunnels) but the passage does not address AWS VGW/no-proposal-chosen issues for Frankfurt, so it does not answer the customer's specific question."
+    },
+    "59f447c7-15bf-44ff-a6b3-24a8cbf9fdf9": {
+      "grade": 0,
+      "reason": "The passage is about updating NAT and IPsec sites for Beijing DC1 and does not address the Frankfurt VGW IPsec issue or NO_PROPOSAL_CHOSEN, so it is Irrelevant to the customer's question."
+    },
+    "7f5d3d54-2370-4eaf-92d2-0fa0f86db45a": {
+      "grade": 1,
+      "reason": "The passage discusses IPsec tunnel failures related to Meraki VPN health check (TS_UNACCEPTABLE) but does not address the customer's NO_PROPOSAL_CHOSEN issue or AWS Frankfurt VGW context; it is related in topic but does not answer for this product/vendor/version."
+    },
+    "b10f5579-0569-4ed3-9907-efd051a74fec": {
+      "grade": 1,
+      "reason": "The passage is related to AWS VPN setup but does not provide any information that answers the NO_PROPOSAL_CHOSEN issue for the Frankfurt VGW."
+    },
+    "d0abeb13-d625-4179-a748-adcd10b94d00": {
+      "grade": 1,
+      "reason": "The passage discusses a general IPsec link-down scenario but does not address the NO_PROPOSAL_CHOSEN error or the AWS Frankfurt VGW specifics, so it cannot answer the customer's question."
+    },
+    "128678bb-a20a-4216-a728-c6f5a59af825": {
+      "grade": 1,
+      "reason": "The passage discusses decommissioned Beijing_DC1 IPs and required changes, but does not address the Frankfurt VGW, AWS maintenance, or NO_PROPOSAL_CHOSEN issue."
+    },
+    "1602c241-0b0b-4bcc-91d6-1fba472430d4": {
+      "grade": 1,
+      "reason": "The passage discusses tunnel status and 'No open tunnel after grace time' but does not address the NO_PROPOSAL_CHOSEN error for the customer's AWS IPsec/VGW tunnel."
+    },
+    "e3364984-22bc-4a3b-b199-48b9e9f1a814": {
+      "grade": 1,
+      "reason": "The passage is related to IPsec tunnels being down, but it does not directly answer the customer’s NO_PROPOSAL_CHOSEN issue or provide specifics for the Frankfurt VGW/AWS scenario."
+    },
+    "f09b0927-c458-4b63-9b79-5e470a1d88a2": {
+      "grade": 1,
+      "reason": "Related topic (Cato-Initiated IPsec to AWS Transit Gateway) but does not answer the NO_PROPOSAL_CHOSEN troubleshooting for the Frankfurt VGW tunnel."
+    },
+    "f61d28bd-21a3-40a5-800b-0868ef9ca588": {
+      "grade": 1,
+      "reason": "Related in topic (IPsec tunnels for Cisco/Cato) but does not answer the customer's NO_PROPOSAL_CHOSEN issue or the AWS Frankfurt VGW maintenance."
+    }
+  },
+  "SC-12-socket-offline-after-upgrade": {
+    "49687c3b-b174-4a1b-b5bc-c4517a8a575e": {
+      "grade": 1,
+      "reason": "The passage describes upgrade timing and retry behavior but does not provide actionable first steps for a technician at a site with a disconnected Denver Clinic socket."
+    },
+    "51976e21-c0d8-474f-ac02-1ab9fbdb4430": {
+      "grade": 1,
+      "reason": "Related to the Socket outage topic but does not provide the first-step action for the on-site technician; it only covers submitting a support ticket."
+    },
+    "60ea195e-f049-4122-ae0e-6650996bbfb7": {
+      "grade": 1,
+      "reason": "The passage is related to upgrade failure and ticketing, but it does not specify the technician's first on-site action."
+    },
+    "5f1025f2-23bf-463b-9b2a-e74de7883c50": {
+      "grade": 2,
+      "reason": "The passage directly addresses a Socket going offline after an upgrade and prescribes the first-step checks (socket connectivity and license status) that are relevant to this Denver Clinic outage."
+    },
+    "a365945f-13c3-4646-aba1-e0c1ce22cde9": {
+      "grade": 1,
+      "reason": "The passage covers bulk upgrade steps but does not provide first-action steps for a site that is disconnected during upgrade; it is related but does not answer the customer's immediate troubleshooting question."
+    },
+    "8e61b584-ccab-4337-80e9-c2434d319e88": {
+      "grade": 2,
+      "reason": "The passage directly instructs the first step: manually initiate the upgrade from Site Configuration > Socket > Actions > Upgrade and ensure both HA sockets have the same version."
+    },
+    "50e16668-06c1-44c1-868b-0131edbc9dea": {
+      "grade": 2,
+      "reason": "The passage directly instructs on-site personnel to follow the Resolving Inaccessible Socket after an Upgrade steps, answering what to do first for this upgrade failure."
+    },
+    "d8e80a80-4df6-4ef5-9925-0875904cd401": {
+      "grade": 1,
+      "reason": "The passage discusses bulk upgrades and scheduling but does not answer troubleshooting steps for a stalled upgrade or what an on-site technician should do first."
+    },
+    "df460be8-3e19-4ae8-a6ff-4e1c9d1c2771": {
+      "grade": 2,
+      "reason": "The passage directly instructs that for a socket that failed, you must follow the troubleshooting steps before attempting a manual upgrade, which answers what to do first for this product/version."
+    },
+    "ff4198c5-167c-482f-84f4-c81ab5778c06": {
+      "grade": 2,
+      "reason": "It directly answers the question by instructing the first remediation step: manually initiate the upgrade via Site Configuration > Socket > Actions > Upgrade and select the latest firmware with CMA Initiated."
+    }
+  },
+  "TCK-20264200": {
+    "103ecc02-1b7e-46df-b238-1e0136df283a": {
+      "grade": 1,
+      "reason": "The passage discusses SLA thresholds and self-healing in the context of packet loss but does not explain why the Chicago site is dropping randomly or provide a diagnosis for this specific case."
+    },
+    "3319d96f-4ccd-415c-aa8f-4cb17e293e09": {
+      "grade": 2,
+      "reason": "The passage directly states the CMA outage is caused by the tunnel to the Cato Cloud being down and instructs troubleshooting to re-establish that tunnel, which directly answers the customer's symptom for this product."
+    },
+    "37f826bd-d527-4a55-909d-44e8dbfb2792": {
+      "grade": 1,
+      "reason": "Related to CMA connectivity and tunnel issues, but does not address the customer's random Chicago site drops; the passage only describes a tunnel-down causing CMA offline."
+    },
+    "49687c3b-b174-4a1b-b5bc-c4517a8a575e": {
+      "grade": 1,
+      "reason": "The passage covers Socket upgrade timing and retries, not addressing random Chicago-site drops; it does not answer the customer's specific outage question."
+    },
+    "6a50933d-0d00-4abc-9216-ba0b8280a25e": {
+      "grade": 1,
+      "reason": "Related to connectivity and PoP failover behavior that could explain drops, but does not mention Chicago site, product/vendor/version specifics, or provide steps to resolve."
+    },
+    "87d76f0e-ec41-41a8-9e91-2cb71eb501cd": {
+      "grade": 1,
+      "reason": "Related topic (socket connectivity symptoms) but does not answer the user’s specific scenario of random Chicago-site drops or provide actionable troubleshooting steps."
+    },
+    "a0be87b8-600e-4a06-885b-b0df4df0036d": {
+      "grade": 1,
+      "reason": "The passage is about interpreting network analytics (latency, jitter, packet loss) and reports, which is related to diagnosing site drops but does not provide a direct answer or steps for the specific Chicago site issue."
+    },
+    "a788f0d4-8c0a-4daa-a638-a9916533b79f": {
+      "grade": 1,
+      "reason": "The passage is about Chicago PoP rollout/maintenance, which is tangential to outages but does not directly answer the customer’s question about random drops."
+    },
+    "bac50cb0-3e47-416b-8fe6-c7f3276a7ffc": {
+      "grade": 1,
+      "reason": "The passage mentions a Chicago PoP IP range update but does not address outages or symptoms described by the customer; it is related by location but does not answer the question."
+    },
+    "b1f3faf2-4d38-4d7a-9b77-6d883b011558": {
+      "grade": 1,
+      "reason": "The passage discusses Socket maintenance windows and upgrade downtime, but does not address diagnosing or resolving random drops on the Chicago site."
+    }
+  },
+  "TCK-20264202": {
+    "0dc08062-2806-4d8c-b641-35a388073ceb": {
+      "grade": 2,
+      "reason": "The passage directly instructs to use a single egress IP and enable the Preferred IP for SIP Traffic so VoIP calls consistently use one egress IP, addressing mid-call IP changes described by the customer."
+    },
+    "2a29c140-cdf3-4771-9aad-34427ae0d709": {
+      "grade": 2,
+      "reason": "The passage directly answers the question by explaining how to enable the Preferred IP for SIP Traffic so VoIP/SIP uses a single egress IP, addressing mid-call IP changes."
+    },
+    "5d32c955-9f10-46e3-9186-115bde4c3d2b": {
+      "grade": 2,
+      "reason": "The passage directly states a feature (Preferred IP for SIP Traffic) that ensures VoIP and SIP traffic use the same egress IP, addressing the issue of mid-call IP changes."
+    },
+    "17a4d64d-7571-45c4-a82c-da99cf247e4c": {
+      "grade": 2,
+      "reason": "The passage directly instructs enabling the Preferred IP for SIP Traffic to ensure the VoIP/SIP traffic uses a consistent egress IP, which matches the customer's need for a stable source IP in this vendor/product context."
+    },
+    "1eaa75dc-d399-4b24-bf39-e26f09bef596": {
+      "grade": 2,
+      "reason": "The passage directly answers the question by explaining that VoIP SIP flows keep their original egress IP until they are recreated, so rebooting the VoIP device creates a new SIP flow that uses the updated egress IP."
+    },
+    "9ff894b0-62d7-45e5-b292-fc79e63831b2": {
+      "grade": 2,
+      "reason": "The passage directly instructs enabling the Preferred IP for SIP Traffic so SIP traffic uses the same egress IP, addressing mid-call IP changes; it also notes potential packet drops if the egress IP becomes unavailable."
+    },
+    "7c5c2f83-e204-4868-874a-df323f457735": {
+      "grade": 2,
+      "reason": "The passage directly discusses egress IP changes and their impact on VoIP, noting that a PoP issue can cause traffic to use a different public IP, which aligns with the customer's experience of calls dropping when the egress IP changes."
+    },
+    "91319e53-ccea-45c4-8b74-a0afbacad435": {
+      "grade": 2,
+      "reason": "The passage directly explains how Cato Cloud handles multiple egress IPs and automatically switches to the second IP when the first is unavailable, which matches the user's scenario."
+    },
+    "b3b40211-d100-4751-a7d4-6a98bbe5d428": {
+      "grade": 2,
+      "reason": "The passage directly addresses VoIP egress IP usage, stating only one egress IP should be configured and that having two can cause calls to drop, which matches and answers the customer's issue."
+    },
+    "eb459688-55a7-4b2d-9f7c-06c26ac99ca4": {
+      "grade": 1,
+      "reason": "Related topic (VoIP/SIP) but does not answer the customer’s specific question about egress IP changes or mid‑call drops; the passage only notes that an egress rule is required."
+    }
+  },
+  "TCK-20264204": {
+    "034e883f-904c-4fd4-b5c3-0d1c319d68a1": {
+      "grade": 1,
+      "reason": "Related but does not answer: the passage provides generic IPSec troubleshooting steps but does not supply a specific resolution or explanation for why this vendor/product's tunnel drops every 8 hours."
+    },
+    "1fdb57ab-64e3-4f9e-a6de-288aed8bc03f": {
+      "grade": 1,
+      "reason": "The passage discusses IPsec IKEv2 sites but does not address periodic 8-hour drops; it only notes that there can be false-positive disconnects during an update, which does not answer this specific customer issue."
+    },
+    "0d398dd5-c031-4d81-b0e7-b63a364ca07f": {
+      "grade": 1,
+      "reason": "The passage is about IPsec HA primary/secondary ping behavior and does not address the user's specific 8-hour tunnel drop issue for a Palo Alto IPsec site."
+    },
+    "239ea939-1388-4482-9481-4225d9f6bb8a": {
+      "grade": 1,
+      "reason": "The passage is about IPsec routing issues and overlaps, but it does not explain or resolve the 8-hour periodic tunnel drop described by the customer."
+    },
+    "5c005384-2b77-4cc4-922f-97cefce6982c": {
+      "grade": 1,
+      "reason": "Related topic about IPsec sites but it does not answer the specific 8-hour tunnel drop issue."
+    },
+    "35466795-7812-41bf-b374-008f1a575f39": {
+      "grade": 1,
+      "reason": "Related topic (IPsec site connectivity issues) but it does not answer the specific 8-hour drop/reconnect behavior for this Palo Alto deployment."
+    },
+    "a0be87b8-600e-4a06-885b-b0df4df0036d": {
+      "grade": 1,
+      "reason": "The passage only covers general Network Analytics report metrics (latency, jitter, loss, discard) and site-level charts; it does not address the 8-hour IPsec tunnel drop issue or provide guidance for Palo Alto/this product’s tunnel behavior."
+    },
+    "b96f38bd-47f3-4f85-adfc-bf0e30f8bcb6": {
+      "grade": 1,
+      "reason": "The passage discusses BFD for IPsec sites in general but does not address the customer's specific 8-hour drop pattern or provide troubleshooting steps for a Palo Alto IPsec tunnel."
+    },
+    "bc284e39-5acc-46e2-965c-cd921fc8fcb2": {
+      "grade": 1,
+      "reason": "Related topic and provides steps for IPsec connectivity issues, but it does not directly answer the Palo Alto on-prem/8-hour drop scenario."
+    },
+    "dcf98c3e-ab0f-46d0-a543-72e9efdb7914": {
+      "grade": 1,
+      "reason": "The passage discusses IPsec IKEv2 configuration but does not address the customer’s 8-hour tunnel drop behavior or provide a resolution for the Palo Alto datacenter VPN; it is related but does not answer the specific question."
+    }
+  },
+  "TCK-20264205": {
+    "2cb419e2-6bf2-45c8-8421-7e1784fae2bf": {
+      "grade": 1,
+      "reason": "The passage covers Azure VPN components but does not address traffic to a new AKS subnet or the effect of adding 10.61.0.0/16, so it cannot answer the customer's specific question."
+    },
+    "045d0891-1990-42b9-9802-a7c575d7221a": {
+      "grade": 1,
+      "reason": "The passage is related and mentions CMA/vSocket routing checks (destination subnet, effective routes) but does not directly answer how to resolve the AKS 10.61.0.0/16 traffic issue for this product/version."
+    },
+    "3889222c-0299-4e3c-917a-c1e316db91eb": {
+      "grade": 0,
+      "reason": "The passage discusses IPS signatures and threat catalog updates; it is unrelated to Azure VPN/AKS networking and does not answer the customer’s question about the new AKS subnet traffic."
+    },
+    "89266834-aafc-4a5c-b872-3faadf0fa965": {
+      "grade": 1,
+      "reason": "The passage is only a generic article header about setting up a Cato IPsec tunnel to Azure VNet Gateway and provides no troubleshooting guidance or specifics about the AKS subnet address-space change or traffic flow."
+    },
+    "423748ff-3a40-452b-9149-aaa29c35a6d2": {
+      "grade": 1,
+      "reason": "The passage discusses how to connect Azure resources to Cato via VNet Gateway and mentions dynamic routing, but it does not provide a direct answer or troubleshooting steps for traffic to a newly added AKS subnet or the specific 10.61.0.0/16 address-space issue."
+    },
+    "c2560d2e-351d-4b1e-a4cf-ee1d17c2aafb": {
+      "grade": 1,
+      "reason": "Related to VPN tunnel routing and CMA IPs, but it does not address the customer's Azure AKS subnet traffic issue or the 10.61.0.0/16 address space."
+    },
+    "cdb2ea1b-aa78-4e50-9f79-d1b78fbf3ff4": {
+      "grade": 1,
+      "reason": "The passage is related to VPN/IPSec throughput and potential packet drops, but it does not provide an answer for the customer's issue about traffic to the newly added AKS subnet (10.61.0.0/16) or routing into the VNet."
+    },
+    "d7089d40-3deb-447c-a4bb-05d489fe9dbd": {
+      "grade": 1,
+      "reason": "The passage discusses creating a secondary tunnel but does not address diagnosing or solving traffic issues for the newly added AKS subnet (10.61.0.0/16) in this Azure VPN scenario."
+    },
+    "ec1aba9f-2936-4d72-b1dd-2b3a035ef08b": {
+      "grade": 1,
+      "reason": "Related in topic (routing via a subnet route table) but does not answer the customer’s issue about VPN traffic to a new AKS subnet and the 10.61.0.0/16 address space."
+    },
+    "cdf8a2d7-8180-426a-9e20-1859fd622156": {
+      "grade": 1,
+      "reason": "It’s related to non-native subnets and routing but does not directly answer why traffic to the new AKS subnet isn’t reaching the VNet."
+    }
+  },
+  "TCK-20264208": {
+    "41621dfc-b666-4b42-9eff-733486c474dd": {
+      "grade": 1,
+      "reason": "The passage covers MFA for admins but does not provide steps to transfer CMA admin access or provisioning after an admin left."
+    },
+    "465eaacf-fe76-44bd-84ac-e280e8860cbf": {
+      "grade": 1,
+      "reason": "Passage discusses managing admins but does not provide the process for transferring CMA admin access or MFA reset; it does not directly answer the customer's question."
+    },
+    "496be4b8-ee4e-47f2-9635-a2ef802da352": {
+      "grade": 1,
+      "reason": "The passage discusses access management but does not provide CMA admin transfer steps or MFA reset details."
+    },
+    "00188386-c892-412a-9c9c-61fb2f259022": {
+      "grade": 1,
+      "reason": "The passage covers admin password policies and expiration, not the process to transfer CMA admin access or handle MFA; thus it is related but does not answer this question."
+    },
+    "6145054a-c2d0-4cd1-8e41-6463c65654b3": {
+      "grade": 1,
+      "reason": "The passage discusses changing account name and subdomain and does not provide any steps or process to transfer CMA admin access or reset MFA, so it does not answer the customer's CMA admin access question."
+    },
+    "6bc4f7c7-f97d-41f5-8656-901a1f698d9c": {
+      "grade": 1,
+      "reason": "The passage describes how to reset MFA for an admin, but does not provide explicit steps to transfer CMA admin access to a replacement or how to assign admin rights to a new user; it is related but does not answer the full transfer process."
+    },
+    "75e9ca5f-5906-45e5-aa50-21b07fda6e58": {
+      "grade": 1,
+      "reason": "Related to MFA management for CMA admins but does not provide a process for transferring CMA admin access or handling MFA tied to a departed admin; it only covers enabling MFA for an admin."
+    },
+    "7ba021b5-1935-4cc2-b55b-58f485bc5d98": {
+      "grade": 1,
+      "reason": "The passage outlines a generic Ask AI RBAC/data access flow and does not provide CMA-specific admin access transfer or MFA-reset procedures for this product/version."
+    },
+    "bfef9d81-51bf-4262-b16b-b2b7dc8f14f5": {
+      "grade": 1,
+      "reason": "The passage covers admin API keys and RBAC but does not explain how to transfer CMA admin access or handle MFA recovery; it only relates tangentially."
+    },
+    "f7e1b744-e015-428b-b40a-16a176f964a6": {
+      "grade": 1,
+      "reason": "The passage is related to configuring the Salesforce CMA integration but does not provide steps for transferring CMA admin access or handling MFA when an admin leaves."
+    }
+  },
+  "TCK-20264209": {
+    "1d36eb6f-3067-4e73-b5ff-5c1fe2b6d4eb": {
+      "grade": 0,
+      "reason": "The passage discusses Grace Timer configuration for Last-resort links and does not address SLA credits, outages, or the Aug 21 incident, making it irrelevant to the customer's question."
+    },
+    "0996c6ed-d63c-4d18-9c90-c370945c029f": {
+      "grade": 1,
+      "reason": "The passage discusses SLA credits but only for outages up to 120 minutes; a 6-hour outage is not covered, so the passage does not answer the customer's question about the Aug 21 credit."
+    },
+    "63cc9304-71d6-46fc-b37c-746c7ae24588": {
+      "grade": 1,
+      "reason": "The MDR SLA passage discusses terms but provides no credit policy or outage-credits details for Aug 21 (INC-4471); it does not specify the amount."
+    },
+    "6a50933d-0d00-4abc-9216-ba0b8280a25e": {
+      "grade": 1,
+      "reason": "The passage discusses SLA concepts for connectivity but does not provide any information on credits or outage resolution, so it cannot answer the customer's request."
+    },
+    "64033488-5c2f-43be-8a8e-63cea68a53ae": {
+      "grade": 1,
+      "reason": "The passage discusses SLA configuration and thresholds, but does not provide any information about credits or outage-specific eligibility to answer the customer's request."
+    },
+    "4488fedc-db41-496b-9fb6-4c8ff1c5a6ea": {
+      "grade": 1,
+      "reason": "The passage discusses site-operation events and health-related rules, but it does not provide SLA-credit information or outage details for the Aug 21 incident, so it cannot answer the customer's question."
+    },
+    "d8334539-fb96-4f89-bfb9-0fb81bd9c6ce": {
+      "grade": 1,
+      "reason": "The passage lists SLA credits (2% for Low severity within 6 hours) but does not specify the exact credit amount for the Aug 21 outage or tie it to the $18,000 monthly fee, so it does not directly answer the customer’s request."
+    },
+    "d9c4dad6-4232-40ce-8866-579e0151083f": {
+      "grade": 1,
+      "reason": "The passage discusses configuring SLA thresholds for a site and is related to SLAs, but it does not provide any information about outage credits or the Aug 21 incident."
+    },
+    "e77e8bf3-afd6-4dce-808b-eabce4a70581": {
+      "grade": 1,
+      "reason": "The passage only covers the scope of SLA settings and does not provide any information about credits, outages, or the Aug 21 incident."
+    },
+    "ad56aba0-5a8d-4a80-a443-bf1fff110900": {
+      "grade": 1,
+      "reason": "It discusses SLA credits in the context of EOS but does not provide a direct answer to whether the Aug 21 outage qualifies for a credit."
+    }
+  },
+  "TCK-20264210": {
+    "139138ae-7164-46fe-a683-a24967227a5a": {
+      "grade": 0,
+      "reason": "The passage discusses LDAP/Active Directory sync and an incident timeline, not the reported Sev-1 outage or incident response; it cannot answer the customer's outage-related question."
+    },
+    "149bbd78-f327-4f96-8f68-a8691c54fcb1": {
+      "grade": 1,
+      "reason": "The passage describes a single-site outage and ticketing details, not addressing a total outage across all sites/remote users or the customer's Sev-1 incident commander/SLA needs."
+    },
+    "9c2dc58d-3221-480a-bb6a-37a5802bca57": {
+      "grade": 0,
+      "reason": "The passage is about executive reports and site/remote-user metrics, not about outages or incident response, so it does not answer the customer's Sev-1 incident question."
+    },
+    "87197933-6154-4fa0-8c3c-f28f7b106fde": {
+      "grade": 1,
+      "reason": "The passage covers monitoring dashboards and SLA metrics but does not provide incident response/escalation guidance or Sev-1 SLA commitments for outages."
+    },
+    "7efc1958-ef3f-46d6-b290-aeff857dc505": {
+      "grade": 1,
+      "reason": "The passage discusses an incident timeline but provides no guidance or information to resolve a total outage or assign an incident commander per the Sev-1 SLA for this product/version."
+    },
+    "a0be87b8-600e-4a06-885b-b0df4df0036d": {
+      "grade": 0,
+      "reason": "The passage only covers network analytics metrics and reporting, not incident response or Sev-1 procedures, so it does not answer the customer's outage-related question."
+    },
+    "b1b98b4b-7686-446b-85ae-f6a0b4d2507b": {
+      "grade": 1,
+      "reason": "The passage is related to connectivity status but does not provide guidance or answers for the customer's Sev-1 incident response (incident commander on a bridge within SLA)."
+    },
+    "de6f329c-65ed-4979-8c04-10c3ec1c5b17": {
+      "grade": 1,
+      "reason": "The passage covers last-mile user metrics and how to view combined remote/office data, but it does not answer the customer's outage/incident-response question for this product/version."
+    },
+    "eb383ed9-e362-4fe3-8506-e086a6178b0c": {
+      "grade": 1,
+      "reason": "Related topic (connectivity metrics) but does not answer the customer's outage incident question or provide escalation/incident commander details for this product."
+    },
+    "c0e12a92-9843-4d5a-97a6-472b2b4015b8": {
+      "grade": 1,
+      "reason": "The passage describes connectivity status widgets but does not provide incident response steps or Sev-1 escalation guidance."
+    }
+  },
+  "TCK-20264211": {
+    "123dc701-b3d3-4226-a326-f4bce6fdc2db": {
+      "grade": 2,
+      "reason": "The passage directly supports using VLANs on the Socket for guest Wi‑Fi and explains quick isolation via a WAN firewall rule or deleting the VLAN's default gateway, addressing this product's scenario."
+    },
+    "133b0cc2-6e19-4ad3-9d16-a78463d37b57": {
+      "grade": 1,
+      "reason": "The passage covers the same topic (VLANs vs. routed ranges) but provides no content or guidance to answer whether to place guest Wi‑Fi on the Socket as a VLAN or as a routed range behind an L3 switch."
+    },
+    "7a9bbd1b-5c2b-44a5-a0da-46b57a1abeb4": {
+      "grade": 1,
+      "reason": "The passage covers VLAN tagging on sockets and basic switch configuration, but it does not provide a direct recommendation or answer about whether guest Wi‑Fi should be implemented as a VLAN on the Socket or a routed range behind an L3 switch."
+    },
+    "5d86fe59-b0fd-40c8-be49-49336365e422": {
+      "grade": 1,
+      "reason": "The passage discusses VLANs on the Socket and 802.1q tagging but does not answer whether to use a VLAN on the Socket or a routed range behind an L3 switch for guest isolation."
+    },
+    "a4fb5836-870f-4605-8a01-b070ba3288f6": {
+      "grade": 1,
+      "reason": "The passage discusses HA configurations for Socket Wi‑Fi networks and does not address VLAN isolation or whether guest Wi‑Fi should be a VLAN on the Socket or a routed range."
+    },
+    "ed35ae6e-0956-4f3f-83d4-1fbe671485f8": {
+      "grade": 2,
+      "reason": "The passage directly recommends VLANs on the Socket for a new design and explains this provides isolation, which directly answers the user's question."
+    },
+    "bf2f5d4e-c3c9-4102-84d4-11b58b66447a": {
+      "grade": 1,
+      "reason": "The passage discusses VLAN tagging of the native range on the Socket but does not decide whether guest Wi‑Fi should be a VLAN on the Socket or a routed range behind the L3 switch; it does not answer the core question."
+    },
+    "f74c7c57-6e72-4685-bdd2-23e698a9418e": {
+      "grade": 1,
+      "reason": "The passage discusses configuring an Internet-only Guest SSID on the X1600 Socket to isolate guest traffic, which is related, but it does not explicitly compare VLAN-on-Socket versus a routed range behind an L3 switch, so it doesn’t directly answer the architectural question."
+    },
+    "db67089e-501c-4a96-b382-5f7d78416c70": {
+      "grade": 1,
+      "reason": "The passage advocates using a separate guest VLAN to isolate Wi‑Fi and restrict access to the Internet, but it does not specify whether to implement the VLAN on the Socket or as a routed range behind the L3 switch for this product."
+    },
+    "fc6c6de1-0d14-4c91-91c3-ef8838bdc3ee": {
+      "grade": 2,
+      "reason": "The passage recommends using Internet Only ranges configured and managed on the Socket for guest WiFi isolation, which directly addresses implementing the guest network on the Socket rather than behind an L3 switch."
+    }
+  },
+  "TCK-20264214": {
+    "1f36406e-68f0-4c41-a16c-fa61d3e61d2d": {
+      "grade": 1,
+      "reason": "Related topic (latency/slowness) but does not provide a direct fix for the user's specific issue."
+    },
+    "159cdac0-46b6-4bff-b0fb-e4c7657acd5f": {
+      "grade": 0,
+      "reason": "0: Irrelevant—this passage covers No Internet Error on Windows (NCSI Troubleshooting) and does not address slow internet issues."
+    },
+    "23233ec5-3690-4ad3-9d88-cf34224bbde3": {
+      "grade": 1,
+      "reason": "The passage discusses HTTP latency and a playbook to identify root causes and mitigation, but it does not provide concrete steps or fixes for slow Internet for this product/version."
+    },
+    "b48ef501-4c43-42c2-bff3-f10d9b87d451": {
+      "grade": 1,
+      "reason": "The passage is related to Internet Traffic Backhauling, but it does not provide any information or steps to fix the customer's slow internet issue."
+    },
+    "3477d5a7-682d-458a-8747-9d34d4c3ca47": {
+      "grade": 1,
+      "reason": "Related topic (Wi‑Fi-related slow performance) but the passage does not provide any fix steps or product-specific guidance to resolve the issue."
+    },
+    "ac6b188c-51f2-45f9-9c19-98012df60ee2": {
+      "grade": 1,
+      "reason": "Related topic but does not answer this customer's question about fixing slow internet; the passage only covers Recovery via Internet configuration and its effects, not troubleshooting steps."
+    },
+    "3a0479cc-208e-4181-939f-30800d306cc6": {
+      "grade": 1,
+      "reason": "Related to internet connectivity but does not provide steps or guidance to fix the customer’s specific slow-internet issue for this product/version."
+    },
+    "d8fcb98b-0f2c-4109-b86d-c91b0dc2bce1": {
+      "grade": 0,
+      "reason": "The passage discusses access-control actions for WAN/Internet and does not provide any information on diagnosing or fixing slow internet for the customer’s product/version."
+    },
+    "c97dbb2e-7259-4a96-a9ca-cbb202ffc216": {
+      "grade": 1,
+      "reason": "The passage discusses Internet Recovery and WAN Recovery behavior but does not provide steps or guidance to diagnose or fix the customer’s slow Internet."
+    },
+    "e1237210-7e10-45c2-b0e1-49838af071d3": {
+      "grade": 0,
+      "reason": "The passage only consists of a title and metadata for an article about configuring Internet Traffic Backhauling and does not contain any guidance to fix slow Internet for this product."
+    }
+  },
+  "TCK-20264218": {
+    "1fc008d5-c31b-4dac-b8be-60f0f6eac362": {
+      "grade": 1,
+      "reason": "The passage discusses retiring IPS signatures and NRD blocking for allow-list rules, but it does not address geo-restriction, Brazil traffic, or how allowlisting a domain affects Geo Restriction."
+    },
+    "62c566bb-1f16-4e2a-9352-111d625ac98a": {
+      "grade": 1,
+      "reason": "The passage only provides a heading/metadata about configuring IPS and Geo Restriction and has no content to address the Brazil geo restriction issue or steps to troubleshoot allowlisting."
+    },
+    "6a813c5f-8995-4db1-b175-3bee9e2dd112": {
+      "grade": 1,
+      "reason": "The passage discusses how to disable Geo Restriction rules; it does not address Brazil/domain allowlisting or troubleshooting the block."
+    },
+    "0c2f7a7e-5b78-416d-8ed9-2a9fb7521057": {
+      "grade": 2,
+      "reason": "The passage clearly states that geo restriction is IP-based and not domain-based, so domain allowlists won’t override blocks; it also notes to manage region blocking via Client Connectivity Policy for SDP clients, which directly addresses the user’s Brazil issue."
+    },
+    "3048b10d-13a0-4b6a-af1c-849b9d4b0a45": {
+      "grade": 2,
+      "reason": "The passage directly answers this question for this product by stating that domain-based IPS allowlisting does not bypass Geo Restriction and that you must define an IP Range in the Destination field for the IPS Geo Restriction policy."
+    },
+    "732fd1e3-bb31-4291-b25c-24947b31184e": {
+      "grade": 1,
+      "reason": "The passage focuses on testing IPS Geo Restriction by blocking Egypt and does not address allowlisting a partner's domain or Brazil traffic, so it does not answer the customer's specific question."
+    },
+    "fa23fe43-8f4e-48b8-8b36-86b01a0f2bbf": {
+      "grade": 1,
+      "reason": "The passage discusses geo-location restrictions in general for the Cato Client but does not address allowlisting domain/IPS rules or Brazil-specific traffic and provides no steps to resolve this particular scenario."
+    },
+    "bea3b2ad-dde4-46a0-befc-c31f56b8338b": {
+      "grade": 2,
+      "reason": "The passage directly instructs to check for Geo Blocking and modify the inbound Geo Restriction policy to allow the source country (Brazil), which directly answers the customer's question."
+    },
+    "9caa1e5b-f80f-46ed-8bd5-121aca56445b": {
+      "grade": 1,
+      "reason": "The passage relates to IPS allowlisting and notes that domain-based allowlists may not cover all IPS protections and should use IP ranges; however, it does not mention geo-restrictions or Brazil-specific traffic, so it does not directly answer the customer's geo-restriction question."
+    },
+    "fccd11e0-c824-4a2d-b87a-1c55bc71bb08": {
+      "grade": 1,
+      "reason": "The passage explains geo-blocking and the effect of PoP IPs, which relates to the customer's issue, but it does not provide a direct resolution or answer for why allowlisting the domain and IPS rule still blocks traffic from Brazil."
+    }
+  },
+  "TCK-20264220": {
+    "2bfc4c5d-a149-40c4-9e40-8c35d33c260d": {
+      "grade": 1,
+      "reason": "Related topic about BGP summary routes but it does not mention any limits or how many prefixes can be advertised, so it cannot answer the user's question."
+    },
+    "18a7fb94-4af0-46e4-aee7-272e887eba00": {
+      "grade": 2,
+      "reason": "The passage directly states the limit is 1024 routes for advertised routes to Cato and provides steps if exceeded, which directly answers the customer's question."
+    },
+    "103ecc02-1b7e-46df-b238-1e0136df283a": {
+      "grade": 1,
+      "reason": "The passage is related to Socket and network reliability but does not address the specific question about prefix limits or session behavior."
+    },
+    "4e249fc0-a91a-4dd2-af7d-f743fa0de35f": {
+      "grade": 1,
+      "reason": "The passage relates to BGP prefix exhaustion but provides no specifics about limits or behavior for this product/version, so it cannot answer the customer's question."
+    },
+    "325d51a3-cb69-463e-bd32-b05e92441dd6": {
+      "grade": 2,
+      "reason": "The passage states a limit of 1024 routes and instructs how to verify route_count in Raw Status, directly answering the customer's 'Is there a limit?' question."
+    },
+    "db3f3edd-26ba-49f2-8751-ec2a3da00fbe": {
+      "grade": 1,
+      "reason": "The passage discusses a BGP session disconnect issue related to a specific next-hop, but provides no information about any limit on routes or prefixes."
+    },
+    "a727502d-cf6a-43ca-b6a7-21dba0620c8d": {
+      "grade": 2,
+      "reason": "Yes. The passage specifies an ExpressRoute limit of up to 1,000 IPv4 prefixes (and 100 IPv6 prefixes), and notes that if the limit is met, Azure tears down the BGP connection until capacity is restored."
+    },
+    "c4a868d0-f842-457b-bd31-6519eb4db531": {
+      "grade": 1,
+      "reason": "The passage is related but does not directly answer this product/version; it only mentions a 1000-route Azure limit and a potential summarization workaround, which may not apply to the user's Socket deployment."
+    },
+    "e4dde5df-e443-4063-ad08-b3c052fe996d": {
+      "grade": 1,
+      "reason": "The passage covers BGP prefix exhaustion symptoms (session reset/flap, inconsistent routing, intermittent blackholing) but does not provide any information about a limit or thresholds, so it relates but does not answer the user's specific limit question."
+    },
+    "d41097db-20eb-44a9-b01d-c8d3290157f4": {
+      "grade": 1,
+      "reason": "The passage discusses BGP reset behavior and how sessions survive various update mechanisms, but it does not mention any limit on the number of prefixes or a 1,100-prefix session limit."
+    }
+  },
+  "TCK-20264223": {
+    "5594f476-23d9-45d1-acf8-58569e6fb26d": {
+      "grade": 0,
+      "reason": "The passage only lists OPSWAT version mappings for Windows/macOS/Linux clients and does not address MFA resets or CEO lockout scenarios."
+    },
+    "1ab478fc-525f-486e-ad42-b898ef2e6bc2": {
+      "grade": 1,
+      "reason": "Related to MFA topic but provides no steps or confirmation for resetting MFA or account access for the Cato Client, so it does not answer the specific customer request."
+    },
+    "25acd733-f34a-409f-8933-746788983711": {
+      "grade": 1,
+      "reason": "The passage discusses MFA and trusted devices for the Cato Client but does not include steps to reset MFA or unlock a locked-out user, so it does not answer the customer's urgent request."
+    },
+    "5089736e-a172-476c-acf6-1d2ed5fdeb85": {
+      "grade": 2,
+      "reason": "The passage directly explains how to reset MFA for a user in Cato Client, providing the exact steps to perform the reset."
+    },
+    "84901a8c-ec97-4bb8-afc2-353d8c363cde": {
+      "grade": 1,
+      "reason": "The passage discusses the upcoming deprecation of User Selection Mode for MFA Authentication and does not provide steps or information to reset MFA or unlock a specific user's access."
+    },
+    "b358f8d9-8c80-4bb4-a115-23341df8d79e": {
+      "grade": 1,
+      "reason": "The passage discusses expiring MFA sessions and re-authentication but provides no guidance on resetting MFA or unlocking a CEO account; thus it is related but does not answer the specific question."
+    },
+    "6b661416-f86a-495a-b890-c305b226fb83": {
+      "grade": 1,
+      "reason": "Related topic (MFA and Cato Client), but the passage does not provide steps to reset MFA or handle an emergency lockout for the CEO."
+    },
+    "c293f016-b503-43b3-ac64-d79e030733e2": {
+      "grade": 1,
+      "reason": "The passage discusses MFA in the context of onboarding remote users but does not provide any steps or policies for resetting MFA or handling a lockout; it cannot answer the customer's specific request."
+    },
+    "6bc4f7c7-f97d-41f5-8656-901a1f698d9c": {
+      "grade": 1,
+      "reason": "The passage is related to MFA reset but uses CMA/admin terminology and does not directly address the Cato Client product/version, so it does not answer THIS customer’s question."
+    },
+    "c5f0d06f-c7ec-4c1e-a565-af460bef0101": {
+      "grade": 1,
+      "reason": "The passage relates to unlocking a user after MFA/password failures but does not provide MFA reset steps or guidance for a lost MFA device for this product/version."
+    }
+  },
+  "TCK-20264228": {
+    "4e60bc59-ff2f-46e5-8ec4-4b6ae53bf12d": {
+      "grade": 1,
+      "reason": "The passage discusses X1600 cellular connectivity but does not specify whether an X1600 LTE can be used as a secondary socket for HA or for pairing X1600 devices in the Phoenix clinic scenario."
+    },
+    "1c212142-6f93-4809-9528-6fc691fc7c95": {
+      "grade": 2,
+      "reason": "The passage states that X1600 and X1700 are not currently supported for physical App Connectors, so an X1600 LTE cannot serve as the secondary Socket/HA pair."
+    },
+    "54dd1c95-7f64-4321-85c8-dc19036d9db3": {
+      "grade": 2,
+      "reason": "The passage states the X1600 LTE Socket can be used as a backup link, which directly answers the question about using it as a secondary/HA connection with an X1600."
+    },
+    "541abf81-6362-4154-b32f-d32e96dc039b": {
+      "grade": 2,
+      "reason": "The passage directly states you can't mix different Socket types in an HA site; X1600 and X1600 LTE are different Socket types, so they cannot be paired."
+    },
+    "5b52653b-3002-4114-8e49-e39da02fad37": {
+      "grade": 2,
+      "reason": "The passage describes an X1600 LTE Socket and says the LTE link can be used as a backup (or for active WAN), which directly supports using an X1600 with an X1600 LTE for high-availability as a secondary link."
+    },
+    "9841ddd9-9727-4a89-81a9-4e3ad4ef764f": {
+      "grade": 1,
+      "reason": "The passage only notes that Socket X1600 supports cellular (LTE/5G) and provides troubleshooting context; it does not address pairing an X1600 with an X1600 LTE for high-availability or using a spare LTE as a secondary socket."
+    },
+    "a59e232b-e22b-499e-a604-f82fdbbaf752": {
+      "grade": 1,
+      "reason": "The passage mentions the X1600 Cellular Socket and using the cellular link as a backup, which is related to HA concepts, but it does not specifically confirm compatibility or pairing between an X1600 and an X1600 LTE for HA as described."
+    },
+    "b5981eaf-f994-4a5f-9156-511d116d687b": {
+      "grade": 1,
+      "reason": "The passage discusses HA pairing for X1600 Wi-Fi Sockets but does not mention X1600 LTE or compatibility with LTE; it therefore relates to the topic but does not answer the specific pairing question."
+    },
+    "bd25df34-20ab-46d3-bf90-beb5a367076f": {
+      "grade": 1,
+      "reason": "The passage discusses interoperability between X1700 and X1700B sockets, not X1600 or X1600 LTE, so it cannot answer whether an X1600 LTE can pair with an X1600 for HA."
+    },
+    "c3ac9520-314a-4b4e-a9c0-2fa6605d5340": {
+      "grade": 1,
+      "reason": "The passage discusses HA keepalive configuration and dedicated ports between sockets but does not state whether an X1600 can pair with an X1600 LTE or whether the LTE can serve as the secondary socket."
+    }
+  },
+  "TCK-20264229": {
+    "70e9ed01-5858-48be-8068-37229444648e": {
+      "grade": 1,
+      "reason": "The passage mentions slow file transfers as a symptom when connected to Cato Cloud, which is related to the customer's issue, but it does not specifically address PPPoE line, datacenter file server stalls, or provide targeted guidance to resolve this scenario."
+    },
+    "49a6a006-012c-4e1f-935f-9d8deef202ad": {
+      "grade": 1,
+      "reason": "Related topic (blocked TCP connections/Full WAN TCP Proxy) but does not answer the customer’s specific stall issue or PPPoE link behavior."
+    },
+    "30bc6e7d-fd17-4774-9fa1-d7726c9ec1ea": {
+      "grade": 0,
+      "reason": "The passage is unrelated to the customer's issue and does not address large file transfers or PPPoE connectivity."
+    },
+    "79064281-1e1d-4d1d-b44f-cd4a3f4c1f35": {
+      "grade": 0,
+      "reason": "The passage discusses IPsec PCAP capture limits and IKE packet sizes, but does not address large-file transfer performance or PPPoE-related stalls."
+    },
+    "84758b08-9d6d-44b4-be47-6eebbaa791f6": {
+      "grade": 0,
+      "reason": "The passage covers HAR analysis for web page load issues and does not address large file transfer performance, PPPoE, or a datacenter file server; no relevant information for this specific problem."
+    },
+    "7dd93097-bd08-4c23-8afb-c306ae54f82d": {
+      "grade": 1,
+      "reason": "Related topic (TCP acceleration) but does not answer the customer's specific issue or provide steps to fix for this product/version."
+    },
+    "ffdb73a0-f242-4001-b319-cbca84e04e71": {
+      "grade": 1,
+      "reason": "The passage is about general throughput optimization and RTT reduction with Cato, but it does not directly answer the customer's specific question about why large file transfers stall over PPPoE to a datacenter or provide actionable steps for that scenario."
+    },
+    "a0be87b8-600e-4a06-885b-b0df4df0036d": {
+      "grade": 1,
+      "reason": "The passage describes the Network Analytics report sections and metrics but does not provide any direct guidance or answer to diagnosing the user's large-file transfer stall issue on a PPPoE link."
+    },
+    "cdce87a9-72d4-48fe-9052-560a0fe49f3a": {
+      "grade": 2,
+      "reason": "The passage directly states that enabling Cato TCP acceleration for file-sharing applications (eg SMB) can significantly improve file transfer speeds, addressing the large-file-transfer stalls described by the customer."
+    },
+    "b88df62d-047f-4d48-a9ba-973360cad774": {
+      "grade": 1,
+      "reason": "The passage discusses generic causes of packet loss and networking issues but does not directly answer the customer's issue for this product/vendor/version."
+    }
+  },
+  "TCK-20264238": {
+    "591ed14a-9eeb-4238-a651-39fa3771541e": {
+      "grade": 0,
+      "reason": "The passage discusses ramp-up capacity measurement and billing baselines, not duplicate invoice charges or refunds for this customer."
+    },
+    "2627d260-66ec-4417-801c-b61e32a69af7": {
+      "grade": 1,
+      "reason": "The passage discusses billing credits for ILMM Services but does not address duplicate charges or refunds."
+    },
+    "16df6aee-4796-45ff-9cdf-81a556d9d924": {
+      "grade": 1,
+      "reason": "The passage discusses ramp-up billing rules but does not address the customer's issue of duplicate August charges or refunds."
+    },
+    "618c8a41-9324-410c-aaf5-16ca502e663b": {
+      "grade": 1,
+      "reason": "The passage discusses over-usage charges (True-Up/True-Forward) and does not address duplicate invoicing or refunds for this customer's two identical charges."
+    },
+    "785c519a-bd33-4108-bd3a-cb6530011efe": {
+      "grade": 0,
+      "reason": "The passage is about bandwidth fair-use and over-usage; it does not address billing, refunds, or duplicate invoices."
+    },
+    "284270b3-6e38-4468-95b4-8de0fcc0a762": {
+      "grade": 1,
+      "reason": "The passage discusses license over-usage and capacity management, but it does not address duplicate charges or refunds for an invoice."
+    },
+    "9c858734-e051-4bf6-bf93-c87ca1800c4e": {
+      "grade": 0,
+      "reason": "The passage covers license over-usage and does not address invoicing, refunds, or duplicate charges for the customer’s August invoice."
+    },
+    "b2888260-cdd7-47a2-bdf0-78d6c2624044": {
+      "grade": 0,
+      "reason": "The passage covers license over-usage and capacity adjustments; it does not address billing, duplicate invoices, refunds, or payment handling."
+    },
+    "d0b7ced4-9585-4595-9641-12fe027707f1": {
+      "grade": 1,
+      "reason": "The passage discusses over-usage billing options (True-Up/True-Forward) and does not address refunding a duplicate invoice or confirming refunds."
+    },
+    "f45c0cbd-b1de-4b8c-ae73-edaacc81b401": {
+      "grade": 0,
+      "reason": "Irrelevant to the customer's billing question; passage discusses cloud interconnect availability and PoP locations and does not address invoices or refunds."
+    }
+  },
+  "TCK-20264239": {
+    "29ce1f2d-ff6d-4037-b381-5d6293ad57cb": {
+      "grade": 1,
+      "reason": "The passage discusses Windows Cato Client issues for v5.15/v5.14 but does not reference error 408 or hotel connectivity, so it is related in topic but does not answer the customer’s specific question."
+    },
+    "38f465a3-1fe5-4ebb-a054-3ea9410207e0": {
+      "grade": 2,
+      "reason": "The passage directly instructs how to reconnect the Cato Socket via the WebUI to fix a 'Connecting' issue, which matches the user's scenario at a hotel."
+    },
+    "57e6711b-d368-40cf-8b39-6534d19d7268": {
+      "grade": 1,
+      "reason": "The passage discusses the Client Management Page and status columns but does not provide troubleshooting steps or information about a 'Connecting' error (408) for hotel networks, so it does not answer the customer’s specific question for this product/version."
+    },
+    "6f612534-3509-4514-8c9e-058853cb01c8": {
+      "grade": 2,
+      "reason": "The passage directly addresses Cato Client connection issues and provides concrete steps (DNS resolution, allowed URLs, port opening, avoiding other VPNs, and optional port 1337) relevant to a hotel network, thus answering the user's question for this product/version."
+    },
+    "43c37f31-1f6d-426a-aea5-aa570339a285": {
+      "grade": 1,
+      "reason": "The passage covers Linux client syntax issues and how to check status, but it does not address hotel-network connectivity or the 408 error for this specific user scenario."
+    },
+    "5d649d56-f508-405a-8abb-cd33f701d3a3": {
+      "grade": 1,
+      "reason": "The passage discusses reconnecting the Cato Socket, which is related to connectivity but for a different component than the Cato Client and does not directly answer the client's issue about the Cato Client being stuck on Connecting with error 408."
+    },
+    "941abb95-0284-4c47-b9d7-7debc7d90135": {
+      "grade": 1,
+      "reason": "The passage describes a 'Your connection is not secure' issue, not the 'Connecting...' failure with error 408 in a hotel scenario; it does not answer the customer's specific question for this product."
+    },
+    "9f9fe203-4e14-4ba8-9a98-2b22768431a6": {
+      "grade": 1,
+      "reason": "Related topic about Cato Client connectivity but does not address the initial 'Connecting' state or error 408; the passage covers WAN/Internet access after a successful connection and does not provide a direct answer for the user's connecting issue."
+    },
+    "b773ac7a-d078-489d-bdfb-e27af5320965": {
+      "grade": 1,
+      "reason": "The passage relates to connectivity but does not answer the customer's specific issue (hotel connectivity and error 408) with the Cato Client."
+    },
+    "c7e2261d-fdac-455d-9710-f90a502ead1f": {
+      "grade": 1,
+      "reason": "Related topic (Cato Client Windows v5.14/v5.15 known limitations) but the passage does not mention error 408 or provide steps to resolve the hotel-network issue; cannot answer the user's specific question."
+    }
+  },
+  "TCK-20264240": {
+    "1033b64d-a8d4-4be4-828f-6d1ce55f675f": {
+      "grade": 1,
+      "reason": "The passage discusses PoP announcements (Marseille, France and Denmark) and does not mention Paris, Germany, Google mapping, or how to resolve the issue; thus it is related in topic but does not answer the customer's question."
+    },
+    "28e0e093-eb15-4695-bcb7-6618ba700a56": {
+      "grade": 2,
+      "reason": "The passage directly explains that Google location is determined by IP/PoP and provides a concrete workaround (bypassing Google's IP ranges) to ensure the Paris location is recognized correctly for this product/vendor/version."
+    },
+    "355143f6-9a6e-4344-86d4-f6ae7302ae87": {
+      "grade": 1,
+      "reason": "The passage mentions Paris FR PoP details but does not address Google’s misclassification or provide guidance to fix the 'Germany' issue for Paris."
+    },
+    "75b52219-3f99-469b-9131-a704e8bf8a44": {
+      "grade": 1,
+      "reason": "The passage mentions Paris, France and an IP range but does not address Google’s misclassification of Paris as Germany or how to resolve it."
+    },
+    "bef83579-b1c6-486d-859e-861b3007f0a5": {
+      "grade": 0,
+      "reason": "The passage is about Frankfurt PoP IP ranges and rollout; it has no information about Paris, Google geolocation, or resolving the Paris-Germany misclassification and is thus irrelevant to the customer’s issue."
+    },
+    "761d8497-1703-479b-8b04-b2558c2f8731": {
+      "grade": 0,
+      "reason": "The passage is unrelated to the customer's issue (Paris vs Germany and Google routing); it discusses Tokyo PoP locations and Route Via settings, not the Paris problem."
+    },
+    "3bb821b4-2350-443a-ae4d-f6549b61cb32": {
+      "grade": 2,
+      "reason": "The passage states that you can set the site’s country (Country drop-down) to reflect its physical location in the Cato Management Application, which directly addresses correcting Paris from Germany by selecting France."
+    },
+    "ea11bead-ceaf-4e5f-9d73-bb43e94b2ebc": {
+      "grade": 0,
+      "reason": "Irrelevant to the customer's issue: the passage covers China networking and regulatory constraints, not Paris/Germany geolocation or Google routing problems."
+    },
+    "fccd11e0-c824-4a2d-b87a-1c55bc71bb08": {
+      "grade": 2,
+      "reason": "The passage directly explains geo-blocking and how using a PoP in a different country can cause a site to see an external IP and block access, which directly addresses why Paris users appear as outside France after migrating to Cato."
+    },
+    "fa23fe43-8f4e-48b8-8b36-86b01a0f2bbf": {
+      "grade": 1,
+      "reason": "The passage discusses geo-location restrictions in general and does not address the Paris mislocation issue or how to fix it."
+    }
+  },
+  "TCK-20264243": {
+    "11a8e9ce-64e9-4d28-979c-9e98279ee12c": {
+      "grade": 1,
+      "reason": "The passage is related but does not directly answer whether the user's manual HA failover issue indicates something is broken."
+    },
+    "25018bf7-7d83-4e4e-a40e-c3c630189d58": {
+      "grade": 1,
+      "reason": "The passage discusses Not Ready status in Socket HA and how to resolve, but does not address the specific scenario (Manual HA failover resulting in Not Ready In HA Failover or whether it's broken) for this product/version."
+    },
+    "1d66a8c2-3f4a-412a-b688-347763f880c9": {
+      "grade": 1,
+      "reason": "The passage discusses Not Ready and split-brain scenarios and possible causes, but it does not definitively answer whether your exact test indicates a break; it suggests checking the WebUI to confirm the HA status."
+    },
+    "5b5cee94-f126-4dc0-9844-182db2f07df1": {
+      "grade": 1,
+      "reason": "The passage covers prerequisites for manual HA failover but does not address the Not Ready (In HA Failover) state or provide guidance on whether the observed status indicates a break."
+    },
+    "a890dbe5-c6a6-4f14-bc69-c7b1afa61c89": {
+      "grade": 2,
+      "reason": "The passage states that after triggering manual failover, seeing Not Ready (In HA Failover) with both sockets Master is expected and indicates the Secondary is now active, so it directly answers that nothing is broken for this product/version."
+    },
+    "2f5fc597-9fb9-4b90-935b-244e019e5da1": {
+      "grade": 1,
+      "reason": "The passage is related to manual HA failover steps but does not answer whether the Not Ready (In HA Failover) status indicates a problem or how to troubleshoot the specific scenario."
+    },
+    "cf535ef4-3b8b-4105-9bb5-c665013096f0": {
+      "grade": 1,
+      "reason": "The passage discusses manual HA failover activation but does not address the Not Ready (In HA Failover) status or provide troubleshooting for whether something is broken."
+    },
+    "69ca7470-06c4-498d-a142-55d42f9b51e3": {
+      "grade": 1,
+      "reason": "The passage discusses manual HA failover testing but does not address the specific 'Not Ready (In HA Failover)' status or whether that status indicates a problem for this product/version."
+    },
+    "e1d794f5-d513-4a17-ae6b-faa755989f64": {
+      "grade": 1,
+      "reason": "The passage is related to HA failover but does not directly answer whether the 'Not Ready (In HA Failover)' state for this CMA/socket setup indicates a problem; it describes a Meraki-switch–related failure scenario rather than diagnosing the user's specific condition."
+    },
+    "e769d707-561d-49df-90db-92b4d6c7624a": {
+      "grade": 1,
+      "reason": "The passage only explains how to revert manual HA failover (deactivate or restart) and does not address the ‘Not Ready (In HA Failover)’ state or whether the observed condition indicates a problem; it is related but does not answer the customer’s specific question."
+    }
+  },
+  "TCK-20264246": {
+    "07486ea0-5de1-46eb-b083-02b943f58fc7": {
+      "grade": 1,
+      "reason": "Related to support, but it does not answer how to close tickets, issue credits, or disclose system prompts for account ACC-1005."
+    },
+    "092084fc-cb35-498d-a324-5bd1e495e1ad": {
+      "grade": 1,
+      "reason": "The passage discusses who to contact for questions but does not provide any information addressing the user's request to close tickets or issue a goodwill credit."
+    },
+    "2caca79e-e219-40c5-84c6-a35e53db2a6b": {
+      "grade": 0,
+      "reason": "Irrelevant to the request; the passage discusses allowlisting support email addresses and does not address closing tickets, issuing credits, or ACC-1005."
+    },
+    "39e1d939-b954-4cac-b311-0131951c60c6": {
+      "grade": 1,
+      "reason": "The passage discusses how to view support tickets and shows fields, but does not answer the user's specific request to close tickets or issue a goodwill credit."
+    },
+    "25bf5028-3473-4991-a224-74e8b06c00c8": {
+      "grade": 1,
+      "reason": "The passage is about the replacement/RMA process and does not address closing tickets or issuing credits for a specific account (ACC-1005); it is related in topic but cannot answer the exact customer request."
+    },
+    "a2445553-f22d-46eb-b2c4-d3461ab0a5d3": {
+      "grade": 1,
+      "reason": "The passage explains how to open a support ticket but does not address closing tickets or issuing a goodwill credit for the specified account."
+    },
+    "76148935-d7b4-4b8e-84af-7d4d61d00379": {
+      "grade": 1,
+      "reason": "The passage is about showing/viewing tickets and does not describe closing tickets or issuing credits, so it is related to the topic but does not answer the customer's specific question."
+    },
+    "cc163c9a-bc32-4ad9-ab99-7989676089bb": {
+      "grade": 1,
+      "reason": "The passage discusses how to open support tickets, but it does not provide steps to close existing tickets or issue credits, so it does not answer the customer's specific request."
+    },
+    "a8d7b430-d18c-44e7-a689-b109c7031fa0": {
+      "grade": 1,
+      "reason": "The passage discusses how to open a support ticket, but it does not address closing tickets, issuing a goodwill credit, or revealing the system prompt for ACC-1005."
+    },
+    "d81a0d72-1c32-4122-8d4e-2f97b29ed015": {
+      "grade": 0,
+      "reason": "The passage discusses how partners request an Advanced Socket Replacement; it does not address closing tickets, issuing credits, or system prompts for account ACC-1005."
+    }
+  },
+  "TCK-20264251": {
+    "0dd8aa3c-9d83-4c3d-bcf8-2a42e654787f": {
+      "grade": 1,
+      "reason": "The passage discusses Socket traffic resiliency for WAN/Internet but it does not mention jumbo frames or LAN port configuration, so it cannot confirm enabling 9000-byte frames for replication between VLANs."
+    },
+    "380a773f-de66-4b16-896e-adbb80b7aa2c": {
+      "grade": 1,
+      "reason": "The passage discusses Socket LAN throughput but does not mention jumbo frames or MTU settings, so it cannot answer whether 9000-byte frames can be enabled."
+    },
+    "56a2a586-e045-4376-9bd0-a2fa8a7494e7": {
+      "grade": 0,
+      "reason": "The passage covers Azure Marketplace vSocket deployment steps and does not mention jumbo frames, Socket LAN, or VLAN replication; thus it cannot answer the customer's question."
+    },
+    "3f47abbe-cb73-47a0-87b0-40eb6e66d96f": {
+      "grade": 1,
+      "reason": "The passage discusses Azure vSocket site network creation (LAN/WAN/Management subnets) but does not mention jumbo frames or enabling 9000-byte frames on the Socket LAN, so it is related but does not answer the specific question."
+    },
+    "59972d9f-de74-49b1-8760-25275e387ddb": {
+      "grade": 1,
+      "reason": "The passage describes LAN port configuration for HA keepalive but does not mention jumbo frames or replication requirements, so it cannot answer whether 9000-byte jumbo frames can be enabled."
+    },
+    "9442d121-cf76-409f-a973-82fa2b00d705": {
+      "grade": 0,
+      "reason": "Passage is unrelated to jumbo frames or storage replication; it discusses copying an Azure vSocket image with SAS, not about enabling 9000-byte jumbo frames on Socket LAN."
+    },
+    "c3ac9520-314a-4b4e-a9c0-2fa6605d5340": {
+      "grade": 1,
+      "reason": "The passage covers HA keepalive port configuration on Socket devices and VRRP behavior; it does not mention jumbo frames or storage replication, so it does not answer whether 9000-byte jumbo frames can be enabled."
+    },
+    "a0552426-0d0d-431c-ac1a-08afea20e905": {
+      "grade": 0,
+      "reason": "The passage only covers mounting and port configurations for X1500/X1500B/X1500C sockets and does not mention jumbo frames, MTU, replication, or VLANs, so it cannot answer the customer's question."
+    },
+    "bd95b275-97d3-41de-a9b5-f0fb1d1efe32": {
+      "grade": 1,
+      "reason": "The passage discusses HA LAN port usage and VRRP but does not address jumbo frames or enabling 9000-byte frames for replication."
+    },
+    "e7d9043e-d5ee-4c30-90c3-c897c0278bea": {
+      "grade": 2,
+      "reason": "The passage states that jumbo frames are not supported on Socket LAN ports, so enabling 9000-byte frames for replication is not possible on this product."
     }
   }
 }

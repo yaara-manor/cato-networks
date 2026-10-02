@@ -1,3 +1,4 @@
+from actions.dispatcher import ActionDispatcher
 from actions.models import ActionResult, ActionStatus, DispatchContext, DispatchRequest
 from actions.payloads import (
     CloseTicketPayload,
@@ -9,6 +10,7 @@ from actions.payloads import (
 )
 
 __all__ = [
+    "ActionDispatcher",
     "ActionResult",
     "ActionStatus",
     "CloseTicketPayload",

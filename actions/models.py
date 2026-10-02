@@ -52,18 +52,18 @@ class ActionResult(_ActionModel):
 
     @classmethod
     def failed(cls, kind: SupportActionKind, detail: str) -> Self:
-        return cls._unsuccessful(kind, ActionStatus.FAILED, detail)
+        return cls.unsuccessful(kind, ActionStatus.FAILED, detail)
 
     @classmethod
     def invalid(cls, kind: SupportActionKind, detail: str) -> Self:
-        return cls._unsuccessful(kind, ActionStatus.INVALID, detail)
+        return cls.unsuccessful(kind, ActionStatus.INVALID, detail)
 
     @classmethod
     def refused(cls, kind: SupportActionKind, detail: str, silent: bool = False) -> Self:
-        return cls._unsuccessful(kind, ActionStatus.REFUSED, detail, announce=not silent)
+        return cls.unsuccessful(kind, ActionStatus.REFUSED, detail, announce=not silent)
 
     @classmethod
-    def _unsuccessful(cls, kind: SupportActionKind, status: ActionStatus, detail: str, announce: bool = True) -> Self:
+    def unsuccessful(cls, kind: SupportActionKind, status: ActionStatus, detail: str, announce: bool = True) -> Self:
         line = f"We could not complete the {kind.value.lower().replace('_', ' ')} request; a support engineer will follow up."
         return cls(kind=kind, status=status, detail=detail, customer_line=line if announce else None)
 

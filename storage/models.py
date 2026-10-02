@@ -173,6 +173,20 @@ class Approval(_StorageModel):
     resolved_at: AwareDatetime | None
 
 
+class BoardRow(_StorageModel):
+    """One conversation on the reviewer board; pending-first ordering is the query's job."""
+
+    conversation_id: UUID
+    account_id: str | None
+    customer_tier: AccountTier
+    stage: ConversationStage
+    pending_count: int
+    oldest_pending_at: AwareDatetime | None
+    updated_at: AwareDatetime
+    oncall_paged: bool
+    escalation_offered: bool
+
+
 class ApprovalResolution(_StorageModel):
     status: ApprovalStatus
     reviewer_notes: str | None = None

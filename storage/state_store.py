@@ -12,10 +12,11 @@ from core.config import settings
 from core.models import AccountTier
 from guardrails.models import ActionType, SessionGuardHistory
 from guardrails.redactor import redact
-from storage import approval_queries
+from storage import approval_queries, board_queries
 from storage.models import (
     Approval,
     ApprovalResolution,
+    BoardRow,
     Conversation,
     ConversationSnapshot,
     ConversationStage,
@@ -389,6 +390,9 @@ class StateStore:
 
     def resolve_approval(self, approval_id: UUID, resolution: ApprovalResolution, at: datetime) -> Approval:
         return approval_queries.resolve_approval(self._conn, approval_id, resolution, at)
+
+    def list_board_rows(self, limit: int) -> list[BoardRow]:
+        return board_queries.list_board_rows(self._conn, limit)
 
     # -- consistent reads ------------------------------------------------
 

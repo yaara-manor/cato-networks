@@ -90,7 +90,7 @@ def test_grounding_context_excludes_unavailable_telemetry_tools(make_deps: MakeD
         (SupportActionKind.MFA_RESET, ActionType.MFA_RESET),
         (SupportActionKind.VERDICT_OVERRIDE, ActionType.VERDICT_OVERRIDE),
         (SupportActionKind.CLOSE_TICKET, ActionType.CLOSE_TICKET),
-        (SupportActionKind.PAGE_ON_CALL, None),  # gated only once plan 22/04 adds the ActionType
+        (SupportActionKind.PAGE_ON_CALL, ActionType.PAGE_ON_CALL),
         (SupportActionKind.CREATE_TICKET, None),
         (SupportActionKind.UPDATE_TICKET, None),
     ],

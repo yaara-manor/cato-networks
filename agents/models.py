@@ -277,12 +277,13 @@ class SupportActionKind(StrEnum):
     VERDICT_OVERRIDE = "VERDICT_OVERRIDE"
 
 
-# Kinds absent here are ungated. PAGE_ON_CALL joins when plan 22/04 adds ActionType.PAGE_ON_CALL.
+# Kinds absent here are ungated.
 _GATED_ACTION_TYPES: dict[SupportActionKind, ActionType] = {
     SupportActionKind.CLOSE_TICKET: ActionType.CLOSE_TICKET,
     SupportActionKind.CREDIT: ActionType.CREDIT,
     SupportActionKind.MFA_RESET: ActionType.MFA_RESET,
     SupportActionKind.VERDICT_OVERRIDE: ActionType.VERDICT_OVERRIDE,
+    SupportActionKind.PAGE_ON_CALL: ActionType.PAGE_ON_CALL,
 }
 
 

@@ -150,6 +150,7 @@ class ActionType(StrEnum):
     MFA_RESET = "MFA_RESET"
     VERDICT_OVERRIDE = "VERDICT_OVERRIDE"
     CLOSE_TICKET = "CLOSE_TICKET"
+    PAGE_ON_CALL = "PAGE_ON_CALL"
 
 
 class ProposedAction(_GuardModel):

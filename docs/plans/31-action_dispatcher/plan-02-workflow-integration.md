@@ -84,7 +84,7 @@
 ### Task 4: Docs and final cleanup
 
 **Files:**
-- Modify: `docs/architecture/system-architecture-design.md` (dispatcher box, `actions/` layout, `simulated_actions` ER entry, Sev-1 wording aligned to POL-SEV1), `docs/overview/decisions.md` (next free ADR: dispatcher after gate, Postgres audit with unique keys, conversation-scoped page key, dispatch-before-state-save order, ticket binding from state, `pending_approval` set here / cleared by #10), `data/README.md` (runtime tickets created in Postgres), `docs/plans/31-action_dispatcher/design.md` (status "Implemented", note the CHECK-constraint deviation)
+- Modify: `docs/architecture/system-architecture-design.md` (dispatcher box, `actions/` layout, `simulated_actions` ER entry, Sev-1 wording aligned to POL-SEV1), `docs/overview/decisions.md` (next free ADR: dispatcher after gate, Postgres audit with unique keys, conversation-scoped page key, dispatch-before-state-save order, ticket binding from state, `pending_approval` set here / cleared by #10), `data/README.md` (runtime tickets created in Postgres), `docs/plans/31-action_dispatcher/design.md` (status "Implemented",)
 
 - [ ] **Step 1: Edit docs** as listed; keep each edit to the affected section.
 - [ ] **Step 2: Whole-change audit**: read every new/modified file end to end; delete unused imports, models, helpers, handlers; grep the branch for `Braintrust`, `datetime.now`, inline imports, `Literal` for enum-like fields, `executable_actions`; confirm no file over ~250 lines and that nothing in `actions/` re-implements `check_action` or `OrchestratorState` logic.

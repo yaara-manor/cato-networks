@@ -70,9 +70,9 @@ Files in `data/simulated_actions/` give no atomic idempotency, race under two wo
 
 Migration `db/migrations/20261002_0900_simulated-actions.sql`, idempotent (`CREATE TABLE IF NOT EXISTS`), re-applied after every `pg_restore` like the 21 migration.
 
-- Columns: `id uuid PK`, `conversation_id uuid FK RESTRICT`, `message_id uuid NULL` (turn that claimed it; NULL for approval-path rows; no FK, same as traces), `idempotency_key text UNIQUE`, `kind text CHECK (...)`, `approval_id uuid NULL FK RESTRICT`, `payload jsonb` (validated payload as dumped), `status text CHECK (CLAIMED, DONE, FAILED, INVALID, REFUSED)`, `result jsonb NULL` (e.g. ticket id, event reference), `claimed_at`, `completed_at NULL`.
+- Columns: `id uuid PK`, `conversation_id uuid FK RESTRICT`, `message_id uuid NULL` (turn that claimed it; NULL for approval-path rows; no FK, same as traces), `idempotency_key text UNIQUE`, `kind text`, `approval_id uuid NULL FK RESTRICT`, `payload jsonb` (validated payload as dumped), `status text` (CLAIMED, DONE, FAILED, INVALID, REFUSED; enum-validated in Pydantic, no SQL CHECK, as 21 plan delta 3), `result jsonb NULL` (e.g. ticket id, event reference), `claimed_at`, `completed_at NULL`.
 - Index `(conversation_id, claimed_at)`.
-- Added to `RUNTIME_TABLES` in `db/init/build.py` (excluded from `seed.dump`, 21 §2.8). A schema test guards CHECK values against the `StrEnum`s (same drift guard as 21).
+- Added to `RUNTIME_TABLES` in `db/init/build.py` (excluded from `seed.dump`, 21 §2.8).
 - Append-mostly: a row is inserted once (`CLAIMED`) and finalized once (`CLAIMED -> terminal`); no deletes.
 
 Keys:
@@ -175,7 +175,7 @@ Functional, real Postgres (existing orchestration fixtures), scripted stub agent
 3. `tests/actions/test_dispatch_approved.py`: credit approved -> event with payload amount; edited -> event uses `edited_payload`, original untouched; rejected/pending -> `REFUSED`, no row finalized; MFA reset by non-admin identity never reaches approval (gate DENY) and direct dispatch is `REFUSED`; `VERDICT_OVERRIDE` always refused.
 4. `tests/orchestration/test_action_flow.py`: credit with a model-written wrong `ticket_id` -> approval payload carries the state ticket id; `CREATE_TICKET` + `CREDIT` in one plan -> approval bound to the new ticket and ticket `pending_approval`; credit with no ticket known -> no approval, fixed line; `active_ticket_id` survives restart; edited approval dropping `ticket_id` -> `INVALID`; reply includes deterministic ticket confirmation, agent text unchanged; handler raises (monkeypatched service) -> `FAILED`, failure line, `escalation_offered`, turn still completes, state saved; duplicate `message_id` -> zero extra rows/tickets, same results; crash after dispatch before reply (kill backend) -> retry finishes with one ticket and one page; two workers same turn -> one effect (turn lock + key); `REQUIRE_APPROVAL` credit proposal -> approval row only, no `simulated_actions` row.
 5. Test hygiene: `tests/storage/conftest.py` and `tests/orchestration/conftest.py` cleanup SQL delete `simulated_actions` before `conversations` (FK RESTRICT), and delete tickets created in a test; `tests/storage/test_schema.py` table list gains the new table.
-6. `tests/actions/test_schema.py`: migration idempotent; CHECK values equal `StrEnum`s; table excluded from dump (extends 21 drift/dump tests); every `SupportActionKind` has a handler or is in the refused set.
+6. `tests/actions/test_schema.py`: migration idempotent; table excluded from dump (extends 21 drift/dump tests); every `SupportActionKind` has a handler or is in the refused set.
 
 ---
 

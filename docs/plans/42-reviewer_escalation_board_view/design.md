@@ -4,7 +4,7 @@
 **Date**: 2026-10-02
 **Status**: Draft for Review (final user decisions applied; aligned with final 31/32 designs)
 **Depends on**: 21 (`StateStore`, `replay_trace`, approvals), 22 (`TriageResult`, `DiagnosticEvidence`, `KnowledgeBundle` in trace `output`), 23/24 (turn path, locking), 31 (action dispatcher, issue #9), 32 (approval lifecycle + resume, issue #10), 41 (customer chat, issue #11). Aligned with the final 32 (`ApprovalService.resolve` + `settle`) and 31 (`simulated_actions`, `list_simulated_actions`); 41 owns the shared trace component and `ui/session.py`.
-**Target Files**: `ui/reviewer_app.py`, `ui/reviewer_view.py`, `ui/session.py` (owned by 41; reviewer adds approval/service wiring), `storage/board_queries.py`, `storage/state_store.py` (one new read method), `storage/models.py` (one new row model), `pyproject.toml`, `docker-compose.yml`, `Dockerfile`, `tests/ui/*`, `tests/storage/test_board_summaries.py`
+**Target Files**: `ui/reviewer_app.py`, `ui/reviewer_view.py`, `ui/trace_panel.py` (imported from 41, not modified), `ui/session.py` (owned by 41; reviewer adds approval/service wiring), `storage/board_queries.py`, `storage/state_store.py` (one new read method), `storage/models.py` (one new row model), `pyproject.toml`, `docker-compose.yml`, `Dockerfile`, `tests/ui/*`, `tests/storage/test_board_summaries.py`
 
 ---
 
@@ -25,7 +25,7 @@ flowchart LR
     App --> View["ui/reviewer_view.py\npure builders: CaseView.from_*"]
     View --> SS["StateStore\nrehydrate / replay_trace / list_board_rows"]
     View --> Svc["CustomerService / TicketService\n(account, open tickets)"]
-    App -- "approve / edit / reject" --> Life["ApprovalService.resolve, then settle (issue #10)"]
+    App -- "approve / edit / reject" --> Life["ApprovalService.decide (issue #10)"]
     Life --> SS
     SS --> PG[("Postgres: conversations, approvals,\ntraces, tool_calls, messages")]
     Cust["Customer chat (41)"] --> SS
@@ -48,7 +48,7 @@ flowchart LR
 | "Token consumption" | `traces.prompt_tokens/completion_tokens/cost_usd` | Direct |
 | "Note logging" | `approvals.reviewer_notes`, `edited_payload` exist; `MessageSender` has no `REVIEWER` | Decided: notes live only on the approval row; no reviewer sender, no `resolved_by` |
 | Escalation Board across conversations | `StateStore.list_pending_approvals(None)` exists; `list_conversations` was dropped in 21 plan-01 delta 4 | Add one summary read (§4) instead of N+1 `get_conversation` calls; board = pending approvals plus a small read-only tab of escalated/paged conversations |
-| Resolve via `StateStore.resolve_approval` | Raw store call only flips the row. Final 32: `ApprovalService.resolve(ReviewerDecision) -> Approval` (CAS) then `ApprovalService.settle(approval_id) -> SettleOutcome` (execute via #9, clear ticket, notify customer) | UI calls `resolve` then `settle`; never the store directly (§7) |
+| Resolve via `StateStore.resolve_approval` | Raw store call only flips the row. Final 32: `ApprovalService.decide(ReviewerDecision) -> DecisionResult` (single UI entry point; runs `resolve` CAS then `settle`: execute via #9, clear ticket, notify customer) | UI calls only `decide`, `list_pending`, `get_approval`; never the store directly (§7) |
 | "Note logging" for the customer | 32 adds `ReviewerDecision.customer_reason` (optional, customer-safe, guard-checked) beside internal `reviewer_notes` | Two fields in the form: internal note, optional customer reason (reject only) |
 | Dispatch outcome | 31 `simulated_actions` + `StateStore.list_simulated_actions(conversation_id)` | Shown on resolved approval cards (key `approval:{approval_id}`) |
 | Enums via `AtiIntEnum` | Repo uses `StrEnum` everywhere (ADR-005); `novia_shared` not a dependency | Decided: `StrEnum` |
@@ -70,10 +70,10 @@ Decision: A. Panels render from one frozen `CaseView` so swapping the front end 
 All reads reuse existing store methods; one new read.
 
 - **Board list (new)**: `StateStore.list_board_rows(limit: int) -> list[BoardRow]`, SQL in new `storage/board_queries.py` (same split as `approval_queries.py`). One query over `conversations` left-joined to a count of `approvals` with `status = 'PENDING'` and the oldest pending `requested_at`. Ordered pending-first, oldest pending first, then `updated_at desc`. Uses the existing partial index on pending approvals; no new index.
-- **`BoardRow`** (frozen, in `storage/models.py`): `conversation_id`, `account_id`, `customer_tier`, `stage`, `pending_count`, `oldest_pending_at`, `updated_at`, `oncall_paged`, `escalation_offered`.
+- **`BoardRow`** (frozen, in `storage/models.py`): `conversation_id`, `account_id`, `customer_tier`, `stage`, `pending_count`, `oldest_pending_at`, `updated_at`, `oncall_paged`.
 - **Case detail**: `rehydrate(conversation_id)` for identity/messages/pending approvals, `replay_trace(conversation_id)` for turns/steps/tool calls/all approvals (single consistent-read snapshot each). Resolved approvals are included in replay, so the queue can show history.
 - **Account + tickets**: `CustomerService.lookup_account(account_id)` (company), `TicketService.get_ticket_history(account_id)`.
-- **Escalated/paged tab**: `list_board_rows` also carries `oncall_paged` and `escalation_offered` flags read from `conversations.state` (`OrchestratorState` snapshot, 23/24) so the read-only tab needs no second query. Flag names to be confirmed against `orchestration/state.py` at implementation.
+- **Escalated/paged tab**: `list_board_rows` also carries `oncall_paged`, read from `conversations.state` (`StateSnapshot.data`, field `OrchestratorState.oncall_paged` in `orchestration/state.py`, confirmed in code and 31 §state update). `escalation_offered` is NOT persisted (only a `TurnResult` field, 31 sets it on failed actions), so it is not used; failed-action escalations are visible as `FAILED` rows via `list_simulated_actions` on the case detail. Tab = conversations with `oncall_paged` true.
 - **Dispatch result**: `StateStore.list_simulated_actions(conversation_id)` (31); matched to an approval by `approval_id`.
 - No writes besides `ApprovalService` calls.
 
@@ -86,9 +86,9 @@ Pure functions/classmethods, all frozen Pydantic, no Streamlit import, no I/O. C
 - **`CaseView`**: `conversation_id`, `context: ContextPanel`, `evidence: EvidencePanel`, `approvals: tuple[ApprovalCard, ...]`; trace is rendered by the shared component from the same `TraceReplay`. Classmethod `from_rows(snapshot: ConversationSnapshot, replay: TraceReplay, account: CustomerAccount | None, tickets: Sequence[Ticket], actions: Sequence[SimulatedAction], now: AwareDatetime) -> CaseView`. `now` is passed in (from `SimulationClock`), keeping it deterministic.
 - **`ContextPanel`**: `account_id`, `company`, `tier`, `contact_email`, `sla: tuple[SlaCountdown, ...]`, `repeat_contact: RepeatAlert | None`, `open_tickets: tuple[TicketRow, ...]`. `SlaCountdown`: `label` (first response / resolution), `due_at`, `remaining: timedelta`, `state: SlaState` (`OK`, `AT_RISK` under 25% of window left, `BREACHED`); `resolution_paused` shown as such. `RepeatAlert`: `reason`, matching ticket ids, prior closed ids. Both come from the latest `TRIAGE` trace's `TriageResult`; absent triage -> `None` (shown as "not triaged yet", never an empty-looking OK).
 - **`EvidencePanel`**: `evidence: tuple[TelemetryEvidence, ...]` (from `DiagnosticEvidence.evidence_items` of the newest `DIAGNOSTICS` trace, falling back to reply messages), `unavailable_tools` (so an outage is visible, not silent), `link_charts: tuple[LinkChart, ...]` (per-link metrics built from `get_link_quality` tool-call results via `LinkMetricsSummary.model_validate`), `raw_calls: tuple[ToolCallRecord, ...]`, `kb_passages: tuple[PassageScore, ...]` (`citation_tag`, `rrf_score`, `rerank_score`, `lex_rank`, `vec_rank`, and whether it was cited vs candidate-only), `kb_status: KBSearchStatus`.
-- **`ApprovalCard`**: `approval: Approval` (incl. `customer_reason`, `settled_at` from 32), `action_label`, `proposing_turn`, `evidence_refs` (evidence items of the proposing turn), `can_resolve: bool` (status is `PENDING`), `dispatch: SimulatedAction | None` (from `list_simulated_actions`, status `DONE` / `FAILED` / `INVALID` / `REFUSED`; `None` while unsettled or on reject).
-- **Trace panel**: reused from the shared trace component in `ui/` designed in 41 (turn/step view models built from `TraceReplay`: role, status, latency, tokens, cost, tool calls, in-flight marker, retrieval scores). 42 does not define its own; it passes `replay_trace` output to it. Reviewer-only extras (raw `input`/`output` expanders) are a flag on that component, to agree with 41.
-- **Decision**: no 42 model. The form builds 32's `ReviewerDecision(approval_id, resolution: ApprovalResolution, customer_reason)` directly; `ApprovalResolution` already validates EDITED iff `edited_payload`. A small helper `ReviewerDecision` builder in `ui/reviewer_view.py` (`DecisionForm.to_decision`) only adds UI checks: note required on reject, edited keys equal original keys, `customer_reason` only on reject/edit-free paths as 32 allows.
+- **`ApprovalCard`**: `approval: Approval` (incl. `customer_reason`, `settled_at` from 32; fetched via `ApprovalService.list_pending` / `get_approval`), `action_label`, `proposing_turn`, `evidence_refs` (evidence items of the proposing turn), `can_resolve: bool` (status is `PENDING`), `dispatch: SimulatedAction | None` (from `list_simulated_actions`, status `DONE` / `FAILED` / `INVALID` / `REFUSED`; `None` while unsettled or on reject).
+- **Trace panel**: imported from `ui/trace_panel.py` (owned by 41): `TracePanel`, `TraceTurn`, `TraceStep`, `TracePanel.from_replay(replay: TraceReplay)`, `render_trace_panel(panel, ...)`. 42 defines no trace models and no trace rendering; it passes the `replay_trace` result through `from_replay`. 41's shapes already include redacted input/output and the open-turn flag.
+- **Decision form**: no 42 decision model. `DecisionForm.to_decision() -> ReviewerDecision` (in `ui/reviewer_view.py`) builds 32's `ReviewerDecision(approval_id, resolution: ApprovalResolution, customer_reason: str | None)`: `ApprovalResolution(status=APPROVED)`, `(status=EDITED, edited_payload=...)` or `(status=REJECTED, reviewer_notes=...)`. UI-only checks before calling: note required on reject, edited keys equal original keys. Result type is 32's `DecisionResult(approval, settle: SettleOutcome)`.
 
 Rendering rules: `trace.input`/`model_messages` are already redacted at store write (21 §2.6); the view displays them as stored and never re-reads customer raw text. Reply/evidence text is shown through `st.code`/`st.text` (no HTML injection from customer-influenced strings; `unsafe_allow_html` never enabled).
 
@@ -101,8 +101,8 @@ Thin Streamlit script, no business logic beyond wiring.
 - **Sidebar, Escalation Board**: two tabs. `Pending` (main): list from `list_board_rows`, each row: account, tier, pending badge, oldest pending age. Selecting sets `conversation_id` in `st.query_params` (shareable link, survives refresh). `Escalated` (read-only): conversations with `oncall_paged` or `escalation_offered`, no actions. Auto-refresh every 3 s via `st.fragment(run_every=3)` so new approvals appear in a live demo.
 - **Main, tabs for the selected conversation**: `Context` (panel 1) above `Pending approvals` (panel 3); `Evidence` (panel 2); `Live trace` (panel 4). Context and approvals stay visible at the top because they drive the decision; evidence/trace are tabs.
 - **Pending approvals card**: action type, payload table, proposing-turn evidence, note box. Fields: internal note (`reviewer_notes`, never shown to customer) and optional customer reason (becomes `customer_reason`, shown to customer after guard check). Buttons: Approve; Reject (note required); Edit opens a form pre-filled with `payload` (same keys only, values editable), submit = EDITED. Edited payloads are re-validated by `check_action` inside 32's service (decided); a rejection of the edit surfaces as an inline error. Resolved cards show the settle outcome and the dispatch result. After click the card shows the resolved state from the DB, not optimistic UI.
-- **Live trace** (shared component): fragment polling `replay_trace` every 2 s while the selected conversation's stage is not `IDLE` (a turn is in flight; recorder writes a trace per step so rows appear incrementally), else static. The open turn's steps carry `is_open` and show "running" when a role has no `OK` trace yet.
-- **Errors surfaced, not swallowed**: `ApprovalStateError` (another reviewer won the race) -> inline "already resolved by someone else", card refreshes; `SettleOutcome.BUSY` / `EXECUTION_FAILED` -> card shows "decision saved, settling pending" (the sweep finishes it), never an error that implies the decision was lost; DB unreachable -> board banner, panels keep last good render. Missing triage/diagnostics/knowledge traces render explicit "no data" states per panel (partial failure from 23 means any role may be absent).
+- **Live trace** (`ui/trace_panel.py`): fragment polling `replay_trace` every 2 s while the selected conversation's stage is not `IDLE` (a turn is in flight; recorder writes a trace per step so rows appear incrementally), else static. The open turn's steps carry `is_open` and show "running" when a role has no `OK` trace yet.
+- **Errors surfaced, not swallowed**: `ApprovalStateError` from `decide` (unknown id, already resolved by another reviewer, edit that changes/drops `ticket_id`, unsafe `customer_reason`) -> shown to the reviewer verbatim, no retry, card refreshes; `DecisionResult.settle != SETTLED` (`BUSY`, `EXECUTION_FAILED`) -> card shows "decision saved, customer notice pending" (the sweep finishes it), never an error implying the decision was lost; DB unreachable -> board banner, panels keep last good render. Missing triage/diagnostics/knowledge traces render explicit "no data" states per panel (partial failure from 23 means any role may be absent).
 
 `ui/session.py` (owned by 41, composition root cached with `st.cache_resource`): the reviewer process reuses its connection/clock builders and adds `ApprovalService` (with `ActionDispatcher`, `TicketService`). Building the reviewer runtime once at process start is the "app lifespan" of 32: it calls `ApprovalService.settle_unsettled()` once there. No timer. One autocommit connection per session; no pool.
 
@@ -110,10 +110,10 @@ Thin Streamlit script, no business logic beyond wiring.
 
 ## 7. Approval Resolution Flow
 
-1. Reviewer clicks a button; the app builds `ReviewerDecision` (with optional `customer_reason`) after UI checks (note on reject, same keys on edit).
-2. `ApprovalService.resolve(decision) -> Approval`: CAS from PENDING; a second reviewer gets `ApprovalStateError` (inline message).
-3. App immediately calls `ApprovalService.settle(approval_id) -> SettleOutcome`: executes via #9 `dispatch_approved` (approve/edit), clears the ticket's `pending_approval`, writes the customer notice event message under `turn_lock`. 32 keeps these separate (CQS) so the decision is durable even if settle fails; sweep at runtime start finishes unsettled rows.
-4. UI re-reads the approval and `list_simulated_actions` and re-renders. The UI never executes actions, never writes customer messages, never calls `StateStore.resolve_approval`.
+1. Reviewer clicks a button; the app builds `ReviewerDecision` via `DecisionForm.to_decision` after UI checks.
+2. App calls `ApprovalService.decide(decision) -> DecisionResult`, which runs `resolve` (CAS from PENDING; losing reviewer gets `ApprovalStateError`) then `settle` (execute via #9 `dispatch_approved` on approve/edit, clear ticket `pending_approval`, write customer notice under `turn_lock`). Decision is durable even if settle does not complete; runtime-start sweep finishes it.
+3. UI renders from `DecisionResult.approval` and `.settle`, then re-reads `get_approval` and `list_simulated_actions`.
+4. The UI never calls `resolve`/`settle` separately, never executes actions, never writes customer messages or `approvals` rows, never calls `StateStore.resolve_approval`.
 
 Idempotency: replayed click -> `ApprovalStateError` or `ALREADY_SETTLED`; dispatcher key `approval:{approval_id}` makes re-execution impossible.
 
@@ -135,9 +135,9 @@ Real Postgres via existing `tests/storage/conftest.py` fixtures; no mocks of the
 
 ## 9. Coupling to Parallel Designs
 
-- **#10 (32)**: `ApprovalService.resolve`, `settle`, `settle_unsettled`, `ReviewerDecision.customer_reason`, `SettleOutcome`, `Approval.settled_at/customer_reason`. Final-design names used as-is.
+- **#10 (32, §5b)**: `ApprovalService.decide`, `list_pending`, `get_approval`, `settle_unsettled` (runtime start); `ReviewerDecision`, `DecisionResult`, `SettleOutcome`, `Approval.settled_at/customer_reason`. Final names used as-is.
 - **#9 (31)**: `StateStore.list_simulated_actions`, `SimulatedAction` / `SimulatedActionStatus`. Read-only.
-- **#11 (41)**: shared Streamlit stack, `ui/session.py`, and the shared trace component (not duplicated here). Separate processes, one DB.
+- **#11 (41)**: shared Streamlit stack, `ui/session.py`, and `ui/trace_panel.py` (imported, not duplicated). Separate processes, one DB.
 
 ---
 
@@ -152,7 +152,7 @@ Real Postgres via existing `tests/storage/conftest.py` fixtures; no mocks of the
 ## Decisions
 
 1. Stack: Streamlit, shared with 41 (task allows any stack).
-2. Resolve path: `ApprovalService.resolve` then `settle` (32); no `StateStore.resolve_approval` fallback; sweep runs once at reviewer runtime start.
+2. Resolve path: `ApprovalService.decide` (32 §5b); no `StateStore.resolve_approval` fallback; sweep runs once at reviewer runtime start.
 3. Edited payloads re-validated by `check_action` inside 32.
 4. No `resolved_by` column, no reviewer identity, no `REVIEWER` sender; internal `reviewer_notes` plus optional customer-safe `customer_reason`.
 5. Link graphs: bar charts from `LinkMetricsSummary` aggregates; no telemetry API change.
@@ -161,9 +161,8 @@ Real Postgres via existing `tests/storage/conftest.py` fixtures; no mocks of the
 8. Polling 2-5 s (board 3 s, live trace 2 s); no push.
 9. `StrEnum` per repo convention.
 10. Dispatch result shown from `simulated_actions` via `list_simulated_actions`.
-11. Trace panel is 41's shared component; 42 does not duplicate it.
+11. Trace panel is `ui/trace_panel.py` from 41; 42 imports it and defines none.
 
 ## Open questions
 
-1. Shared trace component: module/function name and whether it takes `TraceReplay` directly (confirm with 41 final).
-2. `oncall_paged` / `escalation_offered` read from `conversations.state` jsonb: confirm field names in `OrchestratorState`.
+1. Reviewer-only trace extras (raw input/output) needed beyond 41's `TracePanel` shape? Assumed no.

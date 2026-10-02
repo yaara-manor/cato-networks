@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax. User rule: no code lines in this plan.
 
-**Goal:** `build_triage_agent()` + `run_triage()` returning `AgentRun[TriageResult]`, with identity as a deterministic pre-step, SLA and repeat contact as deterministic post-steps, and a sanitized ticket-history tool.
+**Goal:** `build_triage_agent()` + `run_triage()` returning `AgentRun[TriageResult]`, with identity resolved outside Triage (orchestrator, 23), SLA and repeat contact as deterministic post-steps, and a sanitized ticket-history tool.
 
-**Architecture:** LLM output is `TriageDecision` only. `run_triage` authenticates the caller before the LLM, runs `run_role`, then assembles `TriageResult` with `TicketService.detect_repeat_contact` and `CustomerService.calculate_sla_deadlines`. Model failure falls back to a safe decision; identity/SLA stay intact.
+**Architecture:** LLM output is `TriageDecision` only. `run_triage(TriageInput, SupportDeps)` takes the already-resolved identity, runs `run_role`, then assembles `TriageResult` with `TicketService.detect_repeat_contact` and `CustomerService.calculate_sla_deadlines`. Model failure falls back to a safe decision; identity/SLA stay intact.
 
 **Tech Stack:** pydantic-ai 2.51, existing `services/`, `guardrails/`.
 
@@ -16,8 +16,8 @@ Same as plan 01: typed everywhere, no inline imports, frozen contracts, function
 
 ## Design Decisions (this plan)
 
-- Identity is **not** an LLM tool (resolves design Q1 per §7). `session_account_id` is passed as `claimed_account_id`; `claimed_tier` is never passed (guard covers claims, design Q7).
-- Because `SupportDeps.identity` must exist before the agent runs, `run_triage` takes `SupportDeps` built *without* identity? Decision: the orchestrator builds `SupportDeps` per turn **after** `authenticate_caller`; `run_triage(input: TriageInput, deps: SupportDeps, model: Model | None = None)` therefore re-uses `deps.identity` and does not authenticate itself. The design's "deterministic pre-step" is realized by the orchestrator/test fixture calling `authenticate_caller` (`make_deps` already does). `TriageInput.caller_email` / `session_account_id` stay on the contract for the orchestrator call and for the prompt's identity block. Flag in questions: confirm with 23, which says agents own `SupportDeps` and identity is resolved once per conversation.
+- Identity is **not** an LLM tool and not a Triage step: the orchestrator (23) calls existing `CustomerService.authenticate_caller` (plain function; identity/auth is never LLM-decided) and passes the result in `TriageInput.identity` and `SupportDeps.identity`. The Triage LLM only classifies and judges. `claimed_tier` is never passed (guard covers claims, design Q2).
+- `run_triage(data: TriageInput, deps: SupportDeps, model: Model | None = None)` never authenticates; it reads `data.identity` (equal to `deps.identity`). Test fixtures build identity with `customers.authenticate_caller` (`make_deps` already does).
 - Ticket sanitizing is one helper shared by every tool that returns ticket text: `quarantine(redact(text).text)` using existing `guardrails.redact` and `guardrails.quarantine` (design §4.1). Located in `agents/triage.py` (only Triage returns ticket text; move to base only if a second role needs it).
 - Identity block in the prompt is injected through a dynamic instructions callback (same mechanism as the guard note), not by string templating the prompt file.
 
@@ -86,6 +86,5 @@ Prompt contents per design §4.1/§4.5, fixed headings (Role, Inputs you receive
 
 ## Unresolved Questions
 
-1. `run_triage` reuses a pre-built `deps.identity`; OK that the orchestrator authenticates (same turn, before Triage)?
-2. `calculate_sla_deadlines` with unknown country: `None` SLA or crash? (verify; plan assumes `None` when clarification needed)
-3. Priority rubric: policy text from `POL-SLA`/`POL-SEV1` embedded in the prompt or referenced only?
+1. `calculate_sla_deadlines` with unknown country: `None` SLA or crash? (verify; plan assumes `None` when clarification needed)
+2. Priority rubric: policy text from `POL-SLA`/`POL-SEV1` embedded in the prompt or referenced only?

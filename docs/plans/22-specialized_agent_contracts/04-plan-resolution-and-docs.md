@@ -19,6 +19,7 @@ Same as plan 01 (typed, no inline imports, frozen contracts, functional tests, n
 - Validators are plain module-level functions registered by `build_resolution_agent`; each does one check and returns the plan unchanged or raises `ModelRetry` with fixed text built from violation kind names only (never customer text, never matched secret text). Shared message formatting is one small helper.
 - `deps.grounding` is set by `run_resolution` via `dataclasses.replace(deps, grounding=data.grounding_context())`; validators read it and raise a clear programming error if `None`.
 - Canned holding message: one module constant in `agents/resolution.py`, no markers/numbers; test asserts it passes `check_citations` (as a refusal grounding) and `check_outgoing_message`.
+- Sev-1 hard gate lives in `guardrails.validator.check_action` (design §4.4), not in `agents/`: Resolution only proposes `PAGE_ON_CALL`; the orchestrator consumes the decision. Idempotent: no re-page when the snapshot already shows paged.
 - `identity.account is None`: `run_resolution` drops all actions (validated in code, not trusted to the prompt). `target_account_id` for `to_proposed_action` always comes from `identity.account`; the orchestrator calls it, this plan only guarantees the mapping.
 - Approval is not a model field (design §3.5); the 23 orchestrator derives pending approvals from `check_action`.
 - Escalation reason is a fixed string ("output validation retries exhausted" or "model failure") per plan 01 decision 7.
@@ -34,6 +35,9 @@ Same as plan 01 (typed, no inline imports, frozen contracts, functional tests, n
 
 ## File Structure
 
+- `guardrails/models.py` (modify, small): add `ActionType.PAGE_ON_CALL`.
+- `guardrails/validator.py` (modify, small): `check_action` gains a `PAGE_ON_CALL` rule and two keyword arguments with defaults (`priority: TicketPriority | None = None`, `already_paged: bool = False`) so existing callers/tests stay valid; ALLOW only when priority is `P1` and not already paged, else DENY `POL-SEV1`. Read the existing match statement and exhaustiveness handling first; `SupportActionKind` stays a separate enum (it has ungated kinds), mapped via the table.
+- `tests/guardrails/test_validator.py` (modify): P1 and not paged -> ALLOW; non-P1 -> DENY; already paged -> DENY; unknown identity -> existing POL-IDV DENY.
 - `agents/resolution.py` (create): `HOLDING_MESSAGE`, two output validators, `build_resolution_agent`, `run_resolution`.
 - `prompts/resolution.md` (create).
 - `agents/__init__.py` (modify): re-exports only; public contracts, `build_*`, `run_*`, `SupportDeps`, `AgentRun`, `AgentTrace`.
@@ -41,6 +45,14 @@ Same as plan 01 (typed, no inline imports, frozen contracts, functional tests, n
 - `docs/architecture/system-architecture-design.md` and `docs/overview/decisions.md` (modify).
 
 ## Tasks
+
+### Task 0: Sev-1 hard gate in `check_action`
+
+**Files:** modify `guardrails/models.py`, `guardrails/validator.py`, `tests/guardrails/test_validator.py`.
+
+- [ ] **Step 1: Failing tests** per the file list above.
+- [ ] **Step 2:** Run `uv run pytest tests/guardrails -v`; FAIL. Implement; PASS (all existing guardrail tests still green).
+- [ ] **Step 3: Commit** `feat(guardrails): Sev-1 PAGE_ON_CALL hard gate`.
 
 ### Task 1: Validators and fallback
 
@@ -54,6 +66,7 @@ Same as plan 01 (typed, no inline imports, frozen contracts, functional tests, n
   - refusal grounding with `[kb:...]` marker: retry;
   - `identity.account is None` with actions in the plan: actions dropped;
   - model failure: canned plan, trace present;
+  - grounding excludes a failed telemetry tool: a `[telemetry:<failed_tool>]` marker triggers a retry;
   - canned message passes both guards.
 - [ ] **Step 2:** Run `uv run pytest tests/agents/test_resolution.py -v`; FAIL. Implement; PASS.
 - [ ] **Step 3: Commit** `feat(agents): run_resolution with guard validators`.
@@ -78,7 +91,7 @@ Content per design §4.4/§4.5: empathetic tone under pressure; follow KB diagno
 
 ### Task 4: Docs
 
-**Files:** modify `docs/architecture/system-architecture-design.md` (§4.1 `SupportDeps`, §4.2 role outputs split + `ResolutionPlan` without `pending_approval` + no `propose_action` tool + Triage identity pre-step), `docs/overview/decisions.md` (next free ADR number at implementation time, "LLM decides, code records; native output-validator retry; no brainstruct, PydanticAI-native tracing").
+**Files:** modify `docs/architecture/system-architecture-design.md` (§4.1 `SupportDeps`, §4.2 role outputs split + `ResolutionPlan` without `pending_approval` + no `propose_action` tool + identity resolved by the orchestrator and passed in `TriageInput` + Sev-1 gate in `check_action`), `docs/overview/decisions.md` (next free ADR number at implementation time, "LLM decides, code records; native output-validator retry; no brainstruct, PydanticAI-native tracing").
 
 - [ ] **Step 1:** Edit both docs; grep the architecture doc and `docs/` for `brainstruct` and replace per decision 1 of plan 01.
 - [ ] **Step 2: Commit** `docs: agent contracts ADR and architecture updates`.
@@ -93,7 +106,6 @@ Content per design §4.4/§4.5: empathetic tone under pressure; follow KB diagno
 
 ## Unresolved Questions
 
-1. Sev-1 hard gate: prompt-only for `PAGE_ON_CALL` or add an `ActionType` rule? (design Q3)
-2. `SupportActionKind` stays separate from `ActionType` with mapping (design Q4)?
-3. Opt-in live-LLM smoke test here or Phase 5 (design Q9)?
-4. Per-role model split (design Q8): plan assumes single `settings.llm_model`.
+1. Sev-1 gate keyed on Triage `P1` (LLM-judged) or telemetry-derived (2+ sites down)?
+2. Opt-in live-LLM smoke test here or Phase 5 (design Q4)?
+3. Per-role model split (design Q3): plan assumes single `settings.llm_model`.

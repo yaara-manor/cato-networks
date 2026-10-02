@@ -13,10 +13,10 @@
 ## Design Decisions (up front; they override the design where they differ)
 
 1. **No brainstruct anywhere.** Design/architecture text mentioning it is superseded. Tracing = PydanticAI's own data: `result.all_messages()` (tool calls/returns) + `result.usage()` (`input_tokens`, `output_tokens`, verified present on 2.51 `RunUsage`) + `time.perf_counter`. No OpenTelemetry/Logfire `instrument` call. Persistence of traces is plan 21's `StateStore` (`TraceRecord.from_agent_trace`, `ToolCallRecord`); agents write nothing to the DB.
-2. **`AgentTrace` ownership.** Issue 21 (§7) owns *new fields* on `AgentTrace` (input, output, status, error, retrieval_scores, cost_usd, parent_trace_id). Issue 22 only adds one classmethod `AgentTrace.from_run` that fills the five existing fields (`agent_role`, `tool_calls`, `latency_ms`, `prompt_tokens`, `completion_tokens`). 21's fields must have defaults so the two merges commute. `tool_calls` stays `list[dict[str, Any]]` with keys `tool_name`, `arguments`, `status`, `result` (envelope dump) so 21's `ToolCallRecord.from_envelope` can consume it. Retrieval scores for traces: orchestrator reads `KnowledgeBundle.candidates`.
-3. **`SupportDeps` is owned by 22** (`agents/base.py`); 21 does not define it, 23 only passes it through. No builder function (YAGNI): the orchestrator constructs it per turn; tests use one conftest fixture.
+2. **`AgentTrace` ownership.** Issue 21 (§7) owns *new fields* on `AgentTrace` (input, output, status, error, retrieval_scores, cost_usd, parent_trace_id). Issue 22 only adds one classmethod `AgentTrace.from_run` that fills the five existing fields (`agent_role`, `tool_calls`, `latency_ms`, `prompt_tokens`, `completion_tokens`) plus `cost_usd`, computed with the already-installed `genai_prices` (transitive dep of pydantic-ai, no new dependency); `cost_usd` is `None` when the model is unknown. 21's fields must have defaults. Merge order: 21 -> 22 -> 23. `tool_calls` stays `list[dict[str, Any]]` with keys `tool_name`, `arguments`, `status`, `result` (envelope dump) so 21's `ToolCallRecord.from_envelope` can consume it. Retrieval scores for traces: orchestrator reads `KnowledgeBundle.candidates`.
+3. **`SupportDeps` is owned by 22** (`agents/base.py`); 21 does not define it, 23 only constructs and passes it. Signature of every runner: `run_<role>(Input, SupportDeps)`. No builder function (YAGNI): the orchestrator constructs it per turn; tests use one conftest fixture.
 4. **Sync vs async.** 22 ships sync `run_<role>()` (`agent.run_sync`, sync tools, matches sync psycopg services). 23's agent ports are async `Protocol`s: 23 adapts with `asyncio.to_thread` at the boundary (21 §1 already prescribes this). 22 contains no async code. Caveat: one psycopg connection must not be used by two threads at once; turns are sequential so this holds.
-5. **Contract seams with 23.** Triage returns `TriageResult` (superset of 23's `TriageDecision`; 23 stores `result.decision`). `DiagnosticEvidence` gets a derived property `unavailable_tools: tuple[str, ...]` (tools with status `UNAVAILABLE`) that 23 needs. 23's `KnowledgeBundle.needs_more_telemetry` is NOT added (speculative; derive from `kb_query_hints` later if the loop is kept). Resolution's extra inputs from 23 (degradation notices, prior violations) are not added: output-validator retry inside the agent replaces the orchestrator re-prompt (design §4.4).
+5. **Contract seams with 23.** Triage returns `TriageResult` (superset of 23's `TriageDecision`; 23 stores `result.decision`). `DiagnosticEvidence` has the field `unavailable_tools: tuple[UnavailableTool, ...]` (every non-`OK` result) for 23's partial-failure handling. `KnowledgeBundle` has `needs_more_telemetry: bool` (LLM judgement in `KnowledgeFindings`, copied into the bundle) for 23's Diagnostics <-> Knowledge back-edge capped at 2 rounds. Resolution's extra inputs from 23 (degradation notices, prior violations) are not added: output-validator retry inside the agent replaces the orchestrator re-prompt (design §4.4).
 6. **LLM decides, code records** exactly as design §1. Only judgement fields are `output_type`; evidence, passages, policies, SLA, repeat contact, identity are assembled from message history in code.
 7. **Retry exhaustion reason is a fixed string** ("output validation retries exhausted" / "model failure"), not violation kinds: `UnexpectedModelBehavior` carries no structured violations. Smaller than the design; violation details stay visible in the retry prompts inside the message history.
 8. **Layout hygiene.** `agents/models.py` holds shared types + all contracts (est. under 300 lines; split into an `agents/contracts/` package only if it passes ~350). Prompts under `prompts/` (new dir at repo root).
@@ -45,7 +45,7 @@
 ## File Structure
 
 - `agents/models.py` (modify): keep `AgentTrace`; add `from_run` classmethod; add `_AgentModel`, `TurnSender`, `ConversationTurn`, `AgentRun[T]`, and all role contracts from design §3 (inputs, LLM outputs, assembled outputs, `Intent`, `SupportActionKind`, `SupportAction`, `ResolutionPlan`, `UnavailableTool`).
-- `agents/base.py` (create): `SupportDeps`, `load_prompt`, `build_agent`.
+- `agents/base.py` (create): `SupportDeps` (22 owns it), `load_prompt`, `build_agent`.
 - `agents/messages.py` (create): `tool_returns`, `tool_call_dicts` (message-history extractors).
 - `agents/runner.py` (create): `RoleOutcome`, `run_role`.
 - `agents/__init__.py` (modify, plan 4): re-exports only.
@@ -60,11 +60,12 @@
 **Files:** modify `agents/models.py`; create `tests/agents/test_contracts.py`.
 
 **Interfaces:**
-- Produces: all types named in design §3 with these decisions: `AgentRun[T]` generic frozen model (`output: T`, `trace: AgentTrace`); `TriageResult.scoping_question` property (identity's deterministic question wins over the model's); `DiagnosticEvidence.has_anomaly` and `unavailable_tools` properties; `ResolutionInput.grounding_context() -> GroundingContext`; `SupportAction.to_proposed_action(target_account_id: str) -> ProposedAction | None` driven by one module-level mapping from `SupportActionKind` to `guardrails.ActionType` (absent kinds map to `None`).
+- Produces: all types named in design §3 with these decisions: `AgentRun[T]` generic frozen model (`output: T`, `trace: AgentTrace`); `TriageResult.scoping_question` property (identity's deterministic question wins over the model's); `DiagnosticEvidence.has_anomaly` property and `unavailable_tools` field; `KnowledgeBundle.needs_more_telemetry` field; `TriageInput` carries `identity: CallerIdentity` (no email / session account id); `ResolutionInput.grounding_context() -> GroundingContext` built only from successful tool results (telemetry tools exclude `unavailable_tools`); `SupportAction.to_proposed_action(target_account_id: str) -> ProposedAction | None` driven by one module-level mapping from `SupportActionKind` to `guardrails.ActionType` (absent kinds map to `None`).
 - `DiagnosticEvidence.from_tool_results` and `KnowledgeBundle.from_tool_results` are classmethods; only fields/properties here, bodies in plans 3.
 
 - [ ] **Step 1: Failing test** `grounding_context()`: build a `ResolutionInput` per knowledge status (CONFIDENT with one passage and one policy, LOW_CONFIDENCE_REFUSAL, UNAVAILABLE, `knowledge=None`) using real `RetrievedPassage` / `PolicyDocument` objects from the seeded DB (reuse the `connection` fixture pattern in `tests/retrieval/test_search_kb.py`); assert `kb_refs` (slug, `heading_anchor`), `policy_ids`, `telemetry_tools`, and `is_refusal` true only for the two non-confident statuses.
-- [ ] **Step 2: Failing test** `to_proposed_action` per `SupportActionKind`: CREDIT / MFA_RESET / VERDICT_OVERRIDE / CLOSE_TICKET map to the same-named `ActionType` with the passed `target_account_id` and payload; CREATE_TICKET / UPDATE_TICKET / PAGE_ON_CALL return `None`; feed the CREDIT result into `guardrails.check_action` with a verified-admin identity and assert `GateOutcome.REQUIRE_APPROVAL`.
+- [ ] **Step 2: Failing test** `to_proposed_action` per `SupportActionKind`: CREDIT / MFA_RESET / VERDICT_OVERRIDE / CLOSE_TICKET / PAGE_ON_CALL map to the same-named `ActionType` with the passed `target_account_id` and payload; CREATE_TICKET / UPDATE_TICKET return `None`; feed the CREDIT result into `guardrails.check_action` with a verified-admin identity and assert `GateOutcome.REQUIRE_APPROVAL`.
+- [ ] **Step 3a: Failing test** `grounding_context()` with a tool listed in `unavailable_tools`: absent from `telemetry_tools`.
 - [ ] **Step 3: Failing test**: models frozen (assignment raises); `TriageResult` with `identity.account=None` accepts `sla=None`, `repeat_contact=None`; `scoping_question` precedence.
 - [ ] **Step 4:** Run `uv run pytest tests/agents/test_contracts.py -v`; expect FAIL (imports missing).
 - [ ] **Step 5: Implement** in `agents/models.py`, reusing `services.models` (`CallerIdentity`, `SLADeadlines`, `RepeatContactResult`), `tools.models` (`TelemetryEvidence`, `TelemetryStatus`), `retrieval.models` (`RetrievedPassage`, `PolicyDocument`, `KBSearchStatus`), `guardrails` (`GroundingContext`, `ProposedAction`, `ActionType`), `core.models`. Redefine none of them.
@@ -93,12 +94,12 @@
 **Interfaces:**
 - `tool_returns(messages: list[ModelMessage], tool_name: str) -> tuple[Any, ...]`: `ToolReturnPart.content` of that tool in order (PydanticAI keeps the raw returned object; Step 1 proves it for a Pydantic return).
 - `tool_call_dicts(messages: list[ModelMessage]) -> list[dict[str, Any]]`: pairs each `ToolCallPart` with its `ToolReturnPart` by `tool_call_id` into `{tool_name, arguments, status, result}` (status from the envelope's `status` attribute when present, else `"OK"`; result `model_dump(mode="json")`).
-- `AgentTrace.from_run(role: str, messages: list[ModelMessage], usage: RunUsage, latency_ms: int) -> AgentTrace`.
+- `AgentTrace.from_run(role: str, messages: list[ModelMessage], usage: RunUsage, latency_ms: int, model_name: str | None) -> AgentTrace`; `cost_usd` via `genai_prices` (read its API once with `uv run python -c` before use), `None` when the model is unknown.
 - `RoleOutcome[O]` frozen dataclass: `output: O | None`, `messages: tuple[ModelMessage, ...]`, `trace: AgentTrace`.
 - `run_role(agent, prompt: str, deps: SupportDeps, role: str) -> RoleOutcome[O]`: times with `perf_counter`, calls `run_sync`, builds the trace; catches only `UnexpectedModelBehavior`; transport errors (`ModelAPIError`, `ModelHTTPError`) propagate (backoff/fallback model belong to 23 per design §4).
 
 - [ ] **Step 1: Failing test**: scripted model calls a real tool returning a real `KBSearchResult` (real `RetrievalService.search_kb` on the Q10 question, text read from `data/eval/questions.jsonl` like `tests/retrieval/test_search_kb.py`) then a final output; `tool_returns` yields the typed `KBSearchResult` instance (not dict/str); `tool_call_dicts` has one entry with `status == "CONFIDENT"`.
-- [ ] **Step 2: Failing tests**: invalid output beyond the retry budget gives `output is None` and a trace with role set, no exception; `ModelHTTPError` propagates; no-tool-call run gives empty tuples; `latency_ms >= 0`; token counts equal the `FunctionModel` usage.
+- [ ] **Step 2: Failing tests**: invalid output beyond the retry budget gives `output is None` and a trace with role set, no exception; `ModelHTTPError` propagates; no-tool-call run gives empty tuples; `latency_ms >= 0`; token counts equal the `FunctionModel` usage; `cost_usd` is `None` for the unknown scripted model and set for a known model name.
 - [ ] **Step 3:** Run; FAIL. Implement; PASS.
 - [ ] **Step 4: Commit** `feat(agents): message extractors and shared runner`.
 
@@ -111,6 +112,4 @@
 
 ## Unresolved Questions
 
-1. 21 adds `AgentTrace` fields concurrently: who rebases (suggest second to land)?
-2. Is message history available on `UnexpectedModelBehavior` in 2.51, or is the failure trace empty?
-3. Keep `needs_more_telemetry` out of 22 (23 requests it)?
+1. Is message history available on `UnexpectedModelBehavior` in 2.51, or is the failure trace empty?

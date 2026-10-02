@@ -21,13 +21,14 @@ Same as plan 01 (typed, no inline imports, frozen tuples, functional tests with 
 - **Dedup/ordering in classmethods** (one place each): `inspected_tools` dedupes preserving call order via `dict.fromkeys`; passages dedupe by `passage_id` keeping highest `rerank_score`, then sort by `rerank_score` descending.
 - **Hypothesis with zero evidence is dropped** inside `run_diagnostics` by `model_copy` on findings (not by prompt trust).
 - **Status rule (KnowledgeBundle)**: any CONFIDENT call gives CONFIDENT; else any UNAVAILABLE gives UNAVAILABLE; else (including no call) LOW_CONFIDENCE_REFUSAL. Gate stays in `RetrievalService`; no second threshold in agents.
+- **Grounding input**: `inspected_tools` keeps every called tool; `ResolutionInput.grounding_context()` (plan 01) subtracts `unavailable_tools`, so a failed tool can never be cited.
 - **`snapshot_date`**: from the first non-None `KBSearchResult.snapshot_date`; if only policies were fetched it is `None`.
 
 ## Review Focus
 
-- Foreign-account site id (prompt-injected): refused, zero evidence, listed in `unavailable`; the foreign data never enters message history as usable evidence (the refused envelope has no data).
+- Foreign-account site id (prompt-injected): refused, zero evidence, listed in `unavailable_tools`; the foreign data never enters message history as usable evidence (the refused envelope has no data).
 - Unverified caller (domain mismatch) cannot read any telemetry.
-- Corrupt/empty telemetry dir: every tool returns `UNAVAILABLE`-style envelope, run completes, `unavailable` populated.
+- Corrupt/empty telemetry dir: every tool returns `UNAVAILABLE`-style envelope, run completes, `unavailable_tools` populated.
 - Model skips telemetry entirely: `inspected_tools == ()`, hypothesis `None`.
 - `get_policy` with unknown id returns `None`: absent from `referenced_policies`, no exception; policy id normalisation is done inside `RetrievalService.get_policy` (reuse, do not repeat).
 - Search returns `UNAVAILABLE` but a policy fetch succeeds: bundle status `UNAVAILABLE`, policies still present.
@@ -47,10 +48,10 @@ Same as plan 01 (typed, no inline imports, frozen tuples, functional tests with 
 
 **Files:** modify `agents/models.py`, `tests/agents/test_contracts.py`.
 
-**Interfaces:** `DiagnosticEvidence.from_tool_results(findings: DiagnosticsFindings, results: Sequence[TelemetryToolResult[Any]]) -> DiagnosticEvidence` (evidence of `OK` results flattened in call order; every non-OK result becomes `UnavailableTool(tool_name, status, error)`). `KnowledgeBundle.from_tool_results(findings: KnowledgeFindings, searches: Sequence[KBSearchResult], policies: Sequence[PolicyDocument]) -> KnowledgeBundle` per the rule above; `queries` = each search's `query` in call order.
+**Interfaces:** `DiagnosticEvidence.from_tool_results(findings: DiagnosticsFindings, results: Sequence[TelemetryToolResult[Any]]) -> DiagnosticEvidence` (evidence of `OK` results flattened in call order; every non-OK result becomes `UnavailableTool(tool_name, status, error)` in the `unavailable_tools` field). `KnowledgeBundle.from_tool_results(findings: KnowledgeFindings, searches: Sequence[KBSearchResult], policies: Sequence[PolicyDocument]) -> KnowledgeBundle` per the rule above; `queries` = each search's `query` in call order; `needs_more_telemetry` copied from `findings`.
 
 - [ ] **Step 1: Failing test** status truth table (the only unit-style test; high-risk rule): all combinations of {CONFIDENT, LOW_CONFIDENCE_REFUSAL, UNAVAILABLE} over 0-2 searches, parameterized; dedup of duplicate passage ids; policy dedup.
-- [ ] **Step 2: Failing test** diagnostics assembly with real envelopes from `TelemetryService` (S-1007-01 BGP): `evidence_items` includes the `routes_count` anomaly entry, `has_anomaly` true, `unavailable_tools` empty; a `NOT_FOUND` envelope lands in `unavailable`.
+- [ ] **Step 2: Failing test** diagnostics assembly with real envelopes from `TelemetryService` (S-1007-01 BGP): `evidence_items` includes the `routes_count` anomaly entry, `has_anomaly` true, `unavailable_tools` empty; a `NOT_FOUND` envelope lands in `unavailable_tools`.
 - [ ] **Step 3:** Run `uv run pytest tests/agents/test_contracts.py -v`; FAIL. Implement; PASS.
 - [ ] **Step 4: Commit** `feat(agents): evidence and knowledge assembly`.
 
@@ -70,7 +71,7 @@ Same as plan 01 (typed, no inline imports, frozen tuples, functional tests with 
 
 **Interfaces:** `build_diagnostics_agent(model: Model | None = None) -> Agent[SupportDeps, DiagnosticsFindings]`; `run_diagnostics(data: DiagnosticsInput, deps: SupportDeps, model: Model | None = None) -> AgentRun[DiagnosticEvidence]`: `run_role`, then `DiagnosticEvidence.from_tool_results(findings, tool_returns(...) over all 7 tool names)`; empty `inspected_tools` forces `root_cause_hypothesis=None`; `output is None` gives empty findings plus whatever evidence was gathered. Prompt per design §4.2/§4.5 (inspection order; verbatim evidence via `TelemetryEvidence.format_citation()` wording; anomalies first; `kb_query_hints` carry exact error strings; per-status wording; two examples: BGP route limit, IPsec `NO_PROPOSAL_CHOSEN`; no `SC-` ids).
 
-- [ ] **Step 1: Failing tests**: scripted `get_bgp_status("S-1007-01")` then findings gives `inspected_tools == ("get_bgp_status",)` and the anomaly in `evidence_items`; telemetry dir pointed at an empty tmp dir gives populated `unavailable` and a completed run; no tool call gives hypothesis `None` even when the scripted findings supply one; model failure gives empty findings with evidence gathered so far; prompt smoke test (headings, no `SC-`/`expected`).
+- [ ] **Step 1: Failing tests**: scripted `get_bgp_status("S-1007-01")` then findings gives `inspected_tools == ("get_bgp_status",)` and the anomaly in `evidence_items`; telemetry dir pointed at an empty tmp dir gives populated `unavailable_tools` and a completed run; no tool call gives hypothesis `None` even when the scripted findings supply one; model failure gives empty findings with evidence gathered so far; prompt smoke test (headings, no `SC-`/`expected`).
 - [ ] **Step 2:** Run; FAIL. Implement; PASS.
 - [ ] **Step 3: Commit** `feat(agents): run_diagnostics`.
 
@@ -78,9 +79,9 @@ Same as plan 01 (typed, no inline imports, frozen tuples, functional tests with 
 
 **Files:** create `agents/knowledge.py`, `prompts/knowledge.md`, `tests/agents/test_knowledge.py`.
 
-**Interfaces:** tools `search_knowledge_base(ctx, query: str) -> KBSearchResult` (default `top_k`) and `get_policy(ctx, policy_id: str) -> PolicyDocument | None`; `build_knowledge_agent(model=None) -> Agent[SupportDeps, KnowledgeFindings]`; `run_knowledge(data: KnowledgeInput, deps: SupportDeps, model=None) -> AgentRun[KnowledgeBundle]` using `tool_returns` for both tools; model failure gives bundle from results already obtained with empty `uncovered_topics`. Prompt per design §4.3 (1-3 focused queries, error strings from `kb_query_hints`, no PII; policy-selection table POL-CREDIT/IDV/SEC/SEV1/SLA/CRED; honest `uncovered_topics`).
+**Interfaces:** tools `search_knowledge_base(ctx, query: str) -> KBSearchResult` (default `top_k`) and `get_policy(ctx, policy_id: str) -> PolicyDocument | None`; `build_knowledge_agent(model=None) -> Agent[SupportDeps, KnowledgeFindings]`; `run_knowledge(data: KnowledgeInput, deps: SupportDeps, model=None) -> AgentRun[KnowledgeBundle]` using `tool_returns` for both tools; model failure gives bundle from results already obtained with empty `uncovered_topics`. Prompt per design §4.3 (1-3 focused queries, error strings from `kb_query_hints`, no PII; policy-selection table POL-CREDIT/IDV/SEC/SEV1/SLA/CRED; honest `uncovered_topics`; set `needs_more_telemetry` when passages point at telemetry not yet read).
 
-- [ ] **Step 1: Failing tests**: scripted search for the Q10 `NO_PROPOSAL_CHOSEN` question gives `CONFIDENT`, non-empty passages, `snapshot_date` set; off-domain question (use the off-domain fixture/ADR-007 tests in `tests/retrieval/test_search_kb.py` as source) gives `LOW_CONFIDENCE_REFUSAL`, empty passages, non-empty candidates; closed DB connection (use a throwaway connection that is closed) gives `UNAVAILABLE` while `get_policy("POL-CREDIT")` is still served (policies are in memory); unknown policy id absent; two searches with overlapping passages are deduped; prompt smoke test.
+- [ ] **Step 1: Failing tests**: `needs_more_telemetry=True` in scripted findings surfaces on the bundle; scripted search for the Q10 `NO_PROPOSAL_CHOSEN` question gives `CONFIDENT`, non-empty passages, `snapshot_date` set; off-domain question (use the off-domain fixture/ADR-007 tests in `tests/retrieval/test_search_kb.py` as source) gives `LOW_CONFIDENCE_REFUSAL`, empty passages, non-empty candidates; closed DB connection (use a throwaway connection that is closed) gives `UNAVAILABLE` while `get_policy("POL-CREDIT")` is still served (policies are in memory); unknown policy id absent; two searches with overlapping passages are deduped; prompt smoke test.
 - [ ] **Step 2:** Run; FAIL. Implement; PASS.
 - [ ] **Step 3: Commit** `feat(agents): run_knowledge`.
 

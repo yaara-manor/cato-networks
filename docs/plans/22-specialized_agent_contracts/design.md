@@ -9,7 +9,7 @@
 
 ## 1. Objective & Scope
 
-Four PydanticAI role agents (Triage, Diagnostics, Knowledge, Resolution) with typed inputs, typed outputs, a fixed tool set per role, defined failure modes, and editable system prompts. Each agent is built by a factory and driven by a sync `run_<role>()` function that returns an `AgentRun[Output]` (output + `AgentTrace`).
+Four PydanticAI role agents (Triage, Diagnostics, Knowledge, Resolution) with typed inputs, typed outputs, a fixed tool set per role, defined failure modes, and editable system prompts. Each agent is built by a factory and driven by a sync `run_<role>(Input, SupportDeps)` function that returns an `AgentRun[Output]` (output + `AgentTrace`).
 
 Core principle: **the LLM decides, code records.** The model fills only the judgement fields of each output (intent, priority, hypothesis, wording). Everything that is ground truth (caller identity, SLA deadlines, repeat-contact flag, telemetry evidence, retrieved passages, policies, retrieval status) is assembled by `run_<role>()` from the tool results in the run's message history. The model can never mistype, drop or invent evidence, and the existing guards (`guardrails/`) can trust the contract.
 
@@ -58,10 +58,11 @@ All models subclass `_AgentModel` (`model_config = ConfigDict(frozen=True)`), co
 ### 3.1 Shared
 - **`ConversationTurn`**: `sender: TurnSender` (`StrEnum`: `CUSTOMER`, `AGENT`, `REVIEWER`), `content: str` (already redacted). History passed to agents is `tuple[ConversationTurn, ...]`, most recent last.
 - **`AgentRun[T]`** (generic): `output: T`, `trace: AgentTrace`. Returned by every `run_<role>()`.
-- **`SupportDeps`** (frozen dataclass in `agents/base.py`, PydanticAI deps; built once per turn): `clock: SimulationClock`, `customers: CustomerService`, `tickets: TicketService`, `telemetry: TelemetryService`, `retrieval: RetrievalService`, `identity: CallerIdentity`, `guard_history: SessionGuardHistory`, `approved_actions: frozenset[ActionType]`, `grounding: GroundingContext | None = None` (set only for Resolution via `dataclasses.replace`). Replaces architecture §4.1's `db_pool` / `customer_store`: services already hold their own sync connection.
+- **`SupportDeps`** (frozen dataclass in `agents/base.py`, PydanticAI deps; built once per turn): `clock: SimulationClock`, `customers: CustomerService`, `tickets: TicketService`, `telemetry: TelemetryService`, `retrieval: RetrievalService`, `identity: CallerIdentity` (resolved by the orchestrator, 23), `guard_history: SessionGuardHistory`, `approved_actions: frozenset[ActionType]`, `grounding: GroundingContext | None = None` (set only for Resolution via `dataclasses.replace`). Replaces architecture §4.1's `db_pool` / `customer_store`: services already hold their own sync connection. **22 owns `SupportDeps`**; 21 does not define it, 23 only constructs and passes it.
+- **`AgentTrace`**: 21 owns its fields (all new fields with defaults); 22 adds only the classmethod `AgentTrace.from_run`, which fills role, tool calls, latency, tokens, and `cost_usd` via the already-installed `genai_prices` (transitive dep of pydantic-ai; no new dependency). `cost_usd` is `None` when the model is unknown to `genai_prices`. Merge order: 21 -> 22 -> 23.
 
 ### 3.2 Triage
-- **`TriageInput`**: `message: str`, `caller_email: str | None`, `session_account_id: str | None`, `history: tuple[ConversationTurn, ...]`.
+- **`TriageInput`**: `message: str`, `identity: CallerIdentity` (resolved deterministically by the orchestrator, 23, never by the LLM), `history: tuple[ConversationTurn, ...]`.
 - **`Intent(StrEnum)`**: `TELEMETRY_DIAGNOSIS`, `KB_INQUIRY`, `POLICY_REQUEST`, `ADVERSARIAL`.
 - **`TriageDecision`** (LLM output): `intent: Intent`, `priority: TicketPriority`, `site_id: str | None`, `product_area: str | None`, `symptom_summary: str`, `scoping_question: str | None` (set when the request is too vague to diagnose, SC-02).
 - **`TriageResult`** (assembled): `decision: TriageDecision`, `identity: CallerIdentity`, `sla: SLADeadlines | None`, `repeat_contact: RepeatContactResult | None`; property `scoping_question` = `identity.scoping_question` (missing country) else `decision.scoping_question`. `sla` / `repeat_contact` are `None` when `identity.account` is `None` (unrecognized caller).
@@ -70,18 +71,18 @@ All models subclass `_AgentModel` (`model_config = ConfigDict(frozen=True)`), co
 - **`DiagnosticsInput`**: `triage: TriageResult`, `message: str`, `history`.
 - **`DiagnosticsFindings`** (LLM output): `root_cause_hypothesis: str | None`, `needs_customer_input: str | None` (what only the customer can tell, asked only after telemetry was read), `kb_query_hints: tuple[str, ...]` (symptom terms / exact error strings for Knowledge, e.g. `NO_PROPOSAL_CHOSEN`).
 - **`UnavailableTool`**: `tool_name: str`, `status: TelemetryStatus`, `error: str | None`.
-- **`DiagnosticEvidence`** (assembled): `findings: DiagnosticsFindings`, `inspected_tools: tuple[str, ...]` (call order, deduplicated), `evidence_items: tuple[TelemetryEvidence, ...]` (every `evidence` entry of every `OK` result), `unavailable: tuple[UnavailableTool, ...]` (every non-`OK` result). Property `has_anomaly` = any `is_anomaly`.
+- **`DiagnosticEvidence`** (assembled): `findings: DiagnosticsFindings`, `inspected_tools: tuple[str, ...]` (call order, deduplicated), `evidence_items: tuple[TelemetryEvidence, ...]` (every `evidence` entry of every `OK` result), `unavailable_tools: tuple[UnavailableTool, ...]` (every non-`OK` result; 23 uses it for partial-failure handling). Property `has_anomaly` = any `is_anomaly`.
 
 ### 3.4 Knowledge
 - **`KnowledgeInput`**: `triage: TriageResult`, `diagnostics: DiagnosticEvidence | None`, `message: str`.
-- **`KnowledgeFindings`** (LLM output): `uncovered_topics: tuple[str, ...]` (parts of the question no retrieved passage supports, e.g. SC-09 roadmap dates — the grounding duty from the retrieval design §4.3).
-- **`KnowledgeBundle`** (assembled): `findings: KnowledgeFindings`, `retrieved_passages: tuple[RetrievedPassage, ...]` (union of `passages` of every search call, deduplicated by `passage_id`, ordered by `rerank_score` desc), `candidates: tuple[RetrievedPassage, ...]` (same union over `candidates`, for traces / `answers.md`), `referenced_policies: tuple[PolicyDocument, ...]` (found by `get_policy`, deduplicated), `confidence_status: KBSearchStatus`, `snapshot_date: AwareDatetime | None`, `queries: tuple[str, ...]`.
+- **`KnowledgeFindings`** (LLM output): `uncovered_topics: tuple[str, ...]` (parts of the question no retrieved passage supports, e.g. SC-09 roadmap dates — the grounding duty from the retrieval design §4.3), `needs_more_telemetry: bool` (retrieved passages point at telemetry Diagnostics has not read).
+- **`KnowledgeBundle`** (assembled): `findings: KnowledgeFindings`, `retrieved_passages: tuple[RetrievedPassage, ...]` (union of `passages` of every search call, deduplicated by `passage_id`, ordered by `rerank_score` desc), `candidates: tuple[RetrievedPassage, ...]` (same union over `candidates`, for traces / `answers.md`), `referenced_policies: tuple[PolicyDocument, ...]` (found by `get_policy`, deduplicated), `confidence_status: KBSearchStatus`, `snapshot_date: AwareDatetime | None`, `queries: tuple[str, ...]`, `needs_more_telemetry: bool` (copied from `findings`; 23 uses it for the Diagnostics <-> Knowledge back-edge, capped at 2 rounds).
   - `confidence_status` rule (`KnowledgeBundle.from_tool_results` classmethod): any `CONFIDENT` call → `CONFIDENT`; else any `UNAVAILABLE` → `UNAVAILABLE`; else (including no search call at all) → `LOW_CONFIDENCE_REFUSAL`. `RERANK_MIN_SCORE` is already applied inside `RetrievalService.search_kb`; the agent never re-implements the gate.
 
 ### 3.5 Resolution
-- **`ResolutionInput`**: `triage: TriageResult`, `diagnostics: DiagnosticEvidence | None`, `knowledge: KnowledgeBundle | None`, `history: tuple[ConversationTurn, ...]`, `message: str`. Method `grounding_context() -> GroundingContext`: `kb_refs` from `knowledge.retrieved_passages` (slug, anchor), `policy_ids` from `referenced_policies`, `telemetry_tools` from `diagnostics.inspected_tools`, `is_refusal` when `confidence_status` is `LOW_CONFIDENCE_REFUSAL` or `UNAVAILABLE` (resolves the Phase 2 `from_bundle` follow-up of the guardrails design without making `guardrails/` depend on `agents/`).
+- **`ResolutionInput`**: `triage: TriageResult`, `diagnostics: DiagnosticEvidence | None`, `knowledge: KnowledgeBundle | None`, `history: tuple[ConversationTurn, ...]`, `message: str`. Method `grounding_context() -> GroundingContext`: `kb_refs` from `knowledge.retrieved_passages` (slug, anchor), `policy_ids` from `referenced_policies`, `telemetry_tools` from `diagnostics.inspected_tools` minus every `unavailable_tools` entry, `is_refusal` when `confidence_status` is `LOW_CONFIDENCE_REFUSAL` or `UNAVAILABLE` (resolves the Phase 2 `from_bundle` follow-up of the guardrails design without making `guardrails/` depend on `agents/`). **Grounding is built only from successful tool results**: passages only from successful searches, policies only from found policies, telemetry tools exclude failed ones, so the model cannot cite data from a failed tool (`check_citations` flags the marker).
 - **`SupportActionKind(StrEnum)`**: `CREATE_TICKET`, `UPDATE_TICKET`, `PAGE_ON_CALL`, `CLOSE_TICKET`, `CREDIT`, `MFA_RESET`, `VERDICT_OVERRIDE`.
-- **`SupportAction`**: `kind: SupportActionKind`, `payload: dict[str, str]`, `reason: str`. Method `to_proposed_action(target_account_id: str) -> ProposedAction | None`: table lookup mapping `CLOSE_TICKET` / `CREDIT` / `MFA_RESET` / `VERDICT_OVERRIDE` to guardrails `ActionType`; returns `None` for `CREATE_TICKET` / `UPDATE_TICKET` / `PAGE_ON_CALL` (not gated by `check_action`). `target_account_id` comes from `identity.account`, never from the model.
+- **`SupportAction`**: `kind: SupportActionKind`, `payload: dict[str, str]`, `reason: str`. Method `to_proposed_action(target_account_id: str) -> ProposedAction | None`: table lookup mapping `CLOSE_TICKET` / `CREDIT` / `MFA_RESET` / `VERDICT_OVERRIDE` to guardrails `ActionType`; `PAGE_ON_CALL` also maps to the new `ActionType.PAGE_ON_CALL` (§4.4); returns `None` only for `CREATE_TICKET` / `UPDATE_TICKET` (not gated). `SupportActionKind` stays a separate enum from guardrails `ActionType`: it carries ungated kinds that `ActionType` must not. `target_account_id` comes from `identity.account`, never from the model.
 - **`ResolutionPlan`** (LLM output and final): `customer_message: str` (inline `[kb:<slug>#<anchor>]`, `[policy:POL-X]`, `[telemetry:<tool>]` markers per the guardrails grammar), `actions: tuple[SupportAction, ...]`, `escalate_to_human: bool = False`, `escalation_reason: str | None = None`. Approval is **not** a model field: the orchestrator derives pending approvals from `check_action` → `REQUIRE_APPROVAL`. This deviates from architecture §4.2 (`pending_approval: ApprovalRequest | None`) because a model-set flag must never decide a hard gate.
 
 ---
@@ -92,12 +93,12 @@ Common mechanics (`agents/base.py`):
 - `Agent[SupportDeps, <LLM output>]` built with `settings.llm_model` (overridable by factory argument so tests inject PydanticAI `FunctionModel` / `TestModel`). One model for all roles (no per-role routing).
 - Instructions = `load_prompt(<role>)` (cached file read from `settings.repo_root / "prompts"`) + a dynamic instruction callback returning `guard_history.agent_context_note()` when not `None`. History informs the model; it never changes deterministic outcomes (guardrails design §3).
 - Tools are plain **sync** functions (PydanticAI runs them in a worker thread; codebase is sync-only per retrieval design §2.3). Tools return the service's own typed result (`TelemetryToolResult[T]`, `KBSearchResult`, `PolicyDocument | None`), so the message history keeps the raw typed objects and `run_<role>()` extracts them deterministically; no mutable collector objects.
-- `run_<role>()` is sync (`agent.run_sync`), measures wall-clock latency with `time.perf_counter` (real elapsed, not `SimulationClock`), builds `AgentTrace` (role, tool calls from message history, latency, token usage from `result.usage()`), and returns `AgentRun`.
+- `run_<role>(Input, SupportDeps)` is sync (`agent.run_sync`); 23 adapts it with `asyncio.to_thread`. It measures wall-clock latency with `time.perf_counter` (real elapsed, not `SimulationClock`), builds `AgentTrace` via `AgentTrace.from_run` (role, tool calls from message history, latency, token usage from `result.usage()`), and returns `AgentRun`.
 - Failure handling: tool-level failures are data (envelopes), never exceptions. A model failure that PydanticAI raises as `UnexpectedModelBehavior` is caught inside `run_<role>()` and mapped to the role's fallback below. Transport errors (rate limit, HTTP) propagate: backoff and fallback model are the orchestrator's (architecture §5, issue #8).
 
 ### 4.1 Triage Agent
 - **Purpose**: classify the request; bind it to the verified account, SLA clock and repeat-contact history; ask scoping questions.
-- **Deterministic pre-step (before the LLM)**: `CustomerService.authenticate_caller(caller_email, claimed_account_id=session_account_id)` → `SupportDeps.identity`. Identity is ground truth from account data, never from chat claims (issue objective, POL-IDV). Tier / authority / cross-account claims in the text are the guardrails' job (`check_claims`, run by the orchestrator once identity exists); Triage ignores them.
+- **Identity (not a Triage step)**: the orchestrator (23) resolves identity with the existing `CustomerService.authenticate_caller` (plain function, not an LLM tool) and passes it in `TriageInput.identity` / `SupportDeps.identity`. Identity/auth is never LLM-decided; the Triage LLM only classifies and judges (this overrides the spec's "Triage tool `authenticate_caller`"). Identity is ground truth from account data, never from chat claims (issue objective, POL-IDV). Tier / authority / cross-account claims in the text are the guardrails' job (`check_claims`, run by the orchestrator once identity exists); Triage ignores them.
 - **Tools** (LLM-callable): `get_ticket_history(site_id: str | None = None) -> list[Ticket]` over `TicketService.get_ticket_history` for `identity.account` only. Every ticket `subject` and `body` goes through the guardrails §4.6 sanitizer in order `redact()` → `quarantine()` (seed TCK-20264230 holds the SC-08 PSK; TCK-20264246 is the SC-05 injection). Returns `[]` when `identity.account` is `None`.
 - **Deterministic post-step (after the LLM)**: `TicketService.detect_repeat_contact(account_id, site_id, product_area, symptom_text=symptom_summary)` and `CustomerService.calculate_sla_deadlines(effective_tier, priority, country_code, product_area)` → `TriageResult`. Repeat contact and SLA are never model arithmetic.
 - **Failure modes**:
@@ -110,9 +111,9 @@ Common mechanics (`agents/base.py`):
 - **Purpose**: open CMA before asking the customer; read telemetry; extract evidence; form a hypothesis.
 - **Tools**: the 7 `TelemetryService` methods (`list_sites`, `get_site_status`, `get_link_quality`, `get_events`, `get_bgp_status`, `get_ipsec_status`, `get_client_diagnostics`) as thin wrappers returning `TelemetryToolResult[T]` unchanged. Argument validation and timeouts stay in `TelemetryService` (1.3).
 - **Account-ownership guard (wrapper layer, ~25% of effort)**: `TelemetryService` takes any site id, so a prompt-injected or mistaken id could read another customer's data (SC-05 `ACC-1005`). Each wrapper first checks the site belongs to `identity.account` (membership in `telemetry.list_sites(account_id)`; `get_client_diagnostics` checks `payload.customer_id` after the call and drops `data` / `evidence` on mismatch). Violations return `TelemetryToolResult(status=INVALID_ARGUMENT, error="site not in caller account")`; `identity.account is None` or `not is_verified_account_member` returns the same envelope. Evidence from a refused call never reaches the contract.
-- **Assembly**: `inspected_tools` / `evidence_items` / `unavailable` from the tool returns in the message history (§3.3).
+- **Assembly**: `inspected_tools` / `evidence_items` / `unavailable_tools` from the tool returns in the message history (§3.3).
 - **Failure modes**:
-  - `NOT_FOUND` / `UNAVAILABLE` / `INVALID_ARGUMENT`: listed in `unavailable`; prompt requires continuing with the remaining tools and stating the gap, never inventing numbers (architecture §5 matrix row 1).
+  - `NOT_FOUND` / `UNAVAILABLE` / `INVALID_ARGUMENT`: listed in `unavailable_tools`; prompt requires continuing with the remaining tools and stating the gap, never inventing numbers (architecture §5 matrix row 1).
   - No tool call at all (model skipped telemetry): `inspected_tools` empty, `root_cause_hypothesis` forced to `None` by `run_diagnostics` (a hypothesis with zero evidence is dropped).
   - Model failure: evidence gathered so far with `findings` = empty (`None` hypothesis).
 - **Prompt (`prompts/diagnostics.md`)**: TAC-engineer persona; read telemetry first, ask the customer only for what telemetry cannot tell; inspection order (site status → link quality → events → BGP / IPsec / client by symptom); quote evidence verbatim using `TelemetryEvidence.format_citation()` text and the `[telemetry:<tool>]` marker; state `is_anomaly` items first; hypothesis must name the evidence it rests on; `kb_query_hints` carry exact error strings and metric names; what to say per non-`OK` status; scenario-grounded examples (BGP `routes_count 1024/1024` with flaps, IPsec `NO_PROPOSAL_CHOSEN`, Socket offline after upgrade).
@@ -131,7 +132,7 @@ Common mechanics (`agents/base.py`):
 ### 4.4 Resolution & Action Agent — ~20% of effort (prompt + validators)
 - **Purpose**: one grounded, empathetic customer reply plus proposed actions.
 - **Tools**: none. Actions are structured output (CQS: this agent computes, orchestrator executes), replacing architecture §4.2's `propose_action` tool.
-- **Output validators (PydanticAI `output_validator`, `output_retries=1`)**, using `SupportDeps.grounding` (set by `run_resolution` from `ResolutionInput.grounding_context()`):
+- **Output validators (PydanticAI `output_validator`, `output_retries=1`)**, using `SupportDeps.grounding` (set by `run_resolution` from `ResolutionInput.grounding_context()`, successful tool results only):
   1. `guardrails.validator.check_citations(customer_message, grounding)`: any violation → `ModelRetry` with the violation details (fixed text, no customer data).
   2. `guardrails.validator.check_outgoing_message(customer_message, guard_history, approved_actions)`: any violation → `ModelRetry`.
   This is the architecture §4.2 / guardrails §4.4 "re-prompt once, then route to human", implemented with the framework's native retry rather than orchestrator code.
@@ -139,6 +140,7 @@ Common mechanics (`agents/base.py`):
   - Validator retries exhausted or model failure: `run_resolution` returns `ResolutionPlan(customer_message=<canned holding message>, actions=(), escalate_to_human=True, escalation_reason=<violation kinds or "model failure">)`. The canned message carries no markers or numbers, so it passes the same guards; it lives as one module constant in `agents/resolution.py`.
   - Knowledge `LOW_CONFIDENCE_REFUSAL` / `UNAVAILABLE`: prompt requires the architecture §5 refusal wording and human routing, and no technical claims (`REFUSAL_BREACH` otherwise).
   - `identity.account is None`: no actions (`to_proposed_action` would be `DENY`ed anyway).
+- **Sev-1 `PAGE_ON_CALL` is a hard gate in code, not prompt-only.** Add `ActionType.PAGE_ON_CALL` and a rule in the existing `guardrails.validator.check_action` (single source of truth; small addition to closed 1.5 code, with its test): ALLOW only when `POL-SEV1` criteria hold (triage priority `P1`, passed as a new keyword argument) and the state snapshot does not already show the conversation paged (new keyword argument `already_paged`, default `False` keeps existing callers); otherwise DENY with `POL-SEV1`. Idempotent: a repeat request is denied/no-op, never a re-page. Resolution only proposes; the orchestrator calls `check_action` and consumes the decision. The prompt still states the criteria so the model rarely proposes a denied page.
 - **Prompt (`prompts/resolution.md`)**: tone under pressure (SC-03); follow KB diagnostic order, no invented CLI (commands only in backticks, as the uncited-claim detector requires); marker grammar with a worked example; quote telemetry evidence verbatim; SLA statements copied only from `triage.sla`; never state credit amounts, MFA resets or verdict overrides as done (propose the action, say it needs Escalation Board approval, keep the conversation open); decline malware / C2 verdict overrides and propose escalation to Security Ops (`POL-SEC`); Sev-1 `PAGE_ON_CALL` only per `POL-SEV1` criteria with a one-line `reason`; one scoping question when `triage.scoping_question` is set; do not repeat any redacted secret.
 
 ### 4.5 Prompt Engineering Conventions (all four)
@@ -151,10 +153,11 @@ Common mechanics (`agents/base.py`):
 ## 5. Testing (`tests/agents/`)
 Functional, real seeded Postgres + real `CustomerService` / `TicketService` / `TelemetryService` / `RetrievalService`, **scripted models** (PydanticAI `FunctionModel`) so the tests are deterministic and cost nothing. Prompt quality itself is judged by the Phase 5 scenario replay.
 - `test_triage.py`: SC-06 Chicago repeat contact → `repeat_contact.is_repeat_contact`; SC-07 Standard account sends Premium claim → `identity.effective_tier` stays `Standard`, SLA computed from Standard; unknown email → `identity.account is None`, `sla` and `repeat_contact` `None`; missing-country account → `scoping_question` is the deterministic one; `get_ticket_history` tool returns TCK-20264230 body with the PSK absent and TCK-20264246 quarantined; scripted model failure → fallback decision with intact identity and SLA.
-- `test_diagnostics.py`: scripted run calling `get_bgp_status("S-1007-01")` → `evidence_items` contains the `routes_count` anomaly and `inspected_tools == ("get_bgp_status",)`; site of another account (SC-05 style `ACC-1005` site while caller is `ACC-1007`) → `INVALID_ARGUMENT`, zero evidence, listed in `unavailable`; `TelemetryService` pointed at an empty / corrupt temp dir → `unavailable` populated, run completes; no tool calls → hypothesis dropped; unverified caller → all tools refused.
+- `test_diagnostics.py`: scripted run calling `get_bgp_status("S-1007-01")` → `evidence_items` contains the `routes_count` anomaly and `inspected_tools == ("get_bgp_status",)`; site of another account (SC-05 style `ACC-1005` site while caller is `ACC-1007`) → `INVALID_ARGUMENT`, zero evidence, listed in `unavailable_tools`; `TelemetryService` pointed at an empty / corrupt temp dir → `unavailable_tools` populated, run completes; no tool calls → hypothesis dropped; unverified caller → all tools refused.
 - `test_knowledge.py`: scripted search for the Q10 `NO_PROPOSAL_CHOSEN` question → `CONFIDENT`, `retrieved_passages` non-empty, snapshot date set; off-domain fixture question → `LOW_CONFIDENCE_REFUSAL`, empty passages, non-empty candidates; closed connection → `UNAVAILABLE`, `get_policy("POL-CREDIT")` still returned; unknown policy id absent from `referenced_policies`; two searches returning the same passage → deduplicated.
 - `test_resolution.py`: scripted first draft with an uncited `1350 bytes` sentence then a cited one → one retry, final message passes `check_citations`; scripted `$3,600 credit` sentence on both attempts without approval → `escalate_to_human=True` with the canned message; same sentence with `CREDIT` in `approved_actions` passes; refusal grounding with a `[kb:…]` marker → retry; `SupportAction.to_proposed_action` mapping table (CREDIT → `ActionType.CREDIT`, `PAGE_ON_CALL` → `None`), and the proposed action feeds `check_action` to the expected `GateDecision`.
-- `test_contracts.py` (only high-risk logic): `KnowledgeBundle.from_tool_results` status rule truth table; `ResolutionInput.grounding_context()` for refusal / unavailable / confident; `AgentRun` immutability.
+- `tests/guardrails/test_validator.py` (small addition): `check_action` for `PAGE_ON_CALL`: P1 and not paged -> ALLOW; non-P1 -> DENY; already paged -> DENY (no re-page).
+- `test_contracts.py` (only high-risk logic): `grounding_context()` excludes tools in `unavailable_tools`; `AgentTrace.from_run` fills `cost_usd` for a known model and `None` for an unknown one; `KnowledgeBundle.from_tool_results` status rule truth table; `ResolutionInput.grounding_context()` for refusal / unavailable / confident; `AgentRun` immutability.
 - Prompt smoke: all four `prompts/*.md` load non-empty, contain the marker grammar (Resolution) and no `expected` / `SC-` strings.
 
 ---
@@ -162,28 +165,28 @@ Functional, real seeded Postgres + real `CustomerService` / `TicketService` / `T
 ## 6. Cleanup
 - No unused models, enum members, tools, prompt sections or helpers; every `SupportActionKind` and `Intent` member exercised by at least one test.
 - Pyright `standard` and ruff clean; every function typed (`-> None` included); no inline imports.
-- Update architecture §4.1 (`SupportDeps`: drop `db_pool`, add identity / guard history / approved actions), §4.2 (role outputs split LLM-facing vs assembled, `ResolutionPlan` without `pending_approval`, no `propose_action` tool, Triage identity pre-step) and add the next free ADR in `docs/overview/decisions.md` ("LLM decides, code records" + native output-validator retry). Take the ADR number at implementation time (issues #6 / #8 may add ADRs concurrently).
+- Update architecture §4.1 (`SupportDeps`: drop `db_pool`, add identity / guard history / approved actions), §4.2 (role outputs split LLM-facing vs assembled, `ResolutionPlan` without `pending_approval`, no `propose_action` tool, identity resolved by the orchestrator and passed in `TriageInput`) and add the next free ADR in `docs/overview/decisions.md` ("LLM decides, code records" + native output-validator retry). Take the ADR number at implementation time (issues #6 / #8 may add ADRs concurrently).
 - `agents/__init__.py` exports only public contracts and `run_*` / `build_*` functions.
 
 ---
 
 ## 7. Resolved Decisions
-- Identity is a deterministic pre-step, not an LLM tool call; Triage tools are history only.
+- Identity is resolved by the orchestrator (23) via `authenticate_caller`, passed in `TriageInput`; never an LLM tool. Triage tools are history only.
+- Sev-1 `PAGE_ON_CALL` is a hard code gate in `check_action` (idempotent), consumed by Resolution/orchestrator.
+- `KnowledgeBundle.needs_more_telemetry` and `DiagnosticEvidence.unavailable_tools` are in the contract (23 back-edge, max 2 rounds; partial failure).
+- Grounding context uses successful tool results only.
+- `run_<role>(Input, SupportDeps)` sync; 23 adapts via `asyncio.to_thread`. 22 owns `SupportDeps`; 21 owns `AgentTrace` fields, 22 adds `from_run` (cost via `genai_prices`, nullable); merge order 21 -> 22 -> 23.
 - Evidence, passages, policies, SLA and repeat contact are assembled from tool results in code, never copied by the model.
 - Resolution has no tools and no model-set approval flag; actions are data, gating stays with `check_action`.
 - Citation / outgoing-message re-prompt uses PydanticAI output validators with one retry, then human escalation.
 - Sync agents (`run_sync`) and sync tools; one model (`settings.llm_model`) for all roles.
-- `AgentTrace` unchanged; retrieval scores for traces come from `KnowledgeBundle.candidates`.
+- Retrieval scores for traces come from `KnowledgeBundle.candidates`.
 
 ---
 
 ## 8. Unresolved Questions
-1. Triage identity pre-step OK vs spec's "Triage tool `authenticate_caller`"?
-2. `check_claims` needs identity but should precede agents: run after Triage pre-step, before Diagnostics (Triage sees only prior-turn history note) OK?
-3. Sev-1 hard gate: none in `check_action`; prompt-only (+ eval) for `PAGE_ON_CALL` OK, or add `ActionType.PAGE_ON_CALL` rule?
-4. `SupportActionKind` vs `guardrails.ActionType` overlap: separate enums + mapping OK, or extend `ActionType`?
-5. Does issue #6 change `AgentTrace` or `SupportDeps` (conflict)? Who owns `SupportDeps`?
-6. Does issue #8 expect `run_<role>()` sync, or async coroutines?
-7. Triage `claimed_tier` never passed to `authenticate_caller` (guard covers it): OK?
-8. Per-role model split (cheaper Triage / Knowledge) wanted, or single `gpt-5-nano`?
-9. Opt-in live-LLM smoke test (needs `OPENAI_API_KEY`) in this issue or left to Phase 5?
+1. `check_claims` needs identity but should precede agents: run after identity resolution, before Diagnostics (Triage sees only prior-turn history note) OK?
+2. Triage `claimed_tier` never passed to `authenticate_caller` (guard covers it): OK?
+3. Per-role model split (cheaper Triage / Knowledge) wanted, or single `gpt-5-nano`?
+4. Opt-in live-LLM smoke test (needs `OPENAI_API_KEY`) in this issue or left to Phase 5?
+5. Sev-1 gate keyed on Triage `P1` (LLM-judged) OK, or derive from telemetry (2+ sites down)?

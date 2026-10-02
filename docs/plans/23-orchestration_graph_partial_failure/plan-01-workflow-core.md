@@ -10,20 +10,20 @@
 
 **Spec:** `docs/plans/23-orchestration_graph_partial_failure/design.md` (read with `docs/plans/21-agent_state_machine/design.md` and `docs/plans/22-specialized_agent_contracts/design.md`). Where this plan and design.md disagree, this plan wins (see Design Decisions).
 
-**Depends on:** issues 6 and 7 merged (`storage/*`, `agents/*` contracts and `run_<role>` do not exist in the repo yet). If they land first with different signatures, Task 1 is the only place to adapt.
+**Depends on:** issues 6 and 7 merged, order 21 -> 22 -> 23 (`storage/*`, `agents/*` contracts and `run_<role>` do not exist in the repo yet). If they land first with different signatures, Task 1 is the only place to adapt. Out of scope: cross-worker turn locking and `ConversationState` rebuild (GitHub #34, 2.4).
 
 ## Design Decisions (overrides of design.md, with reasons)
 
 1. **Hand-rolled pipeline, not `pydantic_graph`.** The flow has one real branch (after Triage), no loops (see 5), and persistence is already decided by issue 6 as rows plus `set_stage` per node. `pydantic_graph` would add node classes, a second persistence mechanism (its state persistence vs `StateStore` rows) and an async-only run model, for a graph of 6 nodes. Revisit only if resumable mid-turn execution or graph visualisation becomes a requirement.
-2. **Sync, not async.** Issue 7 makes `run_<role>` sync (`run_sync`); `StateStore` is sync. design.md's async ports would force `asyncio.to_thread` around every call for nothing. Issue 9/API layer wraps `run_turn` in `asyncio.to_thread` once.
+2. **Sync, not async.** Issue 7 makes `run_<role>(Input, SupportDeps)` sync (`run_sync`); `StateStore` is sync. design.md's async ports would force `asyncio.to_thread` around every call for nothing. Issue 9/API layer adapts `run_turn` with `asyncio.to_thread` once. `SupportDeps` is owned by issue 22. The orchestrator builds the Triage identity deterministically (`authenticate_caller`, plain function, no LLM) and passes it in `TriageInput`; no placeholder identity.
 3. **No `ConversationState` model.** Issue 6's `ConversationSnapshot` (from `StateStore.rehydrate`) is the state. History for agents is the snapshot's messages mapped to issue 7's `ConversationTurn`. Prior Triage decision is not fed back explicitly: issue 7's `TriageInput` has only `history`, and the scoping question plus the customer's answer are in that history. This deletes `awaiting_scoping_answer`, `with_*` methods and a duplicate persistence story.
 4. **Workflow owns persistence, through `StateStore` only.** design.md says the caller persists; but issue 6 needs `set_stage` at every node and traces per agent call, which only the workflow can do. A small `TurnRecorder` keeps that out of the routing code (Single Responsibility). Issue 9/API layer only supplies a connection and a `message_id`.
-5. **No Diagnostics <-> Knowledge back-edge, no `MAX_DIAG_KB_ROUNDS`.** Issue 7's contracts have no `needs_more_telemetry` signal; the forward hand-off already exists (`DiagnosticsFindings.kb_query_hints`). Adding a back-edge needs two contract changes in issue 7 for a speculative case. Open question 1.
+5. **Diagnostics <-> Knowledge back-edge restored, `MAX_DIAG_KB_ROUNDS = 2`.** Issue 22 adds `KnowledgeBundle.needs_more_telemetry` and `DiagnosticEvidence.unavailable_tools`. `_evidence` loops Diagnostics -> Knowledge while `needs_more_telemetry` is set, bounded by the constant, then proceeds to Resolution with what it has. Loop guard in one place, no recursion. Clarification is capped at 3 turns (counter in the `StateStore` snapshot), then the workflow escalates instead of asking again.
 6. **No `OUTPUT_GUARD` re-prompt in the workflow.** Issue 7's `run_resolution` already validates citations and the outgoing message with PydanticAI output validators, retries once, then returns the canned human-handoff plan. Re-doing it here is duplicate logic. The workflow reuses `ConversationStage.OUTPUT_GUARD` only if Plan 2 needs it (it does not).
 7. **Reuse `ConversationStage` (issue 6) as the state enum.** No new `WorkflowState`. Visited stages are returned in `TurnResult.path` for tests.
 8. **No `GroundingContext.from_turn`.** Issue 7's `ResolutionInput.grounding_context()` already does it.
 9. **No brainstruct / Braintrust tracing anywhere.** design.md and architecture mention Braintrust export; this plan overrides it. Observability is the issue 6 `traces` / `tool_calls` tables (`StateStore.record_trace`, `replay_trace`) plus PydanticAI's own `result.usage()` and message history, which agents already convert into `AgentTrace`. Do not add or import `braintrust` in `orchestration/`.
-10. **Retrying a turn is idempotent where it is cheap.** `run_turn` takes a caller `message_id`; `append_message` dedupes on it, approvals dedupe on `idempotency_key` derived from it. Agents re-run on retry (new trace rows, append-only); stated limit, not worth a replay cache.
+10. **Retrying a turn is idempotent.** `message_id` is supplied by the caller (API/UI layer) and is the idempotency key: `run_turn` checks the store first and, for an already-processed `message_id`, returns the stored result without re-running agents. `append_message` and approvals (`idempotency_key` derived from it) dedupe on it too.
 
 ## Global Constraints
 
@@ -103,12 +103,12 @@
 - Produces:
   - `TurnRecorder(store: StateStore, clock: SimulationClock, conversation_id: UUID)` with methods `enter(stage)`, `record_message(sender, text, message_id | None)`, `record_run(role, run, parent_trace_id | None) -> UUID` (returns trace id), `save_guard_history(history)`, `save_identity(identity)`, `create_approval(trace_id, action, idempotency_key)`. Each is a single store call; no logic.
   - `Workflow(ports: AgentPorts, store: StateStore, clock: SimulationClock, base_deps: SupportDeps)`.
-  - `Workflow.run_turn(conversation_id: UUID, message: str, message_id: UUID) -> TurnResult`.
+  - `Workflow.run_turn(conversation_id: UUID, message: str, message_id: UUID) -> TurnResult`; `message_id` caller-supplied, already-seen id returns the stored result.
 
 Step order inside `run_turn` (each a private method, one concern):
 1. `_ingest`: `redact` -> `history.with_redaction`; `detect` -> `with_injection`; persist redacted customer message and history. If blocked: append `INJECTION_REFUSAL` as an agent message, `enter(IDLE)`, return with path `(INGESTION_GUARD, IDLE)`; agents untouched.
-2. `_triage`: build `TriageInput` from the snapshot (history mapped to `ConversationTurn`), call `ports.triage`, record the run, persist identity, then `check_claims(redacted, result.identity)` -> `with_entitlement` -> persist history. Rebuild deps with `dataclasses.replace` (identity and guard history) for later steps.
-3. Route with `next_stage_after_triage`; `_evidence` runs Diagnostics (if routed) then Knowledge (always after Diagnostics, or directly for KB intents), skipping both for the Resolution-direct routes. Each run recorded with the previous trace id as parent.
+2. `_triage`: resolve identity via `authenticate_caller` (plain function), build `TriageInput` (with that identity) from the snapshot (history mapped to `ConversationTurn`), call `ports.triage`, record the run, persist identity, then `check_claims(redacted, result.identity)` -> `with_entitlement` -> persist history. Rebuild deps with `dataclasses.replace` (identity and guard history) for later steps.
+3. Route with `next_stage_after_triage`; `_evidence` runs Diagnostics (if routed) then Knowledge (always after Diagnostics, or directly for KB intents), looping back to Diagnostics while `needs_more_telemetry` up to `MAX_DIAG_KB_ROUNDS = 2`, skipping both for the Resolution-direct routes. Each run recorded with the previous trace id as parent.
 4. `_resolve`: build `ResolutionInput` (diagnostics / knowledge `None` when skipped), call `ports.resolution`, record.
 5. `_gate`: map each `SupportAction` through `to_proposed_action(identity.account.account_id)`; no account -> drop all actions. `None` result -> `executable_actions`; else `check_action`: `ALLOW` -> `executable_actions`, `REQUIRE_APPROVAL` -> `pending_actions` + `create_approval` (idempotency key built from `message_id` and action index), `DENY` -> reason text into `denial_reasons`.
 6. Append the composed reply as an agent message, `enter(IDLE)`, return `TurnResult`.
@@ -125,11 +125,14 @@ Each step calls `enter(<stage>)` first so a crash resumes at the last committed 
 **Files:**
 - Test: `tests/orchestration/test_routing.py` (extend), `tests/orchestration/test_guard_flow.py`
 
-**Interfaces:** consumes Task 3 `Workflow`, stubs from `conftest.py`. Produces nothing.
+**Interfaces:** consumes Task 3 `Workflow`, stubs from `conftest.py`. Produces nothing. CI uses stub agents (real `run_resolution` with `FunctionModel`/`TestModel` where validators matter); plus one opt-in live-LLM smoke test, skipped without an API key.
 
 - [ ] **Step 1:** Add tests, each a multi-turn run on a real store:
   - SC-02: turn 1 vague, Triage stub returns a scoping question -> path `(INGESTION_GUARD, TRIAGE, RESOLUTION, ACTION_EVALUATION, IDLE)`, Diagnostics and Knowledge stubs not called; turn 2 answer -> Triage stub receives history containing the question and the answer; path includes `DIAGNOSTICS`, `KNOWLEDGE_RETRIEVAL`.
   - `KB_INQUIRY` skips Diagnostics; `ADVERSARIAL` skips both.
+  - Back-edge: Knowledge stub sets `needs_more_telemetry` once -> path has `DIAGNOSTICS, KNOWLEDGE_RETRIEVAL` twice; set forever -> stops at 2 rounds.
+  - Clarification cap: 3 scoping turns, 4th turn escalates (`escalation_offered`), no further question.
+  - Duplicate `message_id`: second submit returns stored result, stubs not called again.
   - SC-05: opener blocked -> refusal text, agents never called, `guard_history` has the verdict, stage `IDLE`; follow-up turn answered normally and Triage stub sees the guard note via deps.
   - SC-07 style false Premium claim: `guard_history.false_claims` populated after Triage, persisted.
   - Action gate: stub Resolution proposing `CREDIT` for the caller -> `pending_actions` has it, one `approvals` row `PENDING`, reply unblocked; proposing an action for another account -> `DENY`, reason in reply, no approval row; unrecognised caller -> actions dropped.
@@ -145,9 +148,4 @@ Each step calls `enter(<stage>)` first so a crash resumes at the last committed 
 - [ ] **Step 5:** Commit: `chore(orchestration): cleanup`.
 
 ## Unresolved Questions
-
-1. Add Knowledge -> Diagnostics back-edge (needs `needs_more_telemetry` on issue 7 contracts)? Default: no.
-2. Exact `run_<role>` signature / who builds `SupportDeps` (placeholder identity for Triage pre-step)? Assumed `(Input, SupportDeps)`.
-3. `message_id` supplied by caller OK, or workflow generates?
-4. Drop `OUTPUT_GUARD` stage from workflow (issue 7 validators cover it) OK?
-5. Sync workflow + `to_thread` in API layer OK?
+None.

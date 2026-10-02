@@ -48,6 +48,10 @@ def _redacted_trace_row(trace: TraceRecord) -> dict[str, Any]:
     return row
 
 
+def _redacted_text(text: str | None) -> str | None:
+    return None if text is None else redact(text).text
+
+
 def _open_turn(messages: Sequence[StoredMessage]) -> int | None:
     """Highest customer turn that has no AGENT/SYSTEM reply; older orphans are ignored."""
     customer_turns = [m.turn for m in messages if m.sender is MessageSender.CUSTOMER]
@@ -370,16 +374,14 @@ class StateStore:
         customer_reason: str | None = None,
     ) -> Approval:
         """Reviewer text is untrusted: secrets are redacted here, the persistence chokepoint."""
+        edited = resolution.edited_payload
         safe = resolution.model_copy(
             update={
-                "reviewer_notes": None if resolution.reviewer_notes is None else redact(resolution.reviewer_notes).text,
-                "edited_payload": None
-                if resolution.edited_payload is None
-                else redacted_json(resolution.edited_payload),
+                "reviewer_notes": _redacted_text(resolution.reviewer_notes),
+                "edited_payload": None if edited is None else redacted_json(edited),
             }
         )
-        reason = None if customer_reason is None else redact(customer_reason).text
-        return approval_queries.resolve_approval(self._conn, approval_id, safe, at, reason)
+        return approval_queries.resolve_approval(self._conn, approval_id, safe, at, _redacted_text(customer_reason))
 
     def list_unsettled_approvals(self, limit: int) -> list[Approval]:
         return approval_queries.list_unsettled_approvals(self._conn, limit)

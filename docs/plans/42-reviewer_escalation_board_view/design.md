@@ -2,9 +2,10 @@
 
 **Issue**: `#12` ([Phase 4] 4.2: Support Reviewer & Escalation Board View)
 **Date**: 2026-10-02
+**Implementation**: [plan-01](plan-01-board-read-model.md) (needs 21-24 only), [plan-02](plan-02-reviewer-app.md) (needs 31, 32, 41).
 **Status**: Draft for Review (final user decisions applied; aligned with final 31/32 designs)
 **Depends on**: 21 (`StateStore`, `replay_trace`, approvals), 22 (`TriageResult`, `DiagnosticEvidence`, `KnowledgeBundle` in trace `output`), 23/24 (turn path, locking), 31 (action dispatcher, issue #9), 32 (approval lifecycle + resume, issue #10), 41 (customer chat, issue #11). Aligned with the final 32 (`ApprovalService.resolve` + `settle`) and 31 (`simulated_actions`, `list_simulated_actions`); 41 owns the shared trace component and `ui/session.py`.
-**Target Files**: `ui/reviewer_app.py`, `ui/reviewer_view.py`, `ui/trace_panel.py` (imported from 41, not modified), `ui/session.py` (owned by 41; reviewer adds approval/service wiring), `storage/board_queries.py`, `storage/state_store.py` (one new read method), `storage/models.py` (one new row model), `pyproject.toml`, `docker-compose.yml`, `Dockerfile`, `tests/ui/*`, `tests/storage/test_board_summaries.py`
+**Target Files**: `ui/reviewer_app.py`, `ui/reviewer_view.py`, `ui/reviewer_session.py`, `ui/trace_panel.py` (imported from 41, not modified), `ui/session.py` (41, read-only reuse), `storage/board_queries.py`, `storage/state_store.py` (one new read method), `storage/models.py` (one new row model), `pyproject.toml`, `docker-compose.yml`, `Dockerfile`, `tests/ui/*`, `tests/storage/test_board_summaries.py`
 
 ---
 
@@ -41,7 +42,7 @@ flowchart LR
 |---|---|---|
 | `ui/reviewer_app.py` only | Arch §10 layout also lists `ui/customer_app.py`; no `ui/` exists, no UI dependency in `pyproject.toml` | Add Streamlit; split render (`reviewer_app.py`) from pure builders (`reviewer_view.py`) so logic is testable without a browser |
 | SLA countdowns, repeat-contact alerts | Not persisted as columns. `TriageResult.sla: SLADeadlines` and `.repeat_contact: RepeatContactResult` live in the triage trace `output` (22) | Read from latest `TRIAGE` trace of the conversation; countdown computed in view against `SimulationClock.now()` (ADR-001), never wall clock |
-| "Open tickets" | `TicketService.get_ticket_history(account_id)` returns all; `include_open=False` filters `status != 'open'` (no open-only mode) | Fetch history, filter `TicketStatus` open in the builder; no service change |
+| "Open tickets" | `TicketService.get_ticket_history(account_id)` returns all; `include_open=False` filters `status != 'open'` (no unresolved-only mode); "open" must also cover `pending_customer` / `pending_approval` | Fetch history, keep every status except `closed` (`open`, `pending_customer`, `pending_approval`; `TicketStatus` is a `Literal` of those four) in the builder; no service change |
 | "Retrieval scores" | 21 design had `traces.retrieval_scores`; shipped schema dropped it. Scores (`rrf_score`, `rerank_score`, ranks) sit inside KB-search `tool_calls.result` (`KBSearchResult.passages/candidates`) and in `KnowledgeBundle` in the `KNOWLEDGE` trace output | Read from tool calls; no schema change |
 | "Link quality graphs" | `get_link_quality` returns `LinkMetricsSummary` aggregates per link (avg/max/latest loss, latency, jitter, throughput, `down_intervals`), not a time series | Chart = per-link bar charts of these aggregates over the returned window. True time-series needs a telemetry API change: open question |
 | "Quoted tool outputs, raw metric values" | `TelemetryEvidence(tool_name, metric_key, raw_value, timestamp, is_anomaly)` on `StoredMessage.telemetry_evidence` and in `DiagnosticEvidence.evidence_items`; raw envelope in `tool_calls.result` | Evidence table from `evidence_items` (open turn included, before any reply exists); raw JSON expander from `tool_calls.result` |
@@ -104,7 +105,15 @@ Thin Streamlit script, no business logic beyond wiring.
 - **Live trace** (`ui/trace_panel.py`): fragment polling `replay_trace` every 2 s while the selected conversation's stage is not `IDLE` (a turn is in flight; recorder writes a trace per step so rows appear incrementally), else static. The open turn's steps carry `is_open` and show "running" when a role has no `OK` trace yet.
 - **Errors surfaced, not swallowed**: `ApprovalStateError` from `decide` (unknown id, already resolved by another reviewer, edit that changes/drops `ticket_id`, unsafe `customer_reason`) -> shown to the reviewer verbatim, no retry, card refreshes; `DecisionResult.settle != SETTLED` (`BUSY`, `EXECUTION_FAILED`) -> card shows "decision saved, customer notice pending" (the sweep finishes it), never an error implying the decision was lost; DB unreachable -> board banner, panels keep last good render. Missing triage/diagnostics/knowledge traces render explicit "no data" states per panel (partial failure from 23 means any role may be absent).
 
-`ui/session.py` (owned by 41, composition root cached with `st.cache_resource`): the reviewer process reuses its connection/clock builders and adds `ApprovalService` (with `ActionDispatcher`, `TicketService`). Building the reviewer runtime once at process start is the "app lifespan" of 32: it calls `ApprovalService.settle_unsettled()` once there. No timer. One autocommit connection per session; no pool.
+`ui/reviewer_session.py` (new, small): `build_reviewer_runtime()` cached with `st.cache_resource`, see §6.1. Building it once at process start is the "app lifespan" of 32: it calls `ApprovalService.settle_unsettled()` once there. No timer. One autocommit connection per session; no pool.
+
+### 6.1 Resilience rules (found while planning)
+
+- **Trace-derived panels are best-effort.** Triage/diagnostics/knowledge data are read by `model_validate` of the trace `output` dict (`TriageResult`, `DiagnosticEvidence`, `KnowledgeBundle`). Pick the newest trace of the role with status `OK` and non-null `output`; a `ValidationError` (schema drift after a deploy) or no such trace yields the panel's explicit no-data state, never an exception that blanks the page.
+- **Own light runtime, not 41's.** 41's `build_runtime()` pre-loads the embedder/reranker (heavy, needed for customer turns). The reviewer never runs agents, so it builds a separate small `ReviewerRuntime` (clock, `CustomerService`, `TicketService`, `ApprovalService` with `ActionDispatcher`, DB url) in `ui/reviewer_session.py`; only the connection-opening helper is shared with `ui/session.py` if 41 exposes one.
+- **Connections are per script run / fragment run, never cached.** Streamlit reruns and fragments execute on different threads; `StateStore` needs one autocommit connection per concurrent caller (24). Open with a context manager at the top of each render function; the cached resource holds only config and services' constructors, not live connections. Supersedes the earlier "one connection per session" line.
+- **Stuck stage.** A crashed turn leaves stage non-`IDLE` (21 §5), so the live-trace fragment would poll forever. Acceptable (cheap read); the trace shows the last real step with its `is_open` marker so the reviewer can see it stalled.
+- **SLA countdown while paused.** `resolution_paused` freezes the resolution countdown (shown as "paused"); `due_at` is already business-hours-adjusted by `calculate_sla_deadlines`, so remaining is plain `due_at - now`.
 
 ---
 

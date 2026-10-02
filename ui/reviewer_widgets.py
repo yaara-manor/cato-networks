@@ -6,7 +6,7 @@ import streamlit as st
 from services.approval_models import SettleOutcome
 from storage import ApprovalStatus
 from ui.reviewer_panels import ContextPanel, EvidencePanel, LinkChart, PassageScore
-from ui.reviewer_view import ApprovalCard, DecisionKind
+from ui.reviewer_view import ApprovalCard, DecisionKind, ModelMessagesView
 
 _NO_DATA = "No data"
 _CHART_METRICS = ("avg_packet_loss_pct", "avg_latency_ms", "avg_jitter_ms")
@@ -105,3 +105,12 @@ def render_approval_card(card: ApprovalCard, submit: Submit) -> None:
         _render_decision_inputs(card, submit)
     else:
         _render_resolved(card)
+
+
+def render_model_messages(view: ModelMessagesView) -> None:
+    for step in view.steps:
+        with st.expander(f"Turn {step.turn} {step.agent_role}"):
+            if step.messages is None:
+                st.text("not recorded")
+            else:
+                st.code(json.dumps(step.messages, indent=2, default=str), language="json")

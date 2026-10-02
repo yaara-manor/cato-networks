@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from enum import StrEnum
-from typing import Self
+from typing import Any, Self
 from uuid import UUID
 
 from pydantic import AwareDatetime
@@ -91,11 +91,38 @@ class DecisionForm(View):
         )
 
 
+class StepMessages(View):
+    turn: int
+    agent_role: AgentRole
+    messages: tuple[dict[str, Any], ...] | None  # None: the step recorded none
+
+
+class ModelMessagesView(View):
+    """Redacted at write; reviewer-only, the customer page never builds this."""
+
+    steps: tuple[StepMessages, ...]
+
+    @classmethod
+    def from_replay(cls, replay: TraceReplay) -> Self:
+        return cls(
+            steps=tuple(
+                StepMessages(
+                    turn=turn.turn,
+                    agent_role=step.trace.agent_role,
+                    messages=None if step.trace.model_messages is None else tuple(step.trace.model_messages),
+                )
+                for turn in replay.turns
+                for step in turn.steps
+            )
+        )
+
+
 class CaseView(View):
     conversation_id: UUID
     context: ContextPanel
     evidence: EvidencePanel
     approvals: tuple[ApprovalCard, ...]
+    model_messages: ModelMessagesView
 
     @classmethod
     def from_rows(
@@ -112,4 +139,5 @@ class CaseView(View):
             context=ContextPanel.from_rows(snapshot, replay, account, tickets, now),
             evidence=EvidencePanel.from_rows(replay),
             approvals=tuple(ApprovalCard.from_approval(a, replay, actions) for a in replay.approvals),
+            model_messages=ModelMessagesView.from_replay(replay),
         )

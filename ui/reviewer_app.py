@@ -7,7 +7,7 @@ import streamlit as st
 from storage import ApprovalStateError, BoardRow
 from ui import reviewer_session
 from ui.reviewer_view import ApprovalCard, DecisionForm, DecisionFormError, DecisionKind
-from ui.reviewer_widgets import render_approval_card, render_context, render_evidence
+from ui.reviewer_widgets import render_approval_card, render_context, render_evidence, render_model_messages
 from ui.session import load_trace
 from ui.trace_panel import render_trace_panel
 
@@ -115,11 +115,13 @@ def main() -> None:
         return
     render_context(case.context)
     render_approvals(case.approvals)
-    evidence_tab, trace_tab = st.tabs(["Evidence", "Live trace"])
+    evidence_tab, trace_tab, messages_tab = st.tabs(["Evidence", "Live trace", "Model messages"])
     with evidence_tab:
         render_evidence(case.evidence)
     with trace_tab:
         render_live_trace(conversation_id)
+    with messages_tab:
+        render_model_messages(case.model_messages)
 
 
 main()

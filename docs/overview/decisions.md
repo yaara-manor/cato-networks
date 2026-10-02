@@ -122,7 +122,13 @@
 
 ---
 
-## ADR-010: Per-Conversation Turn Lock as a Session Advisory Lock on the Store Connection
+## ADR-010: Hand-Rolled Sync Orchestration Workflow, Stateless Per-Turn Degradation
+
+- **Context / Problem**: Phase 2.3 must route one customer turn through guards and four agents, degrade explicitly when telemetry or KB is down, and survive an agent exception.
+- **Chosen Approach**: A plain synchronous `orchestration.Workflow.run_turn` over `StateStore` instead of `pydantic_graph`. Degradation is a pure function of statuses on `DiagnosticEvidence` / `KnowledgeBundle`, recomputed every turn; only `OrchestratorState.notice_shown` (in the versioned state snapshot) dedupes the customer notice, cleared when the source is healthy. Refusal is enforced by `run_resolution` validators, not a second workflow path. One `except Exception` boundary returns a canned pause message and an `ERROR` trace (class name only). No Braintrust.
+- **Cost if wrong**: no graph visualisation or resumable node state; a crash mid-turn is recovered by replaying the idempotent `message_id`.
+
+## ADR-011: Per-Conversation Turn Lock as a Session Advisory Lock on the Store Connection
 
 - **Context / Problem**: Two workers must never run `Workflow.run_turn` for one conversation concurrently; a killed worker must not leave it locked.
 - **Chosen Approach**: `storage/turn_lock.py` takes `pg_advisory_lock(hashtextextended('turn:' || id, 0))` on the same connection `StateStore` writes through, wrapped around the whole of `run_turn`. `lock_timeout` (`settings.turn_lock_timeout_s`, 30 s) applies to the acquire only; timeout raises `TurnLockTimeout` with nothing written. Release is a `finally` unlock or Postgres dropping the lock when the backend dies.

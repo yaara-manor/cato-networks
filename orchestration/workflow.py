@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass, replace
 from uuid import UUID
 
@@ -17,7 +18,8 @@ from agents import (
 )
 from core.clock import SimulationClock
 from guardrails import ProposedAction, check_claims, detect, redact
-from orchestration.canned import CLARIFICATION_ESCALATION, INJECTION_REFUSAL
+from orchestration.canned import AGENT_FAILURE_PAUSE, CLARIFICATION_ESCALATION, INJECTION_REFUSAL
+from orchestration.degradation import DegradationNotice, DegradedSource, derive_degradations
 from orchestration.gate import gate_actions
 from orchestration.models import AgentPorts, TurnResult
 from orchestration.recorder import TurnRecorder
@@ -33,6 +35,7 @@ from storage import (
 )
 from tools.models import TelemetryEvidence
 
+logger = logging.getLogger(__name__)
 MAX_DIAG_KB_ROUNDS = 2
 _TURN_SENDERS = {MessageSender.CUSTOMER: TurnSender.CUSTOMER, MessageSender.AGENT: TurnSender.AGENT}
 
@@ -99,7 +102,17 @@ class Workflow:
             _history(snapshot, stored.turn),
             replace(self.base_deps, guard_history=history),
         )
-        return self._answer(turn, snapshot, OrchestratorState.from_snapshot(snapshot.conversation.state))
+        try:
+            return self._answer(turn, snapshot, OrchestratorState.from_snapshot(snapshot.conversation.state))
+        except Exception as error:  # noqa: BLE001  the one agent-failure boundary; the message is already saved
+            return self._pause(recorder, error)
+
+    def _pause(self, recorder: TurnRecorder, error: Exception) -> TurnResult:
+        """State is not saved: carry-over flags stay as the last good turn left them."""
+        logger.error("agent failure: %s", type(error).__name__, exc_info=error)
+        recorder.record_failure(error)
+        recorder.complete_turn(AGENT_FAILURE_PAUSE, sender=MessageSender.SYSTEM)
+        return TurnResult(reply=AGENT_FAILURE_PAUSE, path=recorder.path)
 
     def _replay(self, snapshot: ConversationSnapshot, reply: StoredMessage, message_id: UUID) -> TurnResult:
         pending = tuple(
@@ -133,15 +146,19 @@ class Workflow:
             turn.recorder.create_approval(index, action)
         if gated.oncall_paged:
             state = state.with_oncall_paged()
-        reply = compose_reply((), plan.customer_message, gated.denial_reasons)
+        degradations = derive_degradations(diagnostics, knowledge)
+        notices = tuple(n.customer_text for n in state.unseen(degradations))
+        reply = compose_reply(notices, plan.customer_message, gated.denial_reasons)
+        retrieval_down = any(n.source is DegradedSource.RETRIEVAL for n in degradations)
         return self._finish(
             turn,
-            state,
+            state.with_degraded(degradations),
             reply,
             evidence=diagnostics.evidence_items if diagnostics else (),
             pending=tuple(action for _, action in gated.pending),
             executable=gated.executable,
-            escalation_offered=plan.escalate_to_human,
+            escalation_offered=plan.escalate_to_human or retrieval_down,
+            degradations=degradations,
         )
 
     def _triage(self, turn: _Turn, snapshot: ConversationSnapshot) -> tuple[TriageResult, _Turn]:
@@ -225,6 +242,7 @@ class Workflow:
         pending: tuple[ProposedAction, ...] = (),
         executable: tuple[SupportAction, ...] = (),
         escalation_offered: bool = False,
+        degradations: tuple[DegradationNotice, ...] = (),
     ) -> TurnResult:
         """State is saved before the reply: a crash in between never loses an on-call page."""
         turn.recorder.save_state(state.to_snapshot())
@@ -235,4 +253,5 @@ class Workflow:
             pending_actions=pending,
             executable_actions=executable,
             escalation_offered=escalation_offered,
+            degradations=degradations,
         )

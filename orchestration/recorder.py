@@ -2,7 +2,7 @@ from uuid import UUID, uuid5
 
 from pydantic import BaseModel
 
-from agents import AgentRun
+from agents import AgentRun, AgentTrace, TraceStatus
 from core.clock import SimulationClock
 from guardrails import ProposedAction, SessionGuardHistory
 from services.models import CallerIdentity
@@ -60,15 +60,33 @@ class TurnRecorder:
 
     def record_run[T: BaseModel](self, role: AgentRole, data: BaseModel, run: AgentRun[T]) -> None:
         """Trace ids derive from the message id, so a resumed turn does not duplicate traces."""
+        self._write_trace(
+            run.trace.model_copy(
+                update={
+                    "agent_role": role.value,
+                    "input": data.model_dump(mode="json"),
+                    "output": run.output.model_dump(mode="json"),
+                }
+            )
+        )
+
+    def record_failure(self, error: Exception) -> None:
+        """Class name only: the message may carry customer data."""
+        self._write_trace(
+            AgentTrace(
+                agent_role=AgentRole.ORCHESTRATOR.value,
+                tool_calls=[],
+                latency_ms=0,
+                prompt_tokens=0,
+                completion_tokens=0,
+                status=TraceStatus.ERROR,
+                error=type(error).__name__,
+            )
+        )
+
+    def _write_trace(self, agent_trace: AgentTrace) -> None:
         now = self._clock.now()
         trace_id = uuid5(self._message_id, f"trace:{self._traces}")
-        agent_trace = run.trace.model_copy(
-            update={
-                "agent_role": role.value,
-                "input": data.model_dump(mode="json"),
-                "output": run.output.model_dump(mode="json"),
-            }
-        )
         trace = TraceRecord.from_agent_trace(
             agent_trace,
             self._conversation_id,
@@ -96,11 +114,16 @@ class TurnRecorder:
             self._clock.now(),
         )
 
-    def complete_turn(self, text: str, evidence: tuple[TelemetryEvidence, ...] = ()) -> None:
+    def complete_turn(
+        self,
+        text: str,
+        evidence: tuple[TelemetryEvidence, ...] = (),
+        sender: MessageSender = MessageSender.AGENT,
+    ) -> None:
         self._store.complete_turn(
             self._conversation_id,
             self._turn,
-            MessageSender.AGENT,
+            sender,
             text,
             (),
             evidence,

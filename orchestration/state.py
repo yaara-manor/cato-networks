@@ -2,6 +2,7 @@ from typing import Self
 
 from pydantic import BaseModel, ConfigDict, ValidationError
 
+from orchestration.degradation import DegradationNotice, DegradedSource
 from storage import StateSnapshot
 
 SCHEMA_VERSION = 1
@@ -15,6 +16,7 @@ class OrchestratorState(BaseModel):
 
     clarification_turns: int = 0  # consecutive turns that ended in a scoping question
     oncall_paged: bool = False
+    notice_shown: frozenset[DegradedSource] = frozenset()  # sources whose outage was already disclosed
 
     @classmethod
     def from_snapshot(cls, snapshot: StateSnapshot) -> Self:
@@ -40,3 +42,10 @@ class OrchestratorState(BaseModel):
 
     def with_oncall_paged(self) -> Self:
         return self.model_copy(update={"oncall_paged": True})
+
+    def unseen(self, notices: tuple[DegradationNotice, ...]) -> tuple[DegradationNotice, ...]:
+        return tuple(n for n in notices if n.source not in self.notice_shown)
+
+    def with_degraded(self, notices: tuple[DegradationNotice, ...]) -> Self:
+        """Disclosed = degraded this turn: a healthy source drops out, so a later outage is disclosed again."""
+        return self.model_copy(update={"notice_shown": frozenset(n.source for n in notices)})

@@ -16,7 +16,7 @@ The system:
 3. Grounds every technical statement in Cato's public Knowledge Base using hybrid lexical and vector retrieval with cross-encoder reranking.
 4. Executes support actions (ticket updates, Sev-1 escalations, service credits, MFA resets) while pausing high-impact operations for human reviewer approval in a non-blocking workflow.
 5. Defends against prompt injections, social engineering, and unauthorized authority claims, while redacting sensitive credentials before persistence.
-6. Employs dual-layer observability: local Postgres traces for fully offline self-contained operation, and Braintrust for cloud waterfall tracing and evaluation scoring.
+6. Employs offline, self-contained observability: Postgres trace tables plus PydanticAI message history (no external tracing service).
 
 ---
 
@@ -79,7 +79,6 @@ flowchart TD
     subgraph Storage_Layer["Storage, External API Mocks & Observability"]
         PG_DB[("PostgreSQL 16 + pgvector\n(KB Passages, Policies, State, Traces,\nSimulated CRM/Tickets Store)")]
         TelemetryFiles[("data/telemetry/\n(Simulated Read-Only CMA API Files)")]
-        Braintrust["Braintrust Cloud Tracing & Evals"]
     end
 
     CustomerChat --> Redactor
@@ -101,7 +100,6 @@ flowchart TD
     RAGService --> PG_DB
     ApprovalService --> PG_DB
     StateMachine --> PG_DB
-    StateMachine -. "Optional Stream" .-> Braintrust
 
     ResolAgent --> CitationVerifier
     CitationVerifier --> CustomerChat
@@ -118,14 +116,16 @@ The agent layer uses **PydanticAI** to provide compile-time type validation, dep
 ### 4.1 Dependency Container (`SupportDeps`)
 Every agent receives a typed context container via PydanticAI dependency injection:
 - `clock: SimulationClock` — Provides frozen time `2026-08-28T17:00:00Z` and elapsed time calculations.
-- `db_pool: AsyncConnectionPool` — Connection pool to Postgres.
+- `customers: CustomerService`, `tickets: TicketService` — Account tier / SLA and ticket history services over the shared Postgres connection (no pool object in deps).
 - `telemetry: TelemetryService` — Interface to read synthetic CMA telemetry files directly from `data/telemetry/` with `(resolved_path, mtime_ns)` caching, returning typed `TelemetryToolResult[T]` envelopes with pre-extracted `TelemetryEvidence`.
 - `retrieval: RetrievalService` — Unified interface in `retrieval/service.py` for hybrid KB search (`search_kb` returning `KBSearchResult`) and authoritative internal policy lookup (`get_policy(policy_id) -> PolicyDocument | None`, `list_policies() -> list[PolicyDocument]`). Policies are loaded once at construction and served from memory, so lookup cannot fail at runtime (it keeps working during a DB outage); an unknown id returns `None`.
-- `customer_store: CustomerService` — Account tier and ticket history query engine.
+- `identity: CallerIdentity`, `guard_history: SessionGuardHistory`, `approved_actions: frozenset[ActionType]` — resolved by the orchestrator and injected; `grounding: GroundingContext | None` is set by `run_resolution` for the output validators.
 
 ---
 
 ### 4.2 Agent Specifications
+
+> **Implemented contracts (plan 22, supersede the field lists below where they differ).** Each role splits LLM output from assembled result: Triage `TriageDecision` -> `TriageResult` (identity, SLA, repeat contact filled in code), Diagnostics `DiagnosticsFindings` -> `DiagnosticEvidence` (evidence, unavailable tools and `sev1_corroborated` derived from tool results), Knowledge `KnowledgeFindings` -> `KnowledgeBundle`, Resolution `ResolutionPlan` (LLM output and final). The orchestrator resolves identity (`authenticate_caller`) and passes it in `TriageInput`; Triage does not call lookup/auth tools. Tracing is PydanticAI-native (`AgentTrace.from_run`: messages, usage, latency); no Braintrust.
 
 #### 1. Triage Agent
 - **Purpose**: Authenticates caller, establishes account tier and SLA target clock, checks for repeat contact churn, detects prompt injection/social engineering, and extracts technical scope.
@@ -168,14 +168,16 @@ Every agent receives a typed context container via PydanticAI dependency injecti
 - **Failure Mode**: If top rerank score < `RERANK_MIN_SCORE`, `KBSearchResult` returns `status=KBSearchStatus.LOW_CONFIDENCE_REFUSAL` with `passages=[]` and unfiltered `candidates` preserved for eval/trace logging. If the database is down, `search_kb` catches `psycopg.Error` and returns a `KBSearchResult` with `status=KBSearchStatus.UNAVAILABLE`; policy lookup is unaffected (served from memory).
 
 #### 4. Resolution & Action Agent
-- **Purpose**: Synthesizes customer context, telemetry evidence, and KB passages into a conversational, empathetic, and grounded response. Proposes support actions and marks high-impact operations for approval.
-- **Allowed Tools**: `propose_action(name, payload)`.
-- **Typed Input**: Aggregated state (`TriageDecision`, `DiagnosticEvidence`, `KnowledgeBundle`, conversation history).
+- **Purpose**: Synthesizes customer context, telemetry evidence, and KB passages into a conversational, empathetic, and grounded response. Proposes support actions.
+- **Allowed Tools**: none. There is no `propose_action` tool; proposals are `ResolutionPlan.actions`.
+- **Typed Input (`ResolutionInput`)**: `TriageResult`, optional `DiagnosticEvidence` / `KnowledgeBundle`, conversation history, message.
 - **Typed Output (`ResolutionPlan`)**:
-  - `customer_message: str` (contains inline citations `[kb:<slug>#<anchor>]` and quoted evidence `[telemetry]`)
-  - `actions_to_execute: list[SupportAction]` (`create_ticket`, `update_ticket`, `page_on_call`)
-  - `pending_approval: ApprovalRequest | None` (for credits, MFA resets, security overrides)
-- **Failure Mode**: If output validator detects missing citations on technical statements, triggers prompt refinement or routes to human TAC engineer.
+  - `customer_message: str` (inline `[kb:<slug>#<anchor>]`, `[policy:POL-X]`, `[telemetry:<tool>]` markers)
+  - `actions: tuple[SupportAction, ...]` (`CREATE_TICKET`, `UPDATE_TICKET`, `PAGE_ON_CALL`, `CLOSE_TICKET`, `CREDIT`, `MFA_RESET`, `VERDICT_OVERRIDE`)
+  - `escalate_to_human: bool`, `escalation_reason: str | None`
+  - No `pending_approval` field: the orchestrator derives approvals from `guardrails.check_action` (`REQUIRE_APPROVAL`), so a model-set flag never decides a hard gate.
+- **Sev-1 gate**: `PAGE_ON_CALL` is allowed only in `check_action` when triage priority is `P1`, `sev1_corroborated` (code-derived from telemetry) holds, and the account was not already paged; otherwise DENY `POL-SEV1`.
+- **Failure Mode**: Two PydanticAI output validators run `check_citations` and `check_outgoing_message`; a violation raises `ModelRetry` (budget 1). Exhausted retries or model failure return a constant holding message with `escalate_to_human=True`. With an unrecognized caller all actions are dropped in code.
 
 ---
 
@@ -184,29 +186,35 @@ Every agent receives a typed context container via PydanticAI dependency injecti
 ```mermaid
 stateDiagram-v2
     [*] --> IngestionGuard: Customer Message Received
+    IngestionGuard --> Idle: Prompt Injection (canned refusal)
     IngestionGuard --> Triage: Clean (Credentials Redacted)
-    IngestionGuard --> Blocked: Prompt Injection Detected
 
-    Triage --> ScopeCheck: Evaluate Intent
-    ScopeCheck --> Resolution: Vague (Ask Scoping Question)
-    ScopeCheck --> Diagnostics: Telemetry Symptoms Present
-    ScopeCheck --> KnowledgeRetrieval: Direct Knowledge Question
+    Triage --> Resolution: Scoping Question / Adversarial
+    Triage --> Diagnostics: Telemetry Symptoms Present
+    Triage --> KnowledgeRetrieval: Direct Knowledge Question
 
     Diagnostics --> KnowledgeRetrieval: Ground Telemetry Findings
+    KnowledgeRetrieval --> Diagnostics: needs_more_telemetry (back-edge, cap 2)
     KnowledgeRetrieval --> Resolution: Synthesize Plan
 
-    Resolution --> ActionEvaluation: Propose Actions
-    ActionEvaluation --> ApprovalPending: High-Impact Action (Credit/MFA/Override)
-    ActionEvaluation --> OutputGuard: Standard Action (Ticket/Page)
-
-    ApprovalPending --> OutputGuard: Persist Approval in DB (Non-Blocking)
-    OutputGuard --> [*]: Return Grounded Response to Customer
+    Resolution --> ActionEvaluation: Propose Actions (validators already ran)
+    ActionEvaluation --> Idle: Gate verdicts applied, reply saved
 ```
 
 ### Partial Failure Recovery Matrix
 
-| Failure Event | System Behavior | Customer Experience |
-|---|---|---|
+Degradation is derived fresh each turn from `DiagnosticEvidence.unavailable_tools` and `KnowledgeBundle.confidence_status`; only the customer notice is deduplicated (`OrchestratorState.notice_shown`).
+
+| Condition (this turn) | Notice | Escalation offered | Reply constraint |
+|---|---|---|---|
+| Telemetry tool `UNAVAILABLE` | telemetry notice | no | no values for the unavailable tools |
+| `KBSearchStatus.UNAVAILABLE` | retrieval notice | yes | refusal grounding: no KB markers or technical claims |
+| both | telemetry then retrieval | yes | both |
+| `LOW_CONFIDENCE_REFUSAL` | none | per `ResolutionPlan.escalate_to_human` | refusal grounding |
+| `NOT_FOUND` / `INVALID_ARGUMENT` | none | no | agent reports "no data" |
+| Agent raises | none | no | fixed pause message (SYSTEM row), `ERROR` trace, state intact |
+
+---|---|---|
 | **Telemetry source unreachable / file missing** | `Diagnostics Agent` catches error, logs warning, returns partial evidence. | Agent states: *"CMA telemetry for site [X] is temporarily unavailable. Based on your description..."* Guides manual verification without guessing. |
 | **Postgres RAG service down** | `Knowledge Agent` catches DB connection error, `search_kb` returns `status=KBSearchStatus.UNAVAILABLE`. | Agent states: *"Our documentation service is currently unavailable. To ensure you receive accurate technical guidance, I am escalating this to our engineering team."* Refuses to answer from ungrounded LLM memory. |
 | **Rerank score < `RERANK_MIN_SCORE`** | Top score below threshold indicates no KB coverage (e.g. roadmap query). | Agent states: *"Cato's knowledge base does not currently document support for [feature]. Let me connect you with product support."* Hallucination prevented. |
@@ -218,7 +226,7 @@ stateDiagram-v2
 
 The database schema is managed via sequential SQL migrations under `db/migrations/`:
 - `db/migrations/20260929_1500_kb-schema.sql`: Vector extension, `snapshots`, `kb_articles`, `passages`, `policies`, `accounts`, and `tickets`.
-- `db/migrations/20260930_1000_agent-runtime.sql`: Operational tables for persistent conversation state, messages, non-blocking approvals, execution traces, and simulated side effects.
+- `db/migrations/20261001_0900_agent-runtime.sql`: Operational tables for persistent conversation state, messages, non-blocking approvals, execution traces, and tool calls. These tables are excluded from `db/seed.dump` (`--exclude-table`) so a restore never wipes live conversations.
 
 The unified database connects the ingested Knowledge Base and seeded customer/ticket records with live operational state:
 
@@ -230,7 +238,7 @@ erDiagram
     conversations ||--o{ messages : contains
     conversations ||--o{ approvals : tracks
     conversations ||--o{ traces : records
-    conversations ||--o{ simulated_actions : logs
+    traces ||--o{ tool_calls : invokes
 
     snapshots {
         uuid id PK
@@ -302,14 +310,19 @@ erDiagram
         text contact_email
         text customer_tier
         text active_site_id
+        text stage
+        jsonb guard_history
+        int last_turn
+        int last_seq
+        jsonb state
         timestamptz created_at
         timestamptz updated_at
-        text status
     }
 
     messages {
         uuid id PK
         uuid conversation_id FK
+        int turn
         text sender
         text content
         jsonb citations
@@ -320,10 +333,13 @@ erDiagram
     approvals {
         uuid id PK
         uuid conversation_id FK
+        uuid message_id FK
         text action_type
         jsonb payload
         text status
+        text idempotency_key
         text reviewer_notes
+        jsonb edited_payload
         timestamptz requested_at
         timestamptz resolved_at
     }
@@ -332,21 +348,31 @@ erDiagram
         uuid id PK
         uuid conversation_id FK
         uuid message_id FK
+        int turn
+        int seq
         text agent_role
+        uuid parent_trace_id FK
+        jsonb input
+        jsonb output
+        jsonb model_messages
+        text status
         int latency_ms
         int prompt_tokens
         int completion_tokens
-        jsonb tool_calls
-        jsonb retrieval_scores
+        numeric cost_usd
         timestamptz created_at
     }
 
-    simulated_actions {
+    tool_calls {
         uuid id PK
+        uuid trace_id FK
         uuid conversation_id FK
-        text action_name
-        jsonb payload
-        timestamptz executed_at
+        int seq
+        text tool_name
+        jsonb arguments
+        text status
+        jsonb result
+        int latency_ms
     }
 ```
 
@@ -355,9 +381,9 @@ erDiagram
 - **`policies`**: Read-only store for the 6 internal governance policies.
 - **`accounts`**: Ground-truth customer account records (`ACC-1001`..`ACC-1012`) enriched with primary `-01` site `country` codes for SLA timezone resolution.
 - **`tickets`**: Historical and live support tickets (`TCK-*`), indexed on `(customer_id, created_at)` and `(customer_id, site_id)` for repeat-contact detection and live status updates.
-- **`conversations`**: Maintains persistent session lifecycle across process restarts.
-- **`approvals`**: Decoupled HITL table. Enables non-blocking workflow: status values are `pending`, `approved`, `edited`, `rejected`.
-- **`traces`**: Complete execution traces ensuring reproducible end-to-end replay.
+- **`conversations`**: Persistent session state across restarts: workflow `stage`, `guard_history`, versioned orchestrator `state`, and `last_turn`/`last_seq` counters assigned under a per-conversation row lock (`SELECT ... FOR UPDATE`).
+- **`approvals`**: Decoupled HITL table. Enables non-blocking workflow: status values are `PENDING`, `APPROVED`, `EDITED`, `REJECTED`; creation is idempotent per `(conversation_id, idempotency_key)` and resolution is a compare-and-set from `PENDING`.
+- **`traces`** / **`tool_calls`**: Append-only per-agent execution log (PydanticAI message history in `model_messages`, redacted `input`, cost) with each tool envelope in `tool_calls`; `StateStore.replay_trace` rebuilds the whole conversation graph from these rows alone.
 
 ---
 
@@ -383,23 +409,17 @@ The retrieval pipeline (`RetrievalService` in `retrieval/service.py`) implements
 
 ---
 
-## 8. Dual-Layer Observability & Tracing Architecture
+## 8. Observability & Tracing Architecture
+
+Tracing = Postgres trace tables + PydanticAI message history. No external tracing service.
 
 ```mermaid
 flowchart LR
-    PydanticAIRunner["PydanticAI Agent Execution"] --> TracerMiddleware["Tracing Middleware"]
-
-    TracerMiddleware --> LocalStore["1. Local Postgres Traces Table\n(Offline, Self-Contained, Reviewer UI)"]
-    TracerMiddleware --> BraintrustCheck{"BRAINTRUST_API_KEY\nConfigured?"}
-
-    BraintrustCheck -- Yes --> BraintrustSDK["2. Braintrust Cloud SDK\n(Waterfall Traces, Eval Scoring)"]
-    BraintrustCheck -- No --> SilentlyPass["Skip Cloud Tracing"]
+    PydanticAIRunner["PydanticAI Agent Execution"] --> Store["StateStore"]
+    Store --> Traces["Postgres traces / tool_calls\n(model_messages jsonb = ModelMessagesTypeAdapter dump)"]
 ```
 
-1. **Local Postgres Trace Layer (Offline Guarantee)**:
-   Every agent invocation records its role, prompt tokens, completion tokens, latency, tool calls, and RRF/rerank scores directly to the Postgres `traces` table. This satisfies the requirement that a reviewer running `docker compose` without external API credentials can inspect traces in the UI.
-2. **Braintrust Cloud Layer (Visual Live Demo & Evals)**:
-   When `BRAINTRUST_API_KEY` is present in `.env`, the system automatically logs spans to Braintrust via `@traced` and `braintrust.auto_instrument()`. This provides interactive waterfall visualizations for the interview presentation and powers the evaluation scorers.
+Every agent invocation records its role, prompt/completion tokens, latency, cost, tool calls and the serialized PydanticAI message history to Postgres `traces` / `tool_calls`. A reviewer running `docker compose` without external credentials can inspect traces in the UI.
 
 ---
 
@@ -479,7 +499,7 @@ The codebase is organized into clean, single-responsibility packages separating 
 │   │   └── build.py                   # Offline operator build entrypoint (loads KB + seed tables, writes db/seed.dump)
 │   └── migrations/
 │       ├── 20260929_1500_kb-schema.sql        # Vector extension + snapshots, kb_articles, passages, policies, accounts, tickets
-│       └── 20260930_1000_agent-runtime.sql    # conversations, messages, approvals, traces, simulated_actions
+│       └── 20261001_0900_agent-runtime.sql    # conversations, messages, approvals, traces, tool_calls
 │
 ├── docs/                              # Project documentation, plans & evaluation reports
 │   ├── overview/                      # Deliverable D diagrams (logical & deployment views)
@@ -518,8 +538,15 @@ The codebase is organized into clean, single-responsibility packages separating 
 │   ├── models.py                      # TelemetryStatus, TelemetryEvidence, TelemetryToolResult[T], payload schemas
 │   └── telemetry.py                   # TelemetryService and verbatim [telemetry] evidence extraction
 │
+├── storage/                           # Postgres runtime state (sync)
+│   ├── models.py                      # Frozen row models (Conversation, StoredMessage, TraceRecord, Approval, ConversationSnapshot)
+│   ├── state_store.py                 # StateStore: conversations, messages, traces, rehydrate, replay
+│   ├── approval_queries.py            # Approval row SQL (idempotent create, CAS resolve)
+│   ├── replay.py                      # TraceReplay: pure replay assembly from rows
+│   └── sql.py / jsonb.py              # Row-mapping helpers; NUL-safe jsonb
+│
 ├── services/                          # Business domain logic
-│   ├── models.py                      # Service-domain Pydantic schemas (CallerIdentity, SLADeadlines, RepeatContactResult, ApprovalRecord, CountryCodeOutput)
+│   ├── models.py                      # Service-domain Pydantic schemas (CallerIdentity, SLADeadlines, RepeatContactResult, CountryCodeOutput)
 │   ├── customer_service.py            # Account identification & SLA calculations
 │   ├── ticket_service.py              # Historical tickets & repeat contact analysis
 │   ├── approval_service.py            # Non-blocking HITL approvals lifecycle
@@ -556,10 +583,15 @@ The codebase is organized into clean, single-responsibility packages separating 
     ├── run_scenarios.py               # 12-scenario multi-turn replay harness
     ├── retrieval_metrics.py           # Recall@k and MRR computation
     ├── scenario_scorer.py             # Scores groundedness, citations, tool calls, guardrails
-    ├── braintrust_tracer.py           # Braintrust waterfall spans & eval logging
     ├── test_prompt.py                 # CLI playground to test & iterate on isolated prompts
     └── recorded_traces/               # Committed traces for the 3 representative conversations
 ```
+
+---
+
+## Concurrency
+
+`Workflow.run_turn` runs under a per-conversation Postgres session advisory lock (`storage/turn_lock.py`, key `hashtextextended('turn:' || conversation_id, 0)`), taken on the `StateStore` connection, so one conversation runs one turn at a time across workers. Waiting is bounded by `turn_lock_timeout_s` (default 30 s); on timeout `TurnLockTimeout` is raised with no state written and the caller retries with the same `message_id` (idempotent). If a worker dies, Postgres releases the lock with its backend. Use one connection per concurrent turn. The production DSN must set TCP keepalives (`keepalives_idle`, `keepalives_interval`, `keepalives_count`) so half-open connections release their locks. See ADR-011.
 
 ---
 

@@ -8,6 +8,5 @@ tests/kbindex/output/
 .env
 .env.*
 !.env.example
-braintrust-test.py
 *.pptx
 *.pptx#

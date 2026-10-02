@@ -1,8 +1,9 @@
-from collections.abc import Iterator
 import re
+from collections.abc import Iterator
 from re import Pattern
 from typing import NamedTuple
 
+from core.models import TicketPriority
 from guardrails.models import (
     ActionType,
     CitationReport,
@@ -116,7 +117,14 @@ def check_citations(message: str, context: GroundingContext) -> CitationReport:
     return CitationReport(violations=tuple(violations))
 
 
-def check_action(action: ProposedAction, identity: CallerIdentity) -> GateDecision:
+def check_action(
+    action: ProposedAction,
+    identity: CallerIdentity,
+    *,
+    priority: TicketPriority | None = None,
+    sev1_corroborated: bool = False,
+    already_paged: bool = False,
+) -> GateDecision:
     if identity.account is None or action.target_account_id != identity.account.account_id:
         return GateDecision(
             outcome=GateOutcome.DENY,
@@ -151,6 +159,16 @@ def check_action(action: ProposedAction, identity: CallerIdentity) -> GateDecisi
         case ActionType.CLOSE_TICKET:
             return GateDecision(
                 outcome=GateOutcome.ALLOW, policy_id=None, reason="Closing a ticket needs no approval."
+            )
+        case ActionType.PAGE_ON_CALL if priority == "P1" and sev1_corroborated and not already_paged:
+            return GateDecision(
+                outcome=GateOutcome.ALLOW, policy_id="POL-SEV1", reason="Sev-1 corroborated by telemetry."
+            )
+        case ActionType.PAGE_ON_CALL:
+            return GateDecision(
+                outcome=GateOutcome.DENY,
+                policy_id="POL-SEV1",
+                reason="Paging on-call requires P1 priority, telemetry corroboration, and no earlier page.",
             )
 
 

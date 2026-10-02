@@ -27,13 +27,9 @@ from agents import (
 )
 from core.clock import SimulationClock
 from core.config import settings
-from guardrails import ActionType, SessionGuardHistory
-from orchestration import AgentPorts, Workflow
+from orchestration import AgentPorts, Workflow, build_workflow
 from retrieval.models import KBSearchStatus, PolicyDocument, RetrievedPassage
-from retrieval.service import RetrievalService
-from services import CustomerService, TicketService
 from storage import AgentRole, StateStore
-from tools.telemetry import TelemetryService
 
 PRIYA = "priya@bluebirdretail.com"  # verified member of ACC-1002, not admin
 STRANGER = "mark@example.com"  # unknown caller
@@ -147,19 +143,7 @@ def harness(conn: psycopg.Connection[Any]) -> Iterator[Harness]:
         return conversation.id
 
     def workflow(script: Scripted, connection: psycopg.Connection[Any] | None = None) -> Workflow:
-        connection = connection or conn
-        customers = CustomerService(connection, clock)
-        deps = SupportDeps(
-            clock=clock,
-            customers=customers,
-            tickets=TicketService(connection, clock),
-            telemetry=TelemetryService(clock=clock),
-            retrieval=RetrievalService(connection),
-            identity=customers.authenticate_caller(STRANGER),
-            guard_history=SessionGuardHistory(),
-            approved_actions=frozenset[ActionType](),
-        )
-        return Workflow(script.ports, StateStore(connection), clock, deps)
+        return build_workflow(connection or conn, clock, script.ports)
 
     yield Harness(lambda: psycopg.connect(settings.database_url, autocommit=True), new_conversation, workflow)
     for statement in _CLEANUP_SQL:

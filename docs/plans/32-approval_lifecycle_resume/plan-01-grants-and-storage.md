@@ -31,8 +31,8 @@
 ### Task 1: Migration, models and `StateStore` settle primitives
 
 **Files:**
-- Create: `db/migrations/20261002_1200_approval-settled.sql`
-- Modify: `storage/models.py` (`Approval` gains `settled_at: AwareDatetime | None`, `customer_reason: str | None`, property `effective_payload` = `edited_payload` when set else `payload`), `storage/approval_queries.py` (`resolve_approval` takes optional `customer_reason`; new `settle_approval` SQL part and `list_unsettled_approvals`), `storage/state_store.py` (three public methods below; `resolve_approval` passes `customer_reason` and redacts `reviewer_notes`/`customer_reason` with `redact` and `edited_payload` with the existing `_redacted_json`; `create_approval` redacts `payload` the same way), `storage/__init__.py`
+- Create: `db/migrations/20261002_1300_approval-settled.sql`
+- Modify: `storage/models.py` (`Approval` gains `settled_at: AwareDatetime | None`, `customer_reason: str | None`, property `effective_payload` = `edited_payload` when set else `payload`), `storage/approval_queries.py` (`resolve_approval` takes optional `customer_reason`; new `settle_approval` SQL part and `list_unsettled_approvals`), `storage/state_store.py` (three public methods below; `resolve_approval` passes `customer_reason` and redacts `reviewer_notes`/`customer_reason` with `redact` and `edited_payload` with the existing `storage.jsonb.redacted_json` (public since #9); `create_approval` redacts `payload` the same way), `storage/__init__.py`
 - Test: `tests/storage/test_approval_settle.py` (new), `tests/storage/test_schema.py` (extend), `tests/storage/test_no_secret_in_rows.py` (extend)
 
 **Interfaces:**

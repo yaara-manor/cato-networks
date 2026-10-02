@@ -92,7 +92,7 @@ Crash semantics (stated, not hidden):
 
 All frozen Pydantic, `StrEnum`s, full typing.
 
-- **`ActionStatus(StrEnum)`**: `DONE`, `FAILED`, `INVALID`, `REFUSED`, `DUPLICATE` (replay returned the stored result). Persisted statuses are the first four plus `CLAIMED`; `DUPLICATE` is a result-only flag, kept as `ActionResult.replayed: bool` instead to avoid mixing the two (decision: use `replayed`, drop `DUPLICATE`).
+- **`ActionStatus(StrEnum)`**: `DONE`, `FAILED`, `INVALID`, `REFUSED`. Persisted statuses are these plus `CLAIMED`. Replay is `ActionResult.replayed: bool`, not a status.
 - **`DispatchContext`**: `identity: CallerIdentity`, `priority: TicketPriority`, `sev1_corroborated: bool`, `already_paged: bool`, `conversation_id: UUID`, `message_id: UUID`. Everything the defensive gate re-check and handlers need, built by the workflow from values it already holds.
 - **`ActionResult`**: `kind: SupportActionKind`, `status: ActionStatus`, `replayed: bool`, `reference: str | None` (ticket id, page/credit/MFA event id), `detail: str` (fixed text, no secrets, no raw payload), `customer_line: str | None` (deterministic confirmation or failure sentence). Classmethods `done(...)`, `failed(...)`, `invalid(...)`, `refused(...)`.
 - **Payload models** (all `from_payload` classmethods validate required keys, reject unknown keys):
@@ -171,7 +171,7 @@ Functional, real Postgres (existing orchestration fixtures), scripted stub agent
 ---
 
 ## 9. Cleanup (final step)
-1. Read every new/modified file end to end; no unused imports, models, handlers or helpers; `DUPLICATE` status must not exist (decision in §4); `ponytail:` comment only on the ticket at-most-once ceiling.
+1. Read every new/modified file end to end; no unused imports, models, handlers or helpers; `ponytail:` comment only on the ticket at-most-once ceiling.
 2. Remove `TurnResult.executable_actions` and every reader; confirm no duplicate of 15 gate logic in `actions/`.
 3. Grep: no `datetime.now`, no inline imports, no `Literal` for enum-like fields (the `core.models` literals are reused, not added).
 4. Pyright `standard` and ruff clean; every function fully typed, `-> None` included; f-strings only.

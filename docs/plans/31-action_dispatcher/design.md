@@ -37,11 +37,11 @@ flowchart LR
 | Ticket says | Code today | Decision |
 |---|---|---|
 | Actions `create_ticket`, `update_ticket`, `page_on_call`, `request_service_credit`, `request_mfa_reset` | `SupportActionKind`: `CREATE_TICKET`, `UPDATE_TICKET`, `PAGE_ON_CALL`, `CREDIT`, `MFA_RESET`, plus `CLOSE_TICKET`, `VERDICT_OVERRIDE` | Use code names (`CREDIT` = request_service_credit, `MFA_RESET` = request_mfa_reset). Add handler for `CLOSE_TICKET` (status closed; gate already ALLOWs it). `VERDICT_OVERRIDE` has no handler: gate always DENYs it; dispatcher refuses it defensively. |
-| Sev-1 "strictly validated against POL-SEV1 (production site down, no redundancy)" | `check_action` already allows `PAGE_ON_CALL` only for priority P1 + `sev1_corroborated` + not already paged. `sev1_corroborated` = two+ sites disconnected in one country, or a whole listed account disconnected. POL-SEV1 text never mentions redundancy; architecture §3 does | Validation stays in `check_action` (single source of truth, tested in 15/22/23). Dispatcher adds a defensive re-check, not a second implementation (§3.3). "No redundancy" is not modelled; see Open questions |
-| `request_*` "queues for human approval" | Approval queueing already exists: workflow writes an `approvals` row for `REQUIRE_APPROVAL` (21/23) | No new queueing at request time. `CREDIT`/`MFA_RESET` handlers run only after approval via `dispatch_approved` and emit the simulated downstream effect (billing credit queue / CMA MFA reset) |
-| Audit/events in `data/simulated_actions/` or webhook | No `simulated_actions` table: dropped by 21 plan 01 delta 4. `data/` is repo-tracked and read-only in the container | Postgres table `simulated_actions` is the audit log and idempotency store; one structured log line per action. No JSON files, no webhook (§2.3) |
+| Sev-1 "strictly validated against POL-SEV1 (production site down, no redundancy)" | `check_action` already allows `PAGE_ON_CALL` only for priority P1 + `sev1_corroborated` + not already paged. `sev1_corroborated` = two+ sites disconnected in one country, or a whole listed account disconnected. POL-SEV1 text never mentions redundancy; architecture §3 does | Validation stays in `check_action` (single source of truth, tested in 15/22/23). Dispatcher adds a defensive re-check, not a second implementation (§3.3). **Decided: follow POL-SEV1 only**; "no redundancy" (architecture §3) is not modelled, no HA-pair health. Update architecture §3 wording in cleanup to match POL-SEV1 |
+| `request_*` "queues for human approval" | Approval queueing already exists: workflow writes an `approvals` row for `REQUIRE_APPROVAL` (21/23) | No new queueing at request time (decided: post-approval effect is enough; the approval row is the queue record). `CREDIT`/`MFA_RESET` handlers run only after approval via `dispatch_approved` and emit the simulated downstream effect (billing credit queue / CMA MFA reset) |
+| Audit/events in `data/simulated_actions/` or webhook | No `simulated_actions` table: dropped by 21 plan 01 delta 4. `data/` is repo-tracked and read-only in the container | Postgres table `simulated_actions` is the audit log and idempotency store; one structured log line per action. No JSON files, no webhook (§2.3). **Decided:** the `simulated_actions` table is the export location (reviewers/UI read it via `list_simulated_actions`) |
 | Tickets "in Postgres", `update_ticket` changes status, site, priority | `TicketService` has `create_ticket` and `update_ticket_status` only; `tickets` table has no conversation link | Add `TicketService.update_ticket(ticket_id, status, site_id, priority)` (each optional). Conversation link lives in the audit row |
-| Enums | Codebase uses `StrEnum` (ADR-005); user rule prefers `AtiIntEnum` | Follow codebase `StrEnum` for consistency with 21-24 (string values are persisted and CHECK-constrained) |
+| Enums | Codebase uses `StrEnum` (ADR-005); user rule now allows any enum | Follow codebase `StrEnum` for consistency with 21-24 (string values are persisted and CHECK-constrained) |
 
 ---
 
@@ -62,7 +62,7 @@ flowchart LR
 7. **Sync, takes the existing `StateStore` + `TicketService`**, injected on `Workflow` as a new `dispatcher: ActionDispatcher` field. No clock reads inside handlers beyond `SimulationClock.now()` passed to writes (ADR-001).
 
 ### 2.3 Audit sink: Postgres table, not files
-Files in `data/simulated_actions/` give no atomic idempotency, race under two workers, vanish with the container, and cannot be joined to `conversations` for trace replay. A table gives a unique key, FK to `conversations`, and `replay_trace` adjacency. Reviewer visibility comes from SQL/UI later. Cost: one migration. A JSON export is a one-function addition later if a reviewer insists (Open questions).
+Files in `data/simulated_actions/` give no atomic idempotency, race under two workers, vanish with the container, and cannot be joined to `conversations` for trace replay. A table gives a unique key, FK to `conversations`, and `replay_trace` adjacency. Reviewer visibility comes from SQL/UI later. Cost: one migration. Decided: the table itself is the exported record, no file export.
 
 ---
 
@@ -135,6 +135,9 @@ Rejects `PENDING`/`REJECTED` (returns `REFUSED`; reject path is #10's customer m
 
 Handlers are plain functions over `TicketService` and the claimed row; the page/credit/MFA "side effect" is the finalized `result` JSON, so there is no second sink to keep consistent. Ownership check on `ticket_id` (ticket's `customer_id` equals the caller's account) is in the ticket handlers: a customer cannot update another account's ticket (`REFUSED`).
 
+### 5.4a Pending marker (`mark_pending`)
+Decided: when a `CREDIT`/`MFA_RESET` approval is created, the linked ticket shows `pending_approval`. `CreditPayload` and `MfaResetPayload` gain optional `ticket_id`. `ActionDispatcher.mark_pending(approval, context) -> ActionResult` (called by the workflow right after `create_approval`): if the approval payload has a `ticket_id`, calls `TicketService.update_ticket(status="pending_approval")` with ownership check, audited as an `UPDATE_TICKET` row with key `approval:{approval_id}:pending`; no `ticket_id` means no-op (the conversation row already carries `pending_approval` per POL-CREDIT). Leaving `pending_approval` on resolution (approved/rejected/edited) is #10's `settle` step, which calls `TicketService.update_ticket`; flagged as a coupling.
+
 ### 5.5 Customer-visible lines (`ActionResult.customer_line`)
 Fixed templates, asserted verbatim in tests: ticket created (with id), ticket updated/closed, on-call paged (with incident ref and 15 min ack), failure/unknown outcome ("could not complete X; a support engineer will follow up"). Credit/MFA lines are issued by #10 after approval, not here. The page line never states an amount or SLA beyond POL-SEV1.
 
@@ -179,11 +182,16 @@ Functional, real Postgres (existing orchestration fixtures), scripted stub agent
 
 ---
 
-## 10. Open questions
-- Sev-1 "no redundancy": model it (HA-pair health from `sites.json`) or keep POL-SEV1 criteria (2+ sites/account down)? Arch §3 and ticket vs policy+code.
-- `request_*` = post-approval effect OK, or also a queue event at request time?
-- Need JSON file export in `data/simulated_actions/` for reviewers? Default no.
-- Ticket at-most-once on crash OK, or add natural key?
-- Customer line for credit/MFA after approval: here or #10? Default #10.
-- Mark ticket `pending_approval` when credit/MFA queued? `TicketStatus` has it; default no.
-- Make `_GATED_ACTION_TYPES` public in `agents/models.py` OK (22 file)?
+## 10. Decisions taken after review
+- Sev-1: POL-SEV1 criteria only; no redundancy modelling.
+- `request_*`: post-approval effect only.
+- Audit export: `simulated_actions` table, no files.
+- Ticket write at-most-once on crash: accepted (KISS).
+- Credit/MFA customer line: #10.
+- `pending_approval` ticket status set on approval creation (§5.4a).
+- `_GATED_ACTION_TYPES` made public in `agents/models.py`.
+- Enums: `StrEnum` (global rule updated to allow any enum).
+
+## 11. Open questions
+- #10 must clear ticket `pending_approval` on settle: confirm in 32 design.
+- Credit/MFA payloads carry optional `ticket_id`: does Resolution reliably know it? Prompt change needed.

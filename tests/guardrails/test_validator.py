@@ -1,3 +1,5 @@
+from typing import Any
+
 import pytest
 
 from guardrails import (
@@ -328,6 +330,27 @@ def test_gate_decision_table(
     policy_id: str | None,
 ) -> None:
     decision = check_action(action, request.getfixturevalue(identity_name))
+    assert (decision.outcome, decision.policy_id) == (outcome, policy_id)
+
+
+_PAGE = _action(ActionType.PAGE_ON_CALL)
+
+
+@pytest.mark.parametrize(
+    ("identity_name", "gate", "outcome", "policy_id"),
+    [
+        ("identity_sam", {"priority": "P1", "sev1_corroborated": True}, _ALLOW, "POL-SEV1"),
+        ("identity_sam", {"priority": "P2", "sev1_corroborated": True}, _DENY, "POL-SEV1"),
+        ("identity_sam", {"priority": "P1"}, _DENY, "POL-SEV1"),
+        ("identity_sam", {"priority": "P1", "sev1_corroborated": True, "already_paged": True}, _DENY, "POL-SEV1"),
+        ("identity_sam", {}, _DENY, "POL-SEV1"),
+        ("identity_mark", {"priority": "P1", "sev1_corroborated": True}, _DENY, "POL-IDV"),
+    ],
+)
+def test_page_on_call_sev1_gate(
+    request: pytest.FixtureRequest, identity_name: str, gate: dict[str, Any], outcome: GateOutcome, policy_id: str
+) -> None:
+    decision = check_action(_PAGE, request.getfixturevalue(identity_name), **gate)
     assert (decision.outcome, decision.policy_id) == (outcome, policy_id)
 
 

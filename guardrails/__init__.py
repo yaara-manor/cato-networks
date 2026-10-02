@@ -1,4 +1,4 @@
-from guardrails.citations import CitationMarker, MarkerKind, extract_markers, strip_markers
+from guardrails.citations import KB_REF, CitationMarker, MarkerKind, extract_markers, strip_markers
 from guardrails.injection import detect, quarantine
 from guardrails.models import (
     ActionType,
@@ -31,6 +31,7 @@ from guardrails.validator import (
 
 __all__ = [
     "ActionType",
+    "KB_REF",
     "CitationMarker",
     "CitationReport",
     "CitationViolation",

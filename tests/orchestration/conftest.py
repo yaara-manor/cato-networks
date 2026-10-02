@@ -29,7 +29,7 @@ from core.clock import SimulationClock
 from core.config import settings
 from guardrails import ActionType, SessionGuardHistory
 from orchestration import AgentPorts, Workflow
-from retrieval.models import KBSearchStatus
+from retrieval.models import KBSearchStatus, PolicyDocument, RetrievedPassage
 from retrieval.service import RetrievalService
 from services import CustomerService, TicketService
 from storage import AgentRole, StateStore
@@ -67,6 +67,9 @@ class Scripted:
     escalate: bool = False
     unavailable: tuple[UnavailableTool, ...] = ()
     kb_status: KBSearchStatus = KBSearchStatus.CONFIDENT
+    reply: str = "Here is your answer."
+    passages: tuple[RetrievedPassage, ...] = ()
+    policies: tuple[PolicyDocument, ...] = ()
     fail_in: str | None = None  # role whose callable raises
     calls: list[str] = field(default_factory=list)
     inputs: dict[str, list[Any]] = field(default_factory=dict)
@@ -94,6 +97,8 @@ class Scripted:
         self._seen("knowledge", data)
         bundle = KnowledgeBundle(
             findings=KnowledgeFindings(needs_more_telemetry=self.needs_more_telemetry),
+            retrieved_passages=self.passages,
+            referenced_policies=self.policies,
             confidence_status=self.kb_status,
             needs_more_telemetry=self.needs_more_telemetry,
         )
@@ -102,7 +107,7 @@ class Scripted:
     def resolution(self, data: ResolutionInput, deps: SupportDeps) -> AgentRun[ResolutionPlan]:
         self._seen("resolution", (data, deps))
         plan = ResolutionPlan(
-            customer_message=self.scoping_question or "Here is your answer.",
+            customer_message=self.scoping_question or self.reply,
             actions=self.actions,
             escalate_to_human=self.escalate,
         )

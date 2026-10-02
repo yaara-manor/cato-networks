@@ -3,8 +3,8 @@
 **Issue**: `#11` ([Phase 4] 4.1: Customer Support Chat View)
 **Date**: 2026-10-02
 **Status**: Draft for Review
-**Target Files**: `ui/__init__.py`, `ui/customer_app.py`, `ui/chat_view.py`, `ui/session.py`, `ui/scenarios.py`, `guardrails/citations.py` (+ export), `orchestration/recorder.py`, `orchestration/workflow.py`, `storage/state_store.py` (one read), `pyproject.toml`, `Dockerfile`, `docker-compose.yml`, `tests/ui/*`, `tests/orchestration/*`
-**Depends on**: 21 (`StateStore`), 23/24 (`Workflow.run_turn`, `TurnLockTimeout`), 31 (dispatcher, issue #9), 32 (approval lifecycle/resume, issue #10). **Sibling**: 42 (reviewer board, issue #12).
+**Target Files**: `ui/__init__.py`, `ui/customer_app.py`, `ui/chat_view.py`, `ui/trace_panel.py` (shared with 42), `ui/session.py`, `ui/scenarios.py`, `guardrails/citations.py` (+ export), `orchestration/recorder.py`, `orchestration/workflow.py`, `storage/state_store.py` (one read), `pyproject.toml`, `Dockerfile`, `docker-compose.yml`, `tests/ui/*`, `tests/orchestration/*`
+**Depends on**: 21 (`StateStore`, `replay_trace`), 23/24 (`Workflow.run_turn`, `TurnLockTimeout`), 31 (issue #9: ticket `pending_approval`), 32 (issue #10: `ApprovalService.settle`, AGENT notice, `settled_at`, `customer_reason`). 31 and 32 read in final form. **Sibling**: 42 (reviewer board, issue #12) imports the shared trace component.
 
 ---
 
@@ -19,7 +19,9 @@ Ticket features and how each is met:
 4. Pending escalation/approval banners: `StateStore.list_approvals(conversation_id)` (section 4.4).
 5. Account / scenario switcher: sidebar over `data/eval/scenarios.jsonl` plus free-form email (section 4.5).
 
-Out of scope: reviewer UI (42), executing approved actions (31/32), trace panel (reviewer side per issue; task text also wants "UI surfaces trace for current conversation", covered by 42, flagged in section 8), auth beyond email (identity is server-side `authenticate_caller`, chat claims never trusted), token-level streaming (section 3.2), multi-user session hardening, i18n.
+6. Trace panel for the current conversation (brief section 4: UI must surface the trace): shared component `ui/trace_panel.py` (4.6).
+
+Out of scope: reviewer UI (42), executing/settling approvals (31/32), auth beyond email (identity is server-side `authenticate_caller`, chat claims never trusted), token-level streaming, live stage label, multi-user session hardening, i18n.
 
 ```mermaid
 flowchart LR
@@ -37,14 +39,14 @@ flowchart LR
 | Ticket / architecture doc says | Code reality | Decision |
 |---|---|---|
 | Deliverable `ui/customer_app.py` | No `ui/` package, no API layer, no entrypoint that builds `Workflow`; no UI dependency in `pyproject.toml`; Dockerfile pip-lists deps by hand | Add `ui/` package, `streamlit` dep (pyproject + Dockerfile), composition root `ui/session.py` |
-| "Live responses" | `run_turn` is sync and returns the finished reply once; no token stream, no progress hook | Spinner during the turn + polled stage label (3.2); no streaming |
+| "Live responses" | `run_turn` is sync and returns the finished reply once; no token stream, no progress hook | Spinner only (3.2); no streaming, no stage label |
 | "Citation badges linking to KB / policy docs" | `TurnRecorder.complete_turn` passes `()` as citations to `StateStore.complete_turn`; the `messages.citations` column exists but is always empty. Reply text carries inline markers `[kb:slug#anchor]`, `[policy:ID]`, `[telemetry:tool]` (validated by `guardrails.check_citations`). `RetrievedPassage` has `public_url`, `title`, `heading` | Persist citations at turn end from the grounding bundle (4.2). Small change to 23 files |
-| Policy docs "linking" | Policies are local `data/policies/*.md` / `policies` table, no public URL | Policy badge opens an in-app dialog with the body (4.2) |
-| "Pending escalation status banners" | `TurnResult.escalation_offered` is not persisted; only `approvals` rows are | Banners derive from approvals only; the escalation-offered flag shows for the live turn only (4.4, Q2) |
-| Telemetry chips | `StoredMessage.telemetry_evidence` persisted. Architecture doc quotes `[telemetry]`, code uses `[telemetry:<tool>]` | Chips from stored evidence; inline `[telemetry:tool]` markers stripped from display text |
+| Policy docs "linking" | Policies have no public URL | Policy badge opens an in-app dialog; body via `RetrievalService.get_policy` (4.2) |
+| "Pending escalation status banners" | `TurnResult.escalation_offered` is not persisted; only `approvals` rows are | Banners derive from approvals only; `escalation_offered` not persisted, not shown (decided, 4.4) |
+| Telemetry chips | `StoredMessage.telemetry_evidence` persisted. Architecture doc quotes `[telemetry]`, code uses `[telemetry:<tool>]` | Chips from stored evidence; inline `[telemetry:tool]` markers stripped from display text; architecture doc section 3 point 5 corrected to `[telemetry:<tool>]` in the cleanup step |
 | Scenario switcher | `scenarios.jsonl` has 12 scenarios with `customer_id`, `requester_email`, `opening_message`, followups | Switcher reads that file; no new data |
-| Approval resolution reaches the customer | Issue #10 / plan 32 not in code yet; `MessageSender` is `CUSTOMER/AGENT/SYSTEM` (no REVIEWER; `TurnSender.REVIEWER` exists only in agent history) | Render any non-customer sender as "Support"; flagged as coupling (Q4) |
-| Enums via `AtiIntEnum` (user rule) | Repo uses `StrEnum` (`novia_shared` is not a dependency) | Follow repo (`StrEnum`) for view enums, same as 21-24; Q7 |
+| Approval resolution reaches the customer | 32 (final): `ApprovalService.settle` writes a deterministic `AGENT` message in its own turn (no customer row), sets `approvals.settled_at`; rejection notice may carry guard-checked `approvals.customer_reason`. 31: ticket gets `pending_approval` on approval creation, 32 clears it. Statuses unchanged: `PENDING/APPROVED/EDITED/REJECTED` | No `REVIEWER` sender (decided). The notice is an ordinary AGENT message in the transcript; banners show state only (4.4); UI never shows ticket status |
+| Enums via `AtiIntEnum` (user rule) | Repo uses `StrEnum`; `novia_shared` is not a dependency | `StrEnum`, same as 21-24 (decided) |
 
 ## 3. Structural Decisions
 
@@ -55,10 +57,10 @@ flowchart LR
 | B. Chainlit | Chat-native, steps UI | Own session/auth model, awkward to share one script shape with the reviewer dashboard, harder to test without browser |
 | C. FastAPI + JS front end | Full control, true streaming | Two languages, an API layer nobody asked for, 80% of the effort for zero ticket value (YAGNI) |
 
-Chosen A. Streamlit is a new dependency (only one added).
+Chosen A (confirmed: the brief allows any stack, no FastAPI requirement, Streamlit shared with 42). Streamlit is the only new dependency.
 
 ### 3.2 "Live" responses
-`run_turn` blocks for seconds and runs in the script thread. The page shows `st.spinner` ("Working on it") only; a live stage label would need a worker thread plus a second DB connection polling `conversations.stage`, cosmetic gain for v1 (Q3). Approval banners refresh via a fragment polled every 5 s while the script is idle.
+`run_turn` blocks for seconds in the script thread. The page shows `st.spinner` only; no live stage label (decided). Approval banners refresh via a fragment polled every 5 s while the script is idle.
 
 ### 3.3 Where logic lives (SRP)
 - `ui/customer_app.py`: rendering and event wiring only (chat input, sidebar, dialogs). No SQL, no parsing.
@@ -85,8 +87,8 @@ Chosen A. Streamlit is a new dependency (only one added).
 - `CitationBadge`: `kind`, `label`, `url: str | None` (KB only), `ref: str` (slug#anchor or policy id).
 - `EvidenceChip`: `tool_name`, `text` (`metric_key raw_value`), `timestamp`, `is_anomaly`.
 - `MessageView`: `role` (customer / support), `text` (inline markers stripped), `citations`, `evidence`, `created_at`.
-- `ApprovalBannerState(StrEnum)`: `PENDING`, `APPROVED`, `REJECTED` (EDITED shown as APPROVED to the customer).
-- `ApprovalBanner`: `state`, `title` (from `ActionType`, fixed mapping dict, exhaustive via `match` with `assert_never`), `detail` (fixed copy, no payload echo beyond credit amount if present, no reviewer notes, no `edited_payload`).
+- `ApprovalBannerState(StrEnum)`: `PENDING`, `FINALIZING` (APPROVED/EDITED, `settled_at` null), `APPROVED` (settled), `REJECTED`.
+- `ApprovalBanner`: `state`, `title` (action title from `ActionType` via exhaustive `match` with `assert_never`; no payload field is ever read).
 - `ChatView`: `messages`, `banners`; `from_snapshot(snapshot: ConversationSnapshot, approvals: Sequence[Approval]) -> ChatView`.
 
 ### 4.2 Citation persistence (touches 23 files; the main cross-cutting change)
@@ -94,20 +96,28 @@ Chosen A. Streamlit is a new dependency (only one added).
 - `orchestration/workflow.py` `_finish` gets the final reply plus `KnowledgeBundle | None`; a new pure `Citation.from_marker(marker, bundle)` classmethod (in `orchestration/models.py`) maps KB markers to `{kind: "KB", slug, anchor, title: heading, url: public_url}` and policy markers to `{kind: "POLICY", policy_id, title}` using `retrieved_passages` and `referenced_policies`. Markers not in the bundle cannot occur (output guard already rejects them); they are dropped, never guessed.
 - `TurnRecorder.complete_turn(text, evidence, citations)` forwards a tuple of `dict[str, str]` to the existing `StateStore.complete_turn(... citations ...)` argument (already in the signature; column exists). Replay path (`_replay`) is unchanged: citations come from the stored message.
 - Telemetry markers need no citation rows: chips come from `telemetry_evidence`.
-- Policy dialog body: `StateStore` gains one read, `get_policy_body(policy_id: str) -> str | None`, over the existing `policies` table (avoids importing `RetrievalService`, which pulls the embedding stack). Alternative of `RetrievalService.get_policy` rejected for that reason, except in `ui/session.py` where `RetrievalService` is already built; either is fine, pick the store read for testability without models (Q5).
+- Policy dialog body: `RetrievalService.get_policy(policy_id)` (decided), reached through the `UiRuntime` from `ui/session.py`, which already holds the service. No new store read or SQL.
 
 ### 4.3 Telemetry chips
 One chip per `StoredMessage.telemetry_evidence` item, deduped by `(tool_name, metric_key, raw_value)`; text is the verbatim `metric_key raw_value`, `is_anomaly` styles it as warning, tooltip shows tool name and simulation timestamp. Chip click does nothing (no deep link target exists).
 
 ### 4.4 Banners
-Derived each render from `StateStore.list_approvals(conversation_id)` (not `pending_only`, so resolution flips the banner instead of making it vanish). Mapping: `PENDING` -> "Awaiting review by our support team" with action title; `APPROVED`/`EDITED` -> "Approved"; `REJECTED` -> "Declined". Customer-facing strings only, no reviewer notes. A live-turn-only extra banner when `TurnResult.escalation_offered` is true. Non-blocking: input stays enabled while banners are pending (architecture doc, non-blocking HITL).
+Derived each render from `StateStore.list_approvals(conversation_id)` (not `pending_only`, so resolution flips the banner instead of making it vanish). Mapping per status and `settled_at`:
+- `PENDING` -> "Awaiting review by our support team" + action title only (from `ActionType`: CREDIT, MFA_RESET, CLOSE_TICKET, PAGE_ON_CALL). Never the amount or any payload field (decided; matches 32 `PendingApprovalView`, which also omits payload).
+- `APPROVED`/`EDITED`, `settled_at` null -> "Approved, being finalized" (32 executes then notifies; execution may fail and be swept, so no "done" claim).
+- `APPROVED`/`EDITED`, `settled_at` set -> compact "Approved" chip; the details are the AGENT notice already in the transcript.
+- `REJECTED` -> "Not approved" chip; the reason, if any, is the `customer_reason` inside the AGENT notice (32 guard-checked it). The UI never reads `reviewer_notes`, `edited_payload` or `customer_reason` itself.
+The post-approval message needs no UI special case: it is an `AGENT` message in a later turn, rendered like any reply (no citations, no chips). No ticket status or `pending_approval` shown (31/32 own it). No escalation-offered banner (decided). Non-blocking: input stays enabled while banners are pending (architecture doc, non-blocking HITL).
 
 ### 4.5 Fragment refresh
-Banner block is a `st.fragment(run_every=5)`; on a state change from PENDING it triggers a full rerun so any new support message (from 32's resume turn) appears in the transcript.
+Banner block is a `st.fragment(run_every=5)`; when an approval leaves `PENDING` or gains `settled_at`, it triggers a full rerun so the AGENT notice appears in the transcript.
+
+### 4.6 Trace panel (shared with 42)
+New module `ui/trace_panel.py`, the single trace component for both apps (explicit: 42 imports it, does not build its own). Contains the frozen view models `TracePanel`, `TraceTurn`, `TraceStep` (shapes as defined in 42 section on `TracePanel`: per turn customer text, reply, steps with agent role, status, latency, tokens, cost, tool calls, redacted input/output, open-turn flag, totals) with `TracePanel.from_replay(replay: TraceReplay) -> TracePanel`, and `render_trace_panel(panel: TracePanel) -> None` (Streamlit; `st.expander` per turn, `st.code`/`st.text` only, never `unsafe_allow_html`). Data: `StateStore.replay_trace(conversation_id)` (21), values shown as stored (already redacted at write). Customer page places it in a sidebar/bottom expander "Trace" refreshed after each turn; `ui/chat_view.py` has no trace logic. Dependency: 42 must drop its own `TracePanel` definition and import this module (flagged to 42).
 
 ## 5. Dependency / Coupling Notes
-- 31 (dispatcher, #9) / 32 (lifecycle, #10): UI only reads `approvals` rows and messages. Needs from 32: after resolution a customer-visible message is written to `messages` (any non-customer sender), and approval status transitions stay `PENDING -> APPROVED|EDITED|REJECTED`. If 32 adds statuses (e.g. `EXECUTED`, `FAILED`), the banner mapping's exhaustive `match` fails type-check and must be extended.
-- 42 (reviewer, #12): separate Streamlit script, separate process, shared Postgres; may reuse `ui/chat_view.py` models and `ui/session.py` runtime; no import of `customer_app.py`.
+- 31 (#9): sets ticket `pending_approval` after `create_approval`; UI ignores tickets. Fixed `customer_line`s (ticket created, failure) arrive inside reply text. 32 (#10): UI reads `approvals` (incl. `settled_at`) and messages only. Needs: statuses stay `PENDING/APPROVED/EDITED/REJECTED`; notice is an `AGENT` message. A new status makes the banner `match` fail type-check (`assert_never`) until extended.
+- 42 (#12): separate Streamlit script and process, shared Postgres; imports `ui/trace_panel.py` (owned here), may reuse `ui/session.py`; never imports `customer_app.py`.
 
 ## 6. Testing & Verification
 
@@ -115,7 +125,8 @@ Functional, `streamlit.testing.v1.AppTest`, real Postgres via existing `tests/co
 1. `tests/ui/test_customer_chat_flow.py`: pick a scenario, send message, reply appears; second turn sees history; reload with `conversation_id` query param restores transcript.
 2. Citations: stub resolution plan with `[kb:slug#anchor]` and `[policy:POL-SLA]` -> reply message shows a link badge to `public_url` and a policy badge; stored message row has the citations (`tests/orchestration/test_citation_persistence.py`, covers the 23 change and the replay path returning the same citations).
 3. Evidence chips: stub diagnostics evidence -> chip text equals verbatim metric and anomaly styling flag set.
-4. Banners: stub plan with a `CREDIT` action -> PENDING banner and input still enabled; resolve via `StateStore.resolve_approval` -> banner flips after fragment rerun; no reviewer notes in rendered output (assert on text).
+4. Banners: stub plan with a `CREDIT` action -> PENDING banner with title only (amount string absent from page) and input still enabled; `ApprovalService.resolve` -> FINALIZING; `settle` -> AGENT notice in transcript plus APPROVED chip; REJECTED with `customer_reason` -> notice shows it, page never contains `reviewer_notes`.
+4b. Trace panel: after a turn the panel lists that turn's agent steps with latency/tokens; same `render_trace_panel` imported by a minimal 42 AppTest stub renders identically.
 5. Switcher: changing scenario creates a new conversation with that account's tier; no tier/account claim fields exist.
 6. Errors: simulated `TurnLockTimeout` shows retry notice and the retry reuses the same `message_id` (one customer row).
 7. `tests/ui/test_chat_view.py`: single pure parametrized check of `ChatView.from_snapshot` (marker stripping, dedupe, state mapping); the only unit test, justified by the customer-facing redaction rule.
@@ -126,14 +137,17 @@ Functional, `streamlit.testing.v1.AppTest`, real Postgres via existing `tests/co
 3. Pyright `standard` and ruff clean; all functions typed incl. `-> None`; f-strings only.
 4. Confirm Dockerfile/compose/README run instruction (`streamlit run ui/customer_app.py`) and `streamlit` appear exactly once per file; architecture doc UI section updated; ADR (next free number) in `docs/overview/decisions.md`: Streamlit, citations persisted at write time, banners derived from approvals.
 
-## 8. Open Questions
-1. Streamlit OK vs Chainlit (task text welcomes both)?
-2. Persist `escalation_offered` (new column/state flag) so banner survives reload? v1: live turn only.
-3. Show live stage label (needs thread + 2nd conn)? v1: spinner only.
-4. 32: sender value and text of post-approval customer message? Need `MessageSender` extension (REVIEWER)?
-5. Policy dialog body: store read vs `RetrievalService.get_policy` vs local md?
-6. Trace panel for customer view per task text ("UI surfaces trace"): 42 only, or expandable debug on customer page?
-7. `AtiIntEnum` rule vs repo `StrEnum`; `novia_shared` absent. Keep `StrEnum`?
-8. Does orchestration team accept `_finish`/recorder change for citations (touches 23 files under CR)?
-9. Telemetry marker format: doc `[telemetry]` vs code `[telemetry:tool]`; fix doc?
-10. Credit amount shown in PENDING banner OK, or action title only?
+## 8. Decisions (final)
+1. Streamlit (shared with 42; brief: any stack).
+2. `escalation_offered` not persisted, no banner for it.
+3. Spinner only, no live stage label.
+4. Post-approval sender is `AGENT` (32); no `REVIEWER`; statuses per 32.
+5. Policy dialog body via `RetrievalService.get_policy`.
+6. Trace panel on the customer page; shared `ui/trace_panel.py` used by 42.
+7. `StrEnum`, not `AtiIntEnum`.
+8. Citations persisted in `_finish`/recorder (needed for answers.md and recorded conversations).
+9. Doc fixed to `[telemetry:<tool>]`.
+10. Pending banner shows action title only, never amount.
+
+## 9. Open Questions
+None.

@@ -4,8 +4,11 @@ from uuid import uuid4
 
 import psycopg
 import pytest
+from psycopg.rows import class_row
 
 from db.init.seed import apply_schema
+from guardrails.models import SessionGuardHistory
+from storage import Conversation, ConversationStage, StateSnapshot
 from tests.storage.conftest import NewConversation
 
 RUNTIME_TABLES = {"conversations", "messages", "traces", "tool_calls", "approvals"}
@@ -44,3 +47,17 @@ def test_unique_and_fk_constraints(
     )
     with pytest.raises(psycopg.errors.RestrictViolation):
         conn.execute("delete from conversations where id = %(c)s", {"c": conversation_id})
+
+
+def test_conversation_row_reads_into_contract(
+    conn: psycopg.Connection[Any], new_conversation: NewConversation
+) -> None:
+    conversation_id = new_conversation()
+    with conn.cursor(row_factory=class_row(Conversation)) as cursor:
+        conversation = cursor.execute(
+            "select * from conversations where id = %(id)s", {"id": conversation_id}
+        ).fetchone()
+    assert conversation is not None
+    assert conversation.stage is ConversationStage.IDLE
+    assert conversation.state == StateSnapshot()
+    assert conversation.guard_history == SessionGuardHistory()

@@ -1,10 +1,10 @@
 import subprocess
-from pathlib import Path
 from datetime import UTC, datetime
+from pathlib import Path
 from uuid import uuid4
 
-import pytest
 import psycopg
+import pytest
 
 from core.config import REPO_ROOT, settings
 from db.init.build import RUNTIME_TABLES, write_dump

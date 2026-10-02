@@ -49,4 +49,4 @@ def new_conversation(conn: psycopg.Connection[Any]) -> Iterator[NewConversation]
 
     yield create
     for sql in _CLEANUP_SQL:
-        conn.execute(sql, {"ids": created})  # type: ignore[arg-type]
+        conn.execute(sql, {"ids": created})

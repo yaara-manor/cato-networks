@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from exp_helpers import run, scripted_model
+from experiments.tests.exp_helpers import run, scripted_model
 from experiments.llm import agent_d
 from experiments.llm.agent_d import EXHAUSTED, AgentAnswer, SearchSession, VARIANTS, validate
 from experiments.llm.common import Query

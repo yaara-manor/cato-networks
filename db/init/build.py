@@ -11,6 +11,8 @@ from kbindex.store import load_index
 ROOT = REPO_ROOT / "data" / "kb_ingestion"
 POLICIES_DIR = REPO_ROOT / "data" / "policies"
 TICKETS_DIR = REPO_ROOT / "data" / "tickets"
+# Agent runtime tables live outside the dump: pg_restore --clean would drop them every boot.
+RUNTIME_TABLES = ("conversations", "messages", "traces", "tool_calls", "approvals")
 
 
 def newest_crawl_dir() -> Path:
@@ -45,14 +47,15 @@ def write_dump(destination: Path | str = Path("db/seed.dump")) -> Path:
         if tmp_dest.exists():
             tmp_dest.unlink()
 
+    exclude_flags = [f"--exclude-table={table}" for table in RUNTIME_TABLES]
     commands: list[tuple[list[str], dict[str, str] | None]] = [
-        (["pg_dump", "-Fc", "-h", host, "-p", port, "-U", user, "-d", dbname], env),
+        (["pg_dump", "-Fc", "-h", host, "-p", port, "-U", user, "-d", dbname, *exclude_flags], env),
         (
             [
                 "docker", "run", "--rm", "--network", "host",
                 "-e", f"PGPASSWORD={password}",
                 "pgvector/pgvector:0.8.6-pg18",
-                "pg_dump", "-h", host, "-p", port, "-U", user, "-Fc", dbname,
+                "pg_dump", "-h", host, "-p", port, "-U", user, "-Fc", *exclude_flags, dbname,
             ],
             None,
         ),

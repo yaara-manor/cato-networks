@@ -1,8 +1,10 @@
 from uuid import UUID, uuid4
 
+import pytest
+
 from agents import SupportAction, SupportActionKind
 from core.clock import SimulationClock
-from orchestration.state import MAX_CLARIFICATION_TURNS
+from orchestration.state import MAX_CLARIFICATION_TURNS, StateVersionError
 from storage import StateSnapshot, StateStore
 from tests.orchestration.conftest import PRIYA, Harness, Scripted
 
@@ -78,11 +80,10 @@ def test_page_denied_when_not_p1(harness: Harness, scripted: Scripted) -> None:
     assert _state(harness, conversation_id)["oncall_paged"] is False
 
 
-def test_unknown_state_version_is_treated_as_empty(harness: Harness, scripted: Scripted) -> None:
+def test_newer_state_version_is_refused(harness: Harness, scripted: Scripted) -> None:
     conversation_id = harness.new_conversation(PRIYA)
     with harness.connect() as fresh:
         stale = StateSnapshot(version=99, data={"clarification_turns": 7})
         StateStore(fresh).save_state(conversation_id, stale, SimulationClock().now())
-    scripted.scoping_question = "Which site?"
-    result = harness.workflow(scripted, None).run_turn(conversation_id, VAGUE, uuid4())
-    assert not result.escalation_offered
+    with pytest.raises(StateVersionError):
+        harness.workflow(scripted, None).run_turn(conversation_id, VAGUE, uuid4())

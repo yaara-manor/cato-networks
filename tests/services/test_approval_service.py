@@ -2,12 +2,10 @@ import importlib
 
 import pytest
 
-from actions import ActionDispatcher, ActionResult, DispatchContext
-from agents.models import SupportActionKind
 from guardrails import ActionType, ApprovalStatus
 from services.approval_models import ReviewerDecision, SettleOutcome
 from storage import Approval, ApprovalResolution, ApprovalStateError, MessageSender
-from tests.approval_desk import ADMIN, MFA, PRIYA, Desk
+from tests.approval_desk import ADMIN, MFA, PRIYA, Desk, FlakyDispatcher
 
 APPROVE = ApprovalResolution(status=ApprovalStatus.APPROVED)
 REJECT = ApprovalResolution(status=ApprovalStatus.REJECTED, reviewer_notes="INTERNAL-NOTE")
@@ -135,19 +133,8 @@ def test_unsafe_customer_reason_is_rejected_before_the_cas(desk: Desk) -> None:
     assert desk.store.get_approval(approval.id) == approval
 
 
-class _FlakyDispatcher(ActionDispatcher):
-    """Fails dispatch_approved until `works` is set."""
-
-    works = False
-
-    def dispatch_approved(self, approval: Approval, context: DispatchContext) -> ActionResult:
-        if not self.works:
-            return ActionResult.failed(SupportActionKind.CREDIT, "boom")
-        return super().dispatch_approved(approval, context)
-
-
 def test_failed_dispatch_sends_no_notice_and_the_sweep_retries(desk: Desk) -> None:
-    flaky = _FlakyDispatcher(desk.store, desk.tickets, desk.clock)
+    flaky = FlakyDispatcher(desk.store, desk.tickets, desk.clock)
     service = Desk.create(desk.conn, flaky).service
     approval = desk.propose()
     result = service.decide(ReviewerDecision(approval_id=approval.id, resolution=APPROVE))

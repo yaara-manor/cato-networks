@@ -10,15 +10,14 @@ from uuid import UUID, uuid4
 import psycopg
 import pytest
 
-from actions import ActionDispatcher, ActionResult, DispatchContext
-from agents import AgentRun, SupportAction, SupportActionKind, SupportDeps, TriageInput, TriageResult
+from agents import AgentRun, SupportAction, SupportDeps, TriageInput, TriageResult
 from agents.models import SupportActionKind as Kind
 from core.config import settings
 from guardrails import ApprovalStatus
 from orchestration.canned import AGENT_FAILURE_PAUSE
 from services.approval_models import ReviewerDecision, SettleOutcome
 from storage import Approval, ApprovalResolution, ApprovalStateError, ConversationStage, MessageSender, StateStore
-from tests.approval_desk import Desk
+from tests.approval_desk import Desk, FlakyDispatcher
 from tests.orchestration.conftest import PRIYA, Harness, Scripted
 
 TICKET = SupportAction(
@@ -47,17 +46,6 @@ class Gated(Scripted):
         self.entered.set()
         assert self.release.wait(10)
         return super().triage(data, deps)
-
-
-class _OnceFailingDispatcher(ActionDispatcher):
-    """Reports FAILED until `works`; replays real results afterwards."""
-
-    works = False
-
-    def dispatch_approved(self, approval: Approval, context: DispatchContext) -> ActionResult:
-        if not self.works:
-            return ActionResult.failed(SupportActionKind.CREDIT, "boom")
-        return super().dispatch_approved(approval, context)
 
 
 @pytest.fixture
@@ -197,7 +185,7 @@ def test_failed_dispatch_sends_no_notice_and_every_sweep_retries(
 ) -> None:
     cid, approval = _propose(harness, scripted, conn)
     probe = Desk.create(conn)
-    flaky = _OnceFailingDispatcher(probe.store, probe.tickets, probe.clock)
+    flaky = FlakyDispatcher(probe.store, probe.tickets, probe.clock)
     service = Desk.create(conn, flaky).service
     assert service.resolve(ReviewerDecision(approval_id=approval.id, resolution=APPROVE)).id == approval.id
     for _ in range(2):

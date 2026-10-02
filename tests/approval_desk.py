@@ -4,7 +4,8 @@ from uuid import UUID, uuid4
 
 import psycopg
 
-from actions import ActionDispatcher, DispatchContext
+from actions import ActionDispatcher, ActionResult, DispatchContext
+from agents.models import SupportActionKind
 from core.clock import SimulationClock
 from guardrails import ActionType
 from services import CustomerService, TicketService
@@ -26,6 +27,17 @@ _CLEANUP_SQL = (
 )
 
 
+class FlakyDispatcher(ActionDispatcher):
+    """Reports FAILED from `dispatch_approved` until `works` is set, then behaves for real."""
+
+    works = False
+
+    def dispatch_approved(self, approval: Approval, context: DispatchContext) -> ActionResult:
+        if not self.works:
+            return ActionResult.failed(SupportActionKind.CREDIT, "boom")
+        return super().dispatch_approved(approval, context)
+
+
 @dataclass
 class Desk:
     """A real ApprovalService over Postgres plus a way to file approvals the way the Workflow does."""
@@ -34,6 +46,7 @@ class Desk:
     clock: SimulationClock
     store: StateStore
     tickets: TicketService
+    customers: CustomerService
     dispatcher: ActionDispatcher
     service: ApprovalService
     conversations: list[UUID] = field(default_factory=list)
@@ -46,7 +59,7 @@ class Desk:
         dispatcher = dispatcher or ActionDispatcher(store, tickets, clock)
         row = conn.execute("select coalesce(max(substring(ticket_id from 5)::int), 0) from tickets").fetchone()
         service = ApprovalService(store, dispatcher, tickets, customers, clock)
-        return cls(conn, clock, store, tickets, dispatcher, service, tickets_before=row[0] if row else 0)
+        return cls(conn, clock, store, tickets, customers, dispatcher, service, tickets_before=row[0] if row else 0)
 
     def propose(
         self,
@@ -55,8 +68,7 @@ class Desk:
         payload: dict[str, str] | None = None,
     ) -> Approval:
         """Conversation + customer message + open ticket + PENDING approval, ticket marked pending_approval."""
-        customers = CustomerService(self.conn, self.clock)
-        identity = customers.authenticate_caller(email)
+        identity = self.customers.authenticate_caller(email)
         assert identity.account is not None
         conversation = self.store.create_conversation(
             identity.account.account_id, email, identity.account.tier, self.clock.now()

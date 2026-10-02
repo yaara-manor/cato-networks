@@ -4,7 +4,7 @@ from pathlib import Path
 
 from pydantic_ai.models.test import TestModel
 
-from exp_helpers import run
+from experiments.tests.exp_helpers import run
 from experiments.lab.retrieve import lexical_top
 from experiments.llm import judge, rewrite
 from experiments.llm.common import Query, read_json

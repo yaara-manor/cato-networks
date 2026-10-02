@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from pydantic_ai.exceptions import ModelHTTPError
 
-from exp_helpers import run
+from experiments.tests.exp_helpers import run
 from experiments.llm import agent_d, common, judge, rewrite
 
 

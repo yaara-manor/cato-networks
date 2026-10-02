@@ -97,7 +97,7 @@ class Workflow:
         )
         try:
             return self._answer(turn, snapshot, OrchestratorState.from_snapshot(snapshot.conversation.state))
-        except Exception as error:  # the one agent-failure boundary; the message is already saved
+        except Exception as error:  # noqa: BLE001  the one agent-failure boundary; the message is already saved
             return self._pause(recorder, error)
 
     def _pause(self, recorder: TurnRecorder, error: Exception) -> TurnResult:

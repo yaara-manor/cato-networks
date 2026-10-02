@@ -68,7 +68,6 @@ def _instructions(make_deps: MakeDeps, email: str) -> str:
     return "\n".join(seen)
 
 
-
 def test_identity_block_for_member_and_unknown(make_deps: MakeDeps) -> None:
     member = _instructions(make_deps, "priya.patel@bluebirdretail.com")
     assert "effective tier Standard" in member and "ACC-1002" in member

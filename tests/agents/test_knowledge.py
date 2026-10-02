@@ -11,7 +11,6 @@ from retrieval.service import RetrievalService
 from tests.agents.conftest import MakeDeps, scripted_model
 
 
-
 def _jsonl_question(path: str, key: str, value: str | None = None) -> str:
     with (REPO_ROOT / path).open() as f:
         rows = [json.loads(line) for line in f]

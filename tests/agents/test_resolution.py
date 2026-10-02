@@ -61,7 +61,9 @@ def _kb_marker(knowledge: KnowledgeBundle) -> str:
     return f"[kb:{passage.slug}#{passage.heading_anchor}]"
 
 
-def test_uncited_claim_then_cited_rewrite_retries_once(make_deps: MakeDeps, q10_result: KBSearchResult) -> None:
+def test_uncited_claim_then_cited_rewrite_retries_once(
+    make_deps: MakeDeps, q10_result: KBSearchResult
+) -> None:
     knowledge = _knowledge(q10_result)
     cited = f"{CLAIM} {_kb_marker(knowledge)}"
     model, attempts = _plans(CLAIM, cited)

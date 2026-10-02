@@ -50,8 +50,7 @@ def test_four_role_chain_feeds_each_output_to_the_next_input(make_deps: MakeDeps
     data = ResolutionInput(triage=triage, diagnostics=diagnostics, knowledge=knowledge, message=message)
     passage = knowledge.retrieved_passages[0]
     reply = (
-        f"{diagnostics.evidence_items[0].format_citation()} "
-        f"See [kb:{passage.slug}#{passage.heading_anchor}]."
+        f"{diagnostics.evidence_items[0].format_citation()} See [kb:{passage.slug}#{passage.heading_anchor}]."
     )
     plan = run_resolution(data, deps, scripted_model([], {"customer_message": reply})).output
     assert plan.customer_message == reply and not plan.escalate_to_human

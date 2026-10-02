@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 import pytest
 from pydantic import ValidationError
 
@@ -19,7 +21,7 @@ from retrieval.models import KBSearchResult, KBSearchStatus
 from retrieval.service import RetrievalService
 from services.models import CallerIdentity
 from tests.agents.conftest import MakeDeps
-from tools.models import TelemetryStatus
+from tools.models import TelemetryEvidence, TelemetryStatus
 
 _DECISION = TriageDecision(intent=Intent.KB_INQUIRY, priority="P3", symptom_summary="s")
 
@@ -134,3 +136,16 @@ def test_identity_scoping_question_wins(make_deps: MakeDeps) -> None:
     assert _triage(identity, scoping_question="Which site?").scoping_question == "Which country?"
     plain = _triage(make_deps().identity, scoping_question="Which site?")
     assert plain.scoping_question == "Which site?"
+
+
+def test_has_anomaly_reflects_evidence_items() -> None:
+    item = TelemetryEvidence(
+        tool_name="get_bgp_status",
+        metric_key="routes_count",
+        raw_value="1024/1024",
+        timestamp=datetime(2026, 8, 28, tzinfo=UTC),
+        is_anomaly=True,
+    )
+    clean = DiagnosticEvidence(findings=DiagnosticsFindings())
+    flagged = clean.model_copy(update={"evidence_items": (item,)})
+    assert (clean.has_anomaly, flagged.has_anomaly) == (False, True)

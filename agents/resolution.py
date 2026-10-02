@@ -21,7 +21,7 @@ def _retry(kinds: Iterable[str]) -> ModelRetry:
     return ModelRetry(f"customer_message violates guardrails ({', '.join(sorted(set(kinds)))}). Rewrite it.")
 
 
-def validate_citations(ctx: RunContext[SupportDeps], plan: ResolutionPlan) -> ResolutionPlan:
+def _validate_citations(ctx: RunContext[SupportDeps], plan: ResolutionPlan) -> ResolutionPlan:
     if ctx.deps.grounding is None:
         raise RuntimeError("SupportDeps.grounding must be set before running Resolution")
     report = check_citations(plan.customer_message, ctx.deps.grounding)
@@ -30,7 +30,7 @@ def validate_citations(ctx: RunContext[SupportDeps], plan: ResolutionPlan) -> Re
     return plan
 
 
-def validate_outgoing(ctx: RunContext[SupportDeps], plan: ResolutionPlan) -> ResolutionPlan:
+def _validate_outgoing(ctx: RunContext[SupportDeps], plan: ResolutionPlan) -> ResolutionPlan:
     violations = check_outgoing_message(
         plan.customer_message, ctx.deps.guard_history, ctx.deps.approved_actions
     )
@@ -41,8 +41,8 @@ def validate_outgoing(ctx: RunContext[SupportDeps], plan: ResolutionPlan) -> Res
 
 def build_resolution_agent(model: Model | None = None) -> Agent[SupportDeps, ResolutionPlan]:
     agent = build_agent(load_prompt("resolution"), ResolutionPlan, model)
-    agent.output_validator(validate_citations)
-    agent.output_validator(validate_outgoing)
+    agent.output_validator(_validate_citations)
+    agent.output_validator(_validate_outgoing)
     return agent
 
 

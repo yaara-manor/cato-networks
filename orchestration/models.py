@@ -17,6 +17,7 @@ from agents import (
     TriageResult,
 )
 from guardrails import ProposedAction
+from orchestration.degradation import DegradationNotice
 from storage import ConversationStage
 
 
@@ -38,3 +39,4 @@ class TurnResult(BaseModel):
     pending_actions: tuple[ProposedAction, ...] = ()
     executable_actions: tuple[SupportAction, ...] = ()
     escalation_offered: bool = False
+    degradations: tuple[DegradationNotice, ...] = ()

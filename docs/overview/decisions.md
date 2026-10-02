@@ -119,3 +119,12 @@
 - **Hard gates in code**: approvals come from `check_action`, not a model field. `ActionType.PAGE_ON_CALL` is ALLOWed only for P1 + code-derived `sev1_corroborated` + not already paged (`POL-SEV1`).
 - **Tracing**: PydanticAI messages, usage and latency (`AgentTrace.from_run`); no brainstruct. Persistence stays in `StateStore` (ADR-008).
 - **Cost if wrong**: a single `settings.llm_model` serves all roles; the fallback escalation reason is one fixed string (cannot distinguish validator exhaustion from transport-level model failure).
+
+---
+
+## ADR-010: Hand-Rolled Sync Orchestration Workflow, Stateless Per-Turn Degradation
+
+- **Context / Problem**: Phase 2.3 must route one customer turn through guards and four agents, degrade explicitly when telemetry or KB is down, and survive an agent exception.
+- **Chosen Approach**: A plain synchronous `orchestration.Workflow.run_turn` over `StateStore` instead of `pydantic_graph`. Degradation is a pure function of statuses on `DiagnosticEvidence` / `KnowledgeBundle`, recomputed every turn; only `OrchestratorState.notice_shown` (in the versioned state snapshot) dedupes the customer notice, cleared when the source is healthy. Refusal is enforced by `run_resolution` validators, not a second workflow path. One `except Exception` boundary returns a canned pause message and an `ERROR` trace (class name only). No Braintrust.
+- **Cost if wrong**: no graph visualisation or resumable node state; a crash mid-turn is recovered by replaying the idempotent `message_id`.
+

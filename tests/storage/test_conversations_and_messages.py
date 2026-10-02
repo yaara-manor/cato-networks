@@ -171,3 +171,13 @@ def test_default_state_and_unknown_conversation(store: StateStore, new_conversat
     assert loaded.state == StateSnapshot(version=1, data={})
     with pytest.raises(LookupError):
         store.set_stage(uuid4(), ConversationStage.IDLE, NOW)
+
+
+def test_message_id_of_another_conversation_is_rejected(
+    store: StateStore, new_conversation: NewConversation
+) -> None:
+    first, second = new_conversation(), new_conversation()
+    message_id = uuid4()
+    store.append_customer_message(first, message_id, "hi", NOW)
+    with pytest.raises(ValueError, match="another conversation"):
+        store.append_customer_message(second, message_id, "hi", NOW)

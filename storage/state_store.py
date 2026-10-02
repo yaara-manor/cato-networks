@@ -56,7 +56,8 @@ def _open_turn(messages: Sequence[StoredMessage]) -> int | None:
 class StateStore:
     """Postgres persistence for conversations, messages, traces, tool calls, approvals.
 
-    Every write locks the conversation row, so writers of one conversation serialize.
+    Counter-, message-, trace- and approval-writing methods lock the conversation row, so those
+    writers serialize; single-statement column updates rely on the caller's turn lock.
     """
 
     def __init__(self, connection: psycopg.Connection[Any]) -> None:
@@ -209,6 +210,8 @@ class StateStore:
         with self._conn.transaction():
             conversation = self._lock_conversation(conversation_id)
             if (existing := self._get_message(message_id)) is not None:
+                if existing.conversation_id != conversation_id:
+                    raise ValueError(f"message {message_id} belongs to another conversation")
                 return existing
             turn = conversation.last_turn + 1
             self._update_conversation(

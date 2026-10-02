@@ -160,6 +160,13 @@ class ProposedAction(_GuardModel):
     payload: dict[str, str]
 
 
+class ApprovalStatus(StrEnum):
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    EDITED = "EDITED"
+    REJECTED = "REJECTED"
+
+
 class ApprovedGrant(_GuardModel):
     """A settled human approval; output rules license only what its (effective) payload says."""
 

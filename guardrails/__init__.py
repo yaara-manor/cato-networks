@@ -2,6 +2,7 @@ from guardrails.citations import KB_REF, CitationMarker, MarkerKind, extract_mar
 from guardrails.injection import detect, quarantine
 from guardrails.models import (
     ActionType,
+    ApprovalStatus,
     ApprovedGrant,
     CitationReport,
     CitationViolation,
@@ -32,6 +33,7 @@ from guardrails.validator import (
 
 __all__ = [
     "ActionType",
+    "ApprovalStatus",
     "ApprovedGrant",
     "KB_REF",
     "CitationMarker",

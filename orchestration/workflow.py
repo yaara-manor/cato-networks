@@ -15,6 +15,7 @@ from agents import (
     TriageInput,
     TriageResult,
     TurnSender,
+    UnsettledApprovalView,
 )
 from core.clock import SimulationClock
 from guardrails import (
@@ -32,6 +33,7 @@ from orchestration.actions_step import (
     stamp_ticket_id,
     was_paged,
 )
+from orchestration.approvals import ApprovalContext
 from orchestration.canned import (
     AGENT_FAILURE_PAUSE,
     CLARIFICATION_ESCALATION,
@@ -83,6 +85,7 @@ class _Turn:
     message: str  # redacted
     history: tuple[ConversationTurn, ...]
     deps: SupportDeps
+    unsettled: tuple[UnsettledApprovalView, ...]
 
 
 def _history(snapshot: ConversationSnapshot, turn: int) -> tuple[ConversationTurn, ...]:
@@ -135,13 +138,15 @@ class Workflow:
             refusal = TurnResult(reply=INJECTION_REFUSAL, path=recorder.completed_path)
             recorder.complete_turn(refusal)
             return refusal
+        approvals = ApprovalContext.from_approvals(self.store.list_approvals(conversation_id))
         turn = _Turn(
             recorder,
             conversation_id,
             message_id,
             redacted.text,
             _history(snapshot, stored.turn),
-            replace(self.base_deps, guard_history=history),
+            replace(self.base_deps, guard_history=history, approved_grants=approvals.grants),
+            approvals.unsettled,
         )
         state = OrchestratorState.from_snapshot(snapshot.conversation.state)  # StateVersionError propagates
         try:
@@ -300,6 +305,7 @@ class Workflow:
             history=turn.history,
             message=turn.message,
             known_ticket_id=state.active_ticket_id,
+            unsettled_approvals=turn.unsettled,
         )
         run = self.ports.resolution(data, turn.deps)
         turn.recorder.record_run(AgentRole.RESOLUTION, data, run)

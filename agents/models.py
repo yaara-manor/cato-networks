@@ -10,7 +10,7 @@ from pydantic_ai.usage import RunUsage
 
 from agents.messages import tool_call_dicts
 from core.models import TicketPriority
-from guardrails import ActionType, GroundingContext, ProposedAction
+from guardrails import ActionType, ApprovalStatus, GroundingContext, ProposedAction
 from retrieval.models import KBSearchResult, KBSearchStatus, PolicyDocument, RetrievedPassage
 from services.models import CallerIdentity, RepeatContactResult, SLADeadlines
 from tools.models import (
@@ -323,6 +323,14 @@ class ResolutionPlan(_AgentModel):
     escalation_reason: str | None = None
 
 
+class UnsettledApprovalView(_AgentModel):
+    """A reviewer request whose customer notice has not gone out; no payload, so no amount can leak."""
+
+    action_type: ActionType
+    status: ApprovalStatus
+    requested_at: AwareDatetime
+
+
 class ResolutionInput(_AgentModel):
     triage: TriageResult
     diagnostics: DiagnosticEvidence | None = None
@@ -330,6 +338,7 @@ class ResolutionInput(_AgentModel):
     history: tuple[ConversationTurn, ...] = ()
     message: str
     known_ticket_id: str | None = None  # ticket already opened in this conversation
+    unsettled_approvals: tuple[UnsettledApprovalView, ...] = ()
 
     def grounding_context(self) -> GroundingContext:
         """Built from successful tool results only; absent stages contribute nothing."""

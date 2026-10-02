@@ -8,7 +8,7 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, model_validator
 
 from agents.models import AgentRole, AgentTrace, ToolCall, TraceStatus
 from core.models import AccountTier
-from guardrails.models import ActionType, SessionGuardHistory
+from guardrails.models import ActionType, ApprovalStatus, SessionGuardHistory
 from tools.models import TelemetryEvidence
 
 
@@ -32,13 +32,6 @@ class MessageSender(StrEnum):
     CUSTOMER = "CUSTOMER"
     AGENT = "AGENT"
     SYSTEM = "SYSTEM"
-
-
-class ApprovalStatus(StrEnum):
-    PENDING = "PENDING"
-    APPROVED = "APPROVED"
-    EDITED = "EDITED"
-    REJECTED = "REJECTED"
 
 
 class ApprovalStateError(Exception):

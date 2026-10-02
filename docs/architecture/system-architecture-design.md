@@ -16,7 +16,7 @@ The system:
 3. Grounds every technical statement in Cato's public Knowledge Base using hybrid lexical and vector retrieval with cross-encoder reranking.
 4. Executes support actions (ticket updates, Sev-1 escalations, service credits, MFA resets) while pausing high-impact operations for human reviewer approval in a non-blocking workflow.
 5. Defends against prompt injections, social engineering, and unauthorized authority claims, while redacting sensitive credentials before persistence.
-6. Employs dual-layer observability: local Postgres traces for fully offline self-contained operation, and Braintrust for cloud waterfall tracing and evaluation scoring.
+6. Employs offline, self-contained observability: Postgres trace tables plus PydanticAI message history (no external tracing service).
 
 ---
 
@@ -79,7 +79,6 @@ flowchart TD
     subgraph Storage_Layer["Storage, External API Mocks & Observability"]
         PG_DB[("PostgreSQL 16 + pgvector\n(KB Passages, Policies, State, Traces,\nSimulated CRM/Tickets Store)")]
         TelemetryFiles[("data/telemetry/\n(Simulated Read-Only CMA API Files)")]
-        Braintrust["Braintrust Cloud Tracing & Evals"]
     end
 
     CustomerChat --> Redactor
@@ -101,7 +100,6 @@ flowchart TD
     RAGService --> PG_DB
     ApprovalService --> PG_DB
     StateMachine --> PG_DB
-    StateMachine -. "Optional Stream" .-> Braintrust
 
     ResolAgent --> CitationVerifier
     CitationVerifier --> CustomerChat
@@ -383,23 +381,17 @@ The retrieval pipeline (`RetrievalService` in `retrieval/service.py`) implements
 
 ---
 
-## 8. Dual-Layer Observability & Tracing Architecture
+## 8. Observability & Tracing Architecture
+
+Tracing = Postgres trace tables + PydanticAI message history. No external tracing service.
 
 ```mermaid
 flowchart LR
-    PydanticAIRunner["PydanticAI Agent Execution"] --> TracerMiddleware["Tracing Middleware"]
-
-    TracerMiddleware --> LocalStore["1. Local Postgres Traces Table\n(Offline, Self-Contained, Reviewer UI)"]
-    TracerMiddleware --> BraintrustCheck{"BRAINTRUST_API_KEY\nConfigured?"}
-
-    BraintrustCheck -- Yes --> BraintrustSDK["2. Braintrust Cloud SDK\n(Waterfall Traces, Eval Scoring)"]
-    BraintrustCheck -- No --> SilentlyPass["Skip Cloud Tracing"]
+    PydanticAIRunner["PydanticAI Agent Execution"] --> Store["StateStore"]
+    Store --> Traces["Postgres traces / tool_calls\n(model_messages jsonb = ModelMessagesTypeAdapter dump)"]
 ```
 
-1. **Local Postgres Trace Layer (Offline Guarantee)**:
-   Every agent invocation records its role, prompt tokens, completion tokens, latency, tool calls, and RRF/rerank scores directly to the Postgres `traces` table. This satisfies the requirement that a reviewer running `docker compose` without external API credentials can inspect traces in the UI.
-2. **Braintrust Cloud Layer (Visual Live Demo & Evals)**:
-   When `BRAINTRUST_API_KEY` is present in `.env`, the system automatically logs spans to Braintrust via `@traced` and `braintrust.auto_instrument()`. This provides interactive waterfall visualizations for the interview presentation and powers the evaluation scorers.
+Every agent invocation records its role, prompt/completion tokens, latency, cost, tool calls and the serialized PydanticAI message history to Postgres `traces` / `tool_calls`. A reviewer running `docker compose` without external credentials can inspect traces in the UI.
 
 ---
 
@@ -556,7 +548,6 @@ The codebase is organized into clean, single-responsibility packages separating 
     ├── run_scenarios.py               # 12-scenario multi-turn replay harness
     ├── retrieval_metrics.py           # Recall@k and MRR computation
     ├── scenario_scorer.py             # Scores groundedness, citations, tool calls, guardrails
-    ├── braintrust_tracer.py           # Braintrust waterfall spans & eval logging
     ├── test_prompt.py                 # CLI playground to test & iterate on isolated prompts
     └── recorded_traces/               # Committed traces for the 3 representative conversations
 ```

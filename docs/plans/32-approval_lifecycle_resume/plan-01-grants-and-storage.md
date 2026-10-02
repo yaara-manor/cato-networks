@@ -77,6 +77,8 @@
 - Modify: `agents/models.py` (frozen `UnsettledApprovalView(action_type, status: ApprovalStatus, requested_at)`; `ResolutionInput.unsettled_approvals: tuple[UnsettledApprovalView, ...] = ()`), `orchestration/workflow.py` (`_run_locked` reads `store.list_approvals(conversation_id)` once, builds the context, sets `SupportDeps.approved_grants`; `_resolve` passes `unsettled`), `prompts/resolution.md`, `agents/__init__.py`, `orchestration/__init__.py` (re-export)
 - Test: `tests/orchestration/test_approval_context.py` (new)
 
+**Impl note:** `ApprovalStatus` moved from `storage.models` to `guardrails.models` (re-exported by both) because `agents.models` cannot import `storage` (cycle: storage imports agents.models). `UnsettledApprovalView` and `ApprovedGrant` use it.
+
 **Interfaces:**
 - Consumes: Task 1 (`Approval.settled_at`, `effective_payload`), Task 2 (`ApprovedGrant`, `approved_grants`), 21 `list_approvals`.
 - Produces: `ApprovalContext.from_approvals`: grants = APPROVED/EDITED rows with `settled_at` set (effective payload); unsettled = every row with `settled_at` null (any status) as views, payload deliberately absent.

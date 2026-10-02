@@ -2,7 +2,7 @@
 
 **Issue**: `#8` ([Phase 2] 2.3: Orchestration Graph & Partial Failure Handling)
 **Date**: 2026-10-01
-**Status**: Ready for Review
+**Status**: Implemented (see plan-01, plan-02)
 **Target Files**: `orchestration/__init__.py`, `orchestration/models.py`, `orchestration/workflow.py`, `tests/orchestration/*`
 
 ---

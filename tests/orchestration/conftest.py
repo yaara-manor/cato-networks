@@ -23,6 +23,7 @@ from agents import (
     TriageDecision,
     TriageInput,
     TriageResult,
+    UnavailableTool,
 )
 from core.clock import SimulationClock
 from core.config import settings
@@ -64,11 +65,16 @@ class Scripted:
     sev1: bool = False
     actions: tuple[SupportAction, ...] = ()
     escalate: bool = False
+    unavailable: tuple[UnavailableTool, ...] = ()
+    kb_status: KBSearchStatus = KBSearchStatus.CONFIDENT
+    fail_in: str | None = None  # role whose callable raises
     calls: list[str] = field(default_factory=list)
     inputs: dict[str, list[Any]] = field(default_factory=dict)
 
     def _seen(self, role: str, data: Any) -> None:
         self.calls.append(role)
+        if self.fail_in == role:
+            raise RuntimeError(f"{role} boom")
         self.inputs.setdefault(role, []).append(data)
 
     def triage(self, data: TriageInput, deps: SupportDeps) -> AgentRun[TriageResult]:
@@ -79,14 +85,16 @@ class Scripted:
 
     def diagnostics(self, data: DiagnosticsInput, deps: SupportDeps) -> AgentRun[DiagnosticEvidence]:
         self._seen("diagnostics", data)
-        evidence = DiagnosticEvidence(findings=DiagnosticsFindings(), sev1_corroborated=self.sev1)
+        evidence = DiagnosticEvidence(
+            findings=DiagnosticsFindings(), unavailable_tools=self.unavailable, sev1_corroborated=self.sev1
+        )
         return AgentRun(output=evidence, trace=_trace("diagnostics"))
 
     def knowledge(self, data: KnowledgeInput, deps: SupportDeps) -> AgentRun[KnowledgeBundle]:
         self._seen("knowledge", data)
         bundle = KnowledgeBundle(
             findings=KnowledgeFindings(needs_more_telemetry=self.needs_more_telemetry),
-            confidence_status=KBSearchStatus.CONFIDENT,
+            confidence_status=self.kb_status,
             needs_more_telemetry=self.needs_more_telemetry,
         )
         return AgentRun(output=bundle, trace=_trace("knowledge"))

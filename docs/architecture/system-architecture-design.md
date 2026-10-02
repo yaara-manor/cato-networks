@@ -186,29 +186,35 @@ Every agent receives a typed context container via PydanticAI dependency injecti
 ```mermaid
 stateDiagram-v2
     [*] --> IngestionGuard: Customer Message Received
+    IngestionGuard --> Idle: Prompt Injection (canned refusal)
     IngestionGuard --> Triage: Clean (Credentials Redacted)
-    IngestionGuard --> Blocked: Prompt Injection Detected
 
-    Triage --> ScopeCheck: Evaluate Intent
-    ScopeCheck --> Resolution: Vague (Ask Scoping Question)
-    ScopeCheck --> Diagnostics: Telemetry Symptoms Present
-    ScopeCheck --> KnowledgeRetrieval: Direct Knowledge Question
+    Triage --> Resolution: Scoping Question / Adversarial
+    Triage --> Diagnostics: Telemetry Symptoms Present
+    Triage --> KnowledgeRetrieval: Direct Knowledge Question
 
     Diagnostics --> KnowledgeRetrieval: Ground Telemetry Findings
+    KnowledgeRetrieval --> Diagnostics: needs_more_telemetry (back-edge, cap 2)
     KnowledgeRetrieval --> Resolution: Synthesize Plan
 
-    Resolution --> ActionEvaluation: Propose Actions
-    ActionEvaluation --> ApprovalPending: High-Impact Action (Credit/MFA/Override)
-    ActionEvaluation --> OutputGuard: Standard Action (Ticket/Page)
-
-    ApprovalPending --> OutputGuard: Persist Approval in DB (Non-Blocking)
-    OutputGuard --> [*]: Return Grounded Response to Customer
+    Resolution --> ActionEvaluation: Propose Actions (validators already ran)
+    ActionEvaluation --> Idle: Gate verdicts applied, reply saved
 ```
 
 ### Partial Failure Recovery Matrix
 
-| Failure Event | System Behavior | Customer Experience |
-|---|---|---|
+Degradation is derived fresh each turn from `DiagnosticEvidence.unavailable_tools` and `KnowledgeBundle.confidence_status`; only the customer notice is deduplicated (`OrchestratorState.notice_shown`).
+
+| Condition (this turn) | Notice | Escalation offered | Reply constraint |
+|---|---|---|---|
+| Telemetry tool `UNAVAILABLE` | telemetry notice | no | no values for the unavailable tools |
+| `KBSearchStatus.UNAVAILABLE` | retrieval notice | yes | refusal grounding: no KB markers or technical claims |
+| both | telemetry then retrieval | yes | both |
+| `LOW_CONFIDENCE_REFUSAL` | none | per `ResolutionPlan.escalate_to_human` | refusal grounding |
+| `NOT_FOUND` / `INVALID_ARGUMENT` | none | no | agent reports "no data" |
+| Agent raises | none | no | fixed pause message (SYSTEM row), `ERROR` trace, state intact |
+
+---|---|---|
 | **Telemetry source unreachable / file missing** | `Diagnostics Agent` catches error, logs warning, returns partial evidence. | Agent states: *"CMA telemetry for site [X] is temporarily unavailable. Based on your description..."* Guides manual verification without guessing. |
 | **Postgres RAG service down** | `Knowledge Agent` catches DB connection error, `search_kb` returns `status=KBSearchStatus.UNAVAILABLE`. | Agent states: *"Our documentation service is currently unavailable. To ensure you receive accurate technical guidance, I am escalating this to our engineering team."* Refuses to answer from ungrounded LLM memory. |
 | **Rerank score < `RERANK_MIN_SCORE`** | Top score below threshold indicates no KB coverage (e.g. roadmap query). | Agent states: *"Cato's knowledge base does not currently document support for [feature]. Let me connect you with product support."* Hallucination prevented. |

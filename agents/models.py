@@ -329,6 +329,7 @@ class ResolutionInput(_AgentModel):
     knowledge: KnowledgeBundle | None = None
     history: tuple[ConversationTurn, ...] = ()
     message: str
+    known_ticket_id: str | None = None  # ticket already opened in this conversation
 
     def grounding_context(self) -> GroundingContext:
         """Built from successful tool results only; absent stages contribute nothing."""

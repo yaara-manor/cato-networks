@@ -29,6 +29,6 @@ def test_next_stage_after_triage(
     assert next_stage_after_triage(TriageResult(decision=decision, identity=identity)) is expected
 
 
-def test_compose_reply_orders_notices_message_denials() -> None:
-    assert compose_reply(("notice",), "answer", ("denied",)) == "notice\n\nanswer\n\ndenied"
-    assert compose_reply((), "answer", ()) == "answer"
+def test_compose_reply_orders_notices_message_confirmations_denials() -> None:
+    assert compose_reply(("notice",), "answer", ("done",), ("denied",)) == "notice\n\nanswer\n\ndone\n\ndenied"
+    assert compose_reply((), "answer", (), ()) == "answer"

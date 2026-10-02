@@ -251,6 +251,7 @@ def seed_degraded(store: StateStore, new_conversation: Callable[[], UUID], make_
 
 
 APP = str(Path(__file__).parents[2] / "ui" / "customer_app.py")
+REVIEWER_APP = str(Path(__file__).parents[2] / "ui" / "reviewer_app.py")
 MakeApp = Callable[[], AppTest]
 
 
@@ -275,3 +276,9 @@ def desk(conn: psycopg.Connection[Any]) -> Iterator[Desk]:
     built = Desk.create(conn)
     yield built
     built.cleanup()
+
+
+@pytest.fixture
+def reviewer(desk: Desk) -> AppTest:
+    """The real reviewer script on real Postgres; approvals are filed through `desk`, no agent runs."""
+    return AppTest.from_file(REVIEWER_APP, default_timeout=30)

@@ -1,7 +1,61 @@
-from agents.models import AgentTrace, ToolCall, TraceStatus
+from agents.base import SupportDeps
+from agents.diagnostics import build_diagnostics_agent, run_diagnostics
+from agents.knowledge import build_knowledge_agent, run_knowledge
+from agents.models import (
+    AgentRun,
+    AgentTrace,
+    ConversationTurn,
+    DiagnosticEvidence,
+    DiagnosticsFindings,
+    DiagnosticsInput,
+    Intent,
+    KnowledgeBundle,
+    KnowledgeFindings,
+    KnowledgeInput,
+    ResolutionInput,
+    ResolutionPlan,
+    SupportAction,
+    SupportActionKind,
+    ToolCall,
+    TraceStatus,
+    TriageDecision,
+    TriageInput,
+    TriageResult,
+    TurnSender,
+    UnavailableTool,
+)
+from agents.resolution import build_resolution_agent, run_resolution
+from agents.triage import build_triage_agent, run_triage
 
 __all__ = [
+    "AgentRun",
     "AgentTrace",
+    "ConversationTurn",
+    "DiagnosticEvidence",
+    "DiagnosticsFindings",
+    "DiagnosticsInput",
+    "Intent",
+    "KnowledgeBundle",
+    "KnowledgeFindings",
+    "KnowledgeInput",
+    "ResolutionInput",
+    "ResolutionPlan",
+    "SupportAction",
+    "SupportActionKind",
+    "SupportDeps",
     "ToolCall",
     "TraceStatus",
+    "TriageDecision",
+    "TriageInput",
+    "TriageResult",
+    "TurnSender",
+    "UnavailableTool",
+    "build_diagnostics_agent",
+    "build_knowledge_agent",
+    "build_resolution_agent",
+    "build_triage_agent",
+    "run_diagnostics",
+    "run_knowledge",
+    "run_resolution",
+    "run_triage",
 ]

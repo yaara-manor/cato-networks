@@ -14,6 +14,8 @@ from storage.models import (
     ToolCallRecord,
     TraceRecord,
 )
+from storage.replay import ReplayStep, ReplayTurn, TraceReplay
+from storage.state_store import StateStore
 
 __all__ = [
     "AgentRole",
@@ -25,10 +27,14 @@ __all__ = [
     "ConversationSnapshot",
     "ConversationStage",
     "MessageSender",
+    "ReplayStep",
+    "ReplayTurn",
     "StateSnapshot",
+    "StateStore",
     "StoredMessage",
     "ToolCallRecord",
     "TraceRecord",
+    "TraceReplay",
     "strip_nul",
     "to_jsonb",
 ]

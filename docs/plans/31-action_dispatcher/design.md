@@ -59,7 +59,7 @@ flowchart LR
 4. **Idempotency by DB unique key** (§3). Replays (client retry, crash resume) return the stored result and run no handler.
 5. **Dispatch before `save_state`, before `complete_turn`.** Order in `Workflow._finish`: dispatch, `save_state`, `complete_turn`. 23's current comment says state is saved first so an on-call page is never lost; with a real executor that order is wrong (state says paged, page never sent, retry gate denies). New order plus conversation-scoped page key makes a crash retry send the page exactly once.
 6. **Failure never claims success.** A handler error or infra error becomes `ActionResult(status=FAILED)`; the workflow appends a fixed courteous line and sets `escalation_offered`. The agent's own text may have promised the action; the deterministic line corrects it (same pattern as degradation notices).
-7. **Sync, takes the existing `StateStore` + `TicketService`**, injected on `Workflow` as a new `dispatcher: ActionDispatcher` field. No clock reads inside handlers beyond `SimulationClock.now()` passed to writes (ADR-001).
+7. **Sync; constructor `ActionDispatcher(store, tickets, clock)`**, no `Workflow` dependency, so `ApprovalService` (32) builds its own instance from the same three objects. Injected on `Workflow` as a new `dispatcher: ActionDispatcher` field. `replay_trace` is not extended (21's planned simulated-action replay is YAGNI): 41/42 read `list_simulated_actions` directly. No clock reads inside handlers beyond `SimulationClock.now()` passed to writes (ADR-001).
 
 ### 2.3 Audit sink: Postgres table, not files
 Files in `data/simulated_actions/` give no atomic idempotency, race under two workers, vanish with the container, and cannot be joined to `conversations` for trace replay. A table gives a unique key, FK to `conversations`, and `replay_trace` adjacency. Reviewer visibility comes from SQL/UI later. Cost: one migration. Decided: the table itself is the exported record, no file export.
@@ -70,7 +70,7 @@ Files in `data/simulated_actions/` give no atomic idempotency, race under two wo
 
 Migration `db/migrations/20261002_0900_simulated-actions.sql`, idempotent (`CREATE TABLE IF NOT EXISTS`), re-applied after every `pg_restore` like the 21 migration.
 
-- Columns: `id uuid PK`, `conversation_id uuid FK RESTRICT`, `idempotency_key text UNIQUE`, `kind text CHECK (...)`, `approval_id uuid NULL FK RESTRICT`, `payload jsonb` (validated payload as dumped), `status text CHECK (CLAIMED, DONE, FAILED, INVALID, REFUSED)`, `result jsonb NULL` (e.g. ticket id, event reference), `claimed_at`, `completed_at NULL`.
+- Columns: `id uuid PK`, `conversation_id uuid FK RESTRICT`, `message_id uuid NULL` (turn that claimed it; NULL for approval-path rows; no FK, same as traces), `idempotency_key text UNIQUE`, `kind text CHECK (...)`, `approval_id uuid NULL FK RESTRICT`, `payload jsonb` (validated payload as dumped), `status text CHECK (CLAIMED, DONE, FAILED, INVALID, REFUSED)`, `result jsonb NULL` (e.g. ticket id, event reference), `claimed_at`, `completed_at NULL`.
 - Index `(conversation_id, claimed_at)`.
 - Added to `RUNTIME_TABLES` in `db/init/build.py` (excluded from `seed.dump`, 21 §2.8). A schema test guards CHECK values against the `StrEnum`s (same drift guard as 21).
 - Append-mostly: a row is inserted once (`CLAIMED`) and finalized once (`CLAIMED -> terminal`); no deletes.
@@ -94,7 +94,7 @@ All frozen Pydantic, `StrEnum`s, full typing.
 
 - **`ActionStatus(StrEnum)`**: `DONE`, `FAILED`, `INVALID`, `REFUSED`. Persisted statuses are these plus `CLAIMED`. Replay is `ActionResult.replayed: bool`, not a status.
 - **`DispatchContext`**: `identity: CallerIdentity`, `priority: TicketPriority`, `sev1_corroborated: bool`, `already_paged: bool`, `conversation_id: UUID`, `message_id: UUID`. Everything the defensive gate re-check and handlers need, built by the workflow from values it already holds.
-- **`ActionResult`**: `kind: SupportActionKind`, `status: ActionStatus`, `replayed: bool`, `reference: str | None` (ticket id, page/credit/MFA event id), `detail: str` (fixed text, no secrets, no raw payload), `customer_line: str | None` (deterministic confirmation or failure sentence). Classmethods `done(...)`, `failed(...)`, `invalid(...)`, `refused(...)`.
+- **`ActionResult`**: `kind: SupportActionKind`, `status: ActionStatus`, `replayed: bool`, `reference: str | None` (ticket id, page/credit/MFA event id), `detail: str` (fixed text, no secrets, no raw payload), `customer_line: str | None` (deterministic confirmation or failure sentence). Classmethods `done(...)`, `failed(...)`, `invalid(...)`, `refused(...)`, and `from_stored(SimulatedAction) -> ActionResult` (used by the answered-turn replay path; `customer_line=None` because the stored reply text already holds the confirmations).
 - **Payload models** (all `from_payload` classmethods validate required keys, reject unknown keys):
   - `CreateTicketPayload`: `subject`, `body`, `product_area`, `priority` (default from triage priority), `site_id` optional.
   - `UpdateTicketPayload`: `ticket_id` plus at least one of `status`, `site_id`, `priority`; values checked against `TicketStatus`/`TicketPriority` literals from `core.models`.
@@ -113,7 +113,7 @@ All frozen Pydantic, `StrEnum`s, full typing.
 ### 5.1 `_run(request)` (the 80% of correctness)
 1. Defensive gate re-check (§5.2). `REFUSED` result on failure; row written `REFUSED`, no handler.
 2. Validate payload with the kind's `from_payload`; `INVALID` on error (row `INVALID`).
-3. `store.claim_action(...)`. If not new: return stored result, `replayed=True`; `CLAIMED` without result -> failed/"outcome unknown".
+3. `store.claim_action(...)`. If not new: same `message_id` (crash retry) -> stored result with `replayed=True`; a different `message_id` (only possible for the conversation-scoped page key, e.g. after a corrupt-state rebuild) -> `REFUSED` "already paged" with no customer line, so a later turn never re-announces an old page. `CLAIMED` without result -> failed/"outcome unknown".
 4. Run handler inside `try`; one `except Exception` around the handler only (logs class name, never message; same rule as 23 §5.4) -> `FAILED`.
 5. `store.finish_action(...)`, emit one `logging` line (`action kind status reference conversation_id`), return `ActionResult`.
 
@@ -126,7 +126,7 @@ Rejects `PENDING`/`REJECTED` (returns `REFUSED`; reject path is #10's customer m
 ### 5.4 Handlers (`actions/simulated.py`)
 | Kind | Effect | Result reference |
 |---|---|---|
-| `CREATE_TICKET` | `TicketService.create_ticket` from identity (customer id, company, tier, email) + payload; priority from payload or triage | new `TCK-...` |
+| `CREATE_TICKET` | `TicketService.create_ticket`: customer id, company, tier from `identity.account`; `customer_name` and `requester_email` both `identity.caller_email` (identity has no name field); caller_email `None` -> `INVALID`; priority from payload or triage | new `TCK-...` |
 | `UPDATE_TICKET` | `TicketService.update_ticket` (status/site/priority); unknown id -> `FAILED` (service raises `ValueError`) | ticket id |
 | `CLOSE_TICKET` | `TicketService.update_ticket(status="closed")` | ticket id |
 | `PAGE_ON_CALL` | audit event `oncall_paged`: incident reference `INC-` + short id, summary, sites, priority, acknowledgement SLA (15 min, POL-SEV1) in `result` | incident ref |
@@ -137,7 +137,7 @@ Handlers are plain functions over `TicketService` and the claimed row; the page/
 
 ### 5.4a Ticket binding and pending marker (decided)
 **Binding.** Every `CREDIT`/`MFA_RESET` payload carries `ticket_id`, the ticket the request is tracked on. It comes from state, not model memory:
-- `OrchestratorState` gains `active_ticket_id: str | None` (`STATE_VERSION` bump, no-op `MIGRATIONS` step; old snapshots default `None`). Set when a `CREATE_TICKET` result is `DONE`, or from the open/repeat-contact ticket Triage already resolved for the caller, when one exists.
+- `OrchestratorState` gains `active_ticket_id: str | None` (`STATE_VERSION` 1 -> 2 with an identity `MIGRATIONS[1]` step: not needed for loading, since the new field defaults, but it makes an old worker in a rolling deploy refuse the newer snapshot instead of silently dropping the field, which is exactly 24's mechanism). Set only when a `CREATE_TICKET` result is `DONE` in this conversation. Triage's repeat-contact tickets are deliberately NOT used: binding a credit to an unrelated historical ticket would be wrong, and the prompt tells Resolution to open a ticket first.
 - `ResolutionInput` gains `known_ticket_id: str | None` (22 contract change), filled from state by the workflow, so the prompt can reference it.
 - The workflow stamps `ticket_id` into each credit/MFA payload in code, overwriting whatever the model wrote. The model value is never trusted.
 - `_answer` order changes: gate, dispatch ticket-kind and page actions, update `active_ticket_id`, then stamp payloads and create approval rows. A plan proposing `CREATE_TICKET` and `CREDIT` together works.
@@ -174,7 +174,8 @@ Functional, real Postgres (existing orchestration fixtures), scripted stub agent
 2. `tests/actions/test_sev1_paging.py` (Sev-1 criteria, the ticket's named test), through the full workflow with real `TelemetryService` evidence: two sites disconnected in one country + P1 -> paged, audit event with incident ref; single site down (HA pair healthy) or P2 -> DENY, nothing written, denial text in reply; second page in same conversation -> denied by gate; with state snapshot wiped (corrupt rebuild) the DB key still blocks the second page (`REFUSED`/replayed, one audit row); direct `dispatch_turn` of a `PAGE_ON_CALL` with `sev1_corroborated=False` -> `REFUSED` (defense in depth).
 3. `tests/actions/test_dispatch_approved.py`: credit approved -> event with payload amount; edited -> event uses `edited_payload`, original untouched; rejected/pending -> `REFUSED`, no row finalized; MFA reset by non-admin identity never reaches approval (gate DENY) and direct dispatch is `REFUSED`; `VERDICT_OVERRIDE` always refused.
 4. `tests/orchestration/test_action_flow.py`: credit with a model-written wrong `ticket_id` -> approval payload carries the state ticket id; `CREATE_TICKET` + `CREDIT` in one plan -> approval bound to the new ticket and ticket `pending_approval`; credit with no ticket known -> no approval, fixed line; `active_ticket_id` survives restart; edited approval dropping `ticket_id` -> `INVALID`; reply includes deterministic ticket confirmation, agent text unchanged; handler raises (monkeypatched service) -> `FAILED`, failure line, `escalation_offered`, turn still completes, state saved; duplicate `message_id` -> zero extra rows/tickets, same results; crash after dispatch before reply (kill backend) -> retry finishes with one ticket and one page; two workers same turn -> one effect (turn lock + key); `REQUIRE_APPROVAL` credit proposal -> approval row only, no `simulated_actions` row.
-5. `tests/actions/test_schema.py`: migration idempotent; CHECK values equal `StrEnum`s; table excluded from dump (extends 21 drift/dump tests); every `SupportActionKind` has a handler or is in the refused set.
+5. Test hygiene: `tests/storage/conftest.py` and `tests/orchestration/conftest.py` cleanup SQL delete `simulated_actions` before `conversations` (FK RESTRICT), and delete tickets created in a test; `tests/storage/test_schema.py` table list gains the new table.
+6. `tests/actions/test_schema.py`: migration idempotent; CHECK values equal `StrEnum`s; table excluded from dump (extends 21 drift/dump tests); every `SupportActionKind` has a handler or is in the refused set.
 
 ---
 
@@ -184,7 +185,7 @@ Functional, real Postgres (existing orchestration fixtures), scripted stub agent
 ---
 
 ## 9. Cleanup (final step)
-1. Read every new/modified file end to end; no unused imports, models, handlers or helpers; `ponytail:` comment only on the ticket at-most-once ceiling.
+1. Read every new/modified file end to end; no unused imports, models, handlers or helpers; `ponytail:` comment only on the ticket at-most-once ceiling; no file over ~250 lines (`actions/simulated.py` handlers one small function each, `actions/models.py` payloads only; split payloads to `actions/payloads.py` if models.py passes that).
 2. Remove `TurnResult.executable_actions` and every reader; confirm no duplicate of 15 gate logic in `actions/`.
 3. Grep: no `datetime.now`, no inline imports, no `Literal` for enum-like fields (the `core.models` literals are reused, not added).
 4. Pyright `standard` and ruff clean; every function fully typed, `-> None` included; f-strings only.

@@ -16,7 +16,7 @@ Ticket features and how each is met:
 1. Multi-turn live chat: `Workflow.run_turn(conversation_id, message, message_id)` per submit; history rendered from `StateStore.rehydrate(...).messages`.
 2. Citation badges to public KB / policy docs: persisted citations on the reply message (section 4.2).
 3. Telemetry evidence chips: `StoredMessage.telemetry_evidence` (already persisted by `complete_turn`).
-4. Pending escalation/approval banners: `StateStore.list_approvals(conversation_id)` (section 4.4).
+4. Pending escalation/approval banners: `StateStore.list_approvals(conversation_id)` plus the latest reply's stored `TurnResult` envelope (`messages.result`, section 4.4).
 5. Account / scenario switcher: sidebar over `data/eval/scenarios.jsonl` plus free-form email (section 4.5).
 
 6. Trace panel for the current conversation (brief section 4: UI must surface the trace): shared component `ui/trace_panel.py` (4.6).
@@ -40,9 +40,9 @@ flowchart LR
 |---|---|---|
 | Deliverable `ui/customer_app.py` | No `ui/` package, no API layer, no entrypoint that builds `Workflow`; no UI dependency in `pyproject.toml`; Dockerfile pip-lists deps by hand | Add `ui/` package, `streamlit` dep (pyproject + Dockerfile), composition root `ui/session.py` |
 | "Live responses" | `run_turn` is sync and returns the finished reply once; no token stream, no progress hook | Spinner only (3.2); no streaming, no stage label |
-| "Citation badges linking to KB / policy docs" | `TurnRecorder.complete_turn` passes `()` as citations to `StateStore.complete_turn`; the `messages.citations` column exists but is always empty. Reply text carries inline markers `[kb:slug#anchor]`, `[policy:ID]`, `[telemetry:tool]` (validated by `guardrails.check_citations`). `RetrievedPassage` has `public_url`, `title`, `heading` | Persist citations at turn end from the grounding bundle (4.2). Small change to 23 files |
+| "Citation badges linking to KB / policy docs" | `TurnRecorder.complete_turn(result, evidence, sender, state)` passes `()` as the citations argument of `StateStore.complete_turn`; `messages.citations` exists but is always empty. Reply text carries inline markers `[kb:slug#anchor]`, `[policy:ID]`, `[telemetry:tool]` (validated by `guardrails.check_citations`, also run at the workflow boundary by `Workflow._require_clean_message`). `RetrievedPassage` has `public_url`, `title`, `heading` | Citations become a field of `TurnResult` (the persisted envelope, `messages.result`); the recorder maps `result.citations` to the existing column argument (4.2). Small change to 23 files |
 | Policy docs "linking" | Policies have no public URL | Policy badge opens an in-app dialog; body via `RetrievalService.get_policy` (4.2) |
-| "Pending escalation status banners" | `TurnResult.escalation_offered` is not persisted; only `approvals` rows are | Banners derive from approvals only; `escalation_offered` not persisted, not shown (decided, 4.4) |
+| "Pending escalation status banners" | After the CR-fix, `messages.result` persists the full `TurnResult` (incl. `escalation_offered`, `pending_actions`, `degradations`) on each reply, and `_replay` returns it | `escalation_offered` is readable on reload from the latest reply's envelope: banner shown (4.4). Supersedes the earlier "not persisted" decision |
 | Telemetry chips | `StoredMessage.telemetry_evidence` persisted. Architecture doc quotes `[telemetry]`, code uses `[telemetry:<tool>]` | Chips from stored evidence; inline `[telemetry:tool]` markers stripped from display text; architecture doc section 3 point 5 corrected to `[telemetry:<tool>]` in the cleanup step |
 | Scenario switcher | `scenarios.jsonl` has 12 scenarios with `customer_id`, `requester_email`, `opening_message`, followups | Switcher reads that file; no new data |
 | Approval resolution reaches the customer | 32 (final): `ApprovalService.settle` writes a deterministic `AGENT` message in its own turn (no customer row), sets `approvals.settled_at`; rejection notice may carry guard-checked `approvals.customer_reason`. 31: ticket gets `pending_approval` on approval creation, 32 clears it. Statuses unchanged: `PENDING/APPROVED/EDITED/REJECTED` | No `REVIEWER` sender (decided). The notice is an ordinary AGENT message in the transcript; banners show state only (4.4); UI never shows ticket status |
@@ -94,8 +94,9 @@ Chosen A (confirmed: the brief allows any stack, no FastAPI requirement, Streaml
 
 ### 4.2 Citation persistence (touches 23 files; the main cross-cutting change)
 - New `guardrails/citations.py`: `extract_markers(message: str) -> tuple[CitationMarker, ...]` reusing the regexes already in `guardrails/validator.py` (move/share, no duplicate patterns; `check_citations` calls it). Exported via `guardrails/__init__.py`. `strip_markers(message) -> str` for display text.
-- `orchestration/workflow.py` `_finish` gets the final reply plus `KnowledgeBundle | None`; a new pure `Citation.from_marker(marker, bundle)` classmethod (in `orchestration/models.py`) maps KB markers to `{kind: "KB", slug, anchor, title: heading, url: public_url}` and policy markers to `{kind: "POLICY", policy_id, title}` using `retrieved_passages` and `referenced_policies`. Markers not in the bundle cannot occur (output guard already rejects them); they are dropped, never guessed.
-- `TurnRecorder.complete_turn(text, evidence, citations)` forwards a tuple of `dict[str, str]` to the existing `StateStore.complete_turn(... citations ...)` argument (already in the signature; column exists). Replay path (`_replay`) is unchanged: citations come from the stored message.
+- `orchestration/models.py`: `TurnResult` gains `citations: tuple[Citation, ...] = ()` (frozen `Citation`: kind, ref, title, url), the single source of truth; it is persisted inside the envelope with no extra work and returned unchanged by `_replay`. Pure classmethod `Citation.for_reply(reply: str, bundle: KnowledgeBundle | None) -> tuple[Citation, ...]` maps KB markers to `{kind KB, slug#anchor, heading, public_url}` and policy markers to `{kind POLICY, policy_id, title}` from `retrieved_passages` / `referenced_policies`; markers not in the bundle are dropped, never guessed; duplicate `(slug, anchor)` keeps best `rerank_score`.
+- `orchestration/workflow.py` `_finish` receives the `KnowledgeBundle | None`, computes `citations` and builds the one `TurnResult` it already builds, then calls the one `recorder.complete_turn`. `TurnRecorder.complete_turn(result, evidence, sender, state)` keeps its signature and passes `tuple(c.to_row() for c in result.citations)` (dict[str, str] rows) to `StateStore.complete_turn`'s existing citations argument instead of `()`. The `messages.citations` column is the typed read path for the UI, the envelope is the replay path; both derive from the same `TurnResult.citations` at one call site.
+- Marker parsing: `guardrails/citations.py` hosts the regexes now private to `validator.py`; `check_citations` (and thereby `Workflow._require_clean_message`) keeps working unchanged; `Citation.for_reply` reuses `extract_markers`. No second regex set.
 - Telemetry markers need no citation rows: chips come from `telemetry_evidence`.
 - Policy dialog body: `RetrievalService(connection).get_policy(policy_id)` (decided) on the per-render connection from `ui/session.py` (policies are loaded in its constructor; no embedder needed). No new store read or SQL.
 
@@ -108,7 +109,7 @@ Derived each render from `StateStore.list_approvals(conversation_id)` (not `pend
 - `APPROVED`/`EDITED`, `settled_at` null -> "Approved, being finalized" (32 executes then notifies; execution may fail and be swept, so no "done" claim).
 - `APPROVED`/`EDITED`, `settled_at` set -> compact "Approved" chip; the details are the AGENT notice already in the transcript.
 - `REJECTED` -> "Not approved" chip; the reason, if any, is the `customer_reason` inside the AGENT notice (32 guard-checked it). The UI never reads `reviewer_notes`, `edited_payload` or `customer_reason` itself.
-The post-approval message needs no UI special case: it is an `AGENT` message in a later turn, rendered like any reply (no citations, no chips). No ticket status or `pending_approval` shown (31/32 own it). No escalation-offered banner (decided). Non-blocking: input stays enabled while banners are pending (architecture doc, non-blocking HITL).
+The post-approval message needs no UI special case: it is an `AGENT` message in a later turn, rendered like any reply (no citations, no chips). No ticket status or `pending_approval` shown (31/32 own it). Escalation banner: if the latest non-customer message's envelope (`TurnResult.model_validate(message.result)`; null on pre-envelope rows means no banner) has `escalation_offered`, show "A support engineer will follow up" (fixed copy); it disappears when a later reply does not carry the flag. Non-blocking: input stays enabled while banners are pending (architecture doc, non-blocking HITL).
 
 ### 4.5 Fragment refresh
 Banner block is a `st.fragment(run_every=5)`; when an approval leaves `PENDING` or gains `settled_at`, it triggers a full rerun so the AGENT notice appears in the transcript.
@@ -141,7 +142,7 @@ Functional, `streamlit.testing.v1.AppTest`, real Postgres via existing `tests/co
 ## 8. Design review fixes (found while planning)
 1. Composition root moved from `ui/` to `orchestration/runtime.py` (shared by eval, 42, 32 sweep); `ui/session.py` shrinks to connection-per-call glue.
 2. Previous draft cached `RetrievalService` via `st.cache_resource`; it binds one connection, so sharing it across Streamlit sessions breaks 24's one-connection-per-turn rule. Only model warm-up is cached.
-3. The trace panel must never read `TraceReplay.approvals` (carries `reviewer_notes`, `edited_payload`): `TracePanel.from_replay` uses turns/steps only; tested by asserting a seeded reviewer note is absent from the page.
+3. Customer-visible leak paths in `TraceReplay`: `approvals` (`reviewer_notes`, `edited_payload`) and each step's `trace.model_messages` (full redacted pydantic-ai messages with prompts and tool data, added by the CR-fix). `TracePanel.from_replay` uses turns and steps (role, status, latency, tokens, cost, tool name/status/latency) only, never `approvals`, `model_messages`, or raw tool-call `arguments`/`result`; tests assert a seeded reviewer note and a seeded `model_messages` sentinel are absent from the page. Step `input`/`output` JSON is not shown to the customer (Q1).
 4. `conversation_id` in the query string lets anyone who has an id open that conversation (and its trace). Demo scope (no auth, matches Out of scope); recorded in the ADR, not fixed.
 5. Citation mapping edge: same `(slug, anchor)` can appear on several passages; first by `rerank_score` wins. Early-return paths (injection refusal, pause, canned text) carry no citations by construction.
 6. LLM credentials are env-only (`settings.llm_model`); UI shows a fixed error if a turn fails at the provider (23's pause message); no key ever read or displayed.
@@ -150,16 +151,16 @@ Functional, `streamlit.testing.v1.AppTest`, real Postgres via existing `tests/co
 
 ## 9. Decisions (final)
 1. Streamlit (shared with 42; brief: any stack).
-2. `escalation_offered` not persisted, no banner for it.
+2. (Revised after CR-fix) `escalation_offered` is persisted in `messages.result`; banner reads it from the latest reply.
 3. Spinner only, no live stage label.
 4. Post-approval sender is `AGENT` (32); no `REVIEWER`; statuses per 32.
 5. Policy dialog body via `RetrievalService.get_policy`.
 6. Trace panel on the customer page; shared `ui/trace_panel.py` used by 42.
 7. `StrEnum`, not `AtiIntEnum`.
-8. Citations persisted in `_finish`/recorder (needed for answers.md and recorded conversations).
+8. Citations ride on `TurnResult.citations` (single source), built in `_finish` and forwarded by the recorder (needed for answers.md and recorded conversations).
 9. Doc fixed to `[telemetry:<tool>]`.
 10. Pending banner shows action title only, never amount.
 
 ## 10. Open Questions
-None.
+1. Trace panel: expose step `input`/`output` JSON to the customer? Plan default: no (metrics and tool names only).
 

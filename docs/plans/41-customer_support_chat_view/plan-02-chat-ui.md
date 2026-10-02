@@ -18,7 +18,7 @@
 
 ## Review Focus
 
-1. Customer page never contains `reviewer_notes`, `edited_payload`, payload amounts or ticket status. -> Tasks 2, 3.
+1. Customer page never contains `reviewer_notes`, `edited_payload`, trace `model_messages`, payload amounts or ticket status. -> Tasks 2, 3.
 2. Garbage/unknown `conversation_id` in query params starts a fresh conversation, no crash. -> Task 3.
 3. Retry after `TurnLockTimeout` reuses the `message_id`: one customer row. -> Task 3.
 4. Message text with HTML/markdown from the customer or agent cannot inject markup. -> Task 3.
@@ -34,10 +34,10 @@
 - Test: `tests/ui/test_chat_view.py`, `tests/ui/test_scenarios.py`
 
 **Interfaces:**
-- Consumes: `ConversationSnapshot`, `Approval`, `StoredMessage` (21, plan 01 citation rows: `kind, ref, title, url`), `strip_markers` (plan 01), `MessageSender`, `ApprovalStatus`, `ActionType`, `Approval.settled_at` (32).
-- Produces: `Scenario` + `load_scenarios(path: Path) -> tuple[Scenario, ...]`; `BadgeKind`, `CitationBadge`, `EvidenceChip`, `MessageView`, `ApprovalBannerState` (PENDING, FINALIZING, APPROVED, REJECTED), `ApprovalBanner`, `ChatView` with `ChatView.from_snapshot(snapshot: ConversationSnapshot, approvals: Sequence[Approval]) -> ChatView`. Banner title derived from `ActionType` only (exhaustive match); payload never read. Evidence chips deduped by (tool, metric, value).
+- Consumes: `ConversationSnapshot`, `Approval`, `StoredMessage` (21; `citations` rows `kind, ref, title, url` from plan 01; `result` envelope parsed via `TurnResult.model_validate`), `strip_markers` (plan 01), `MessageSender`, `ApprovalStatus`, `ActionType`, `Approval.settled_at` (32).
+- Produces: `Scenario` + `load_scenarios(path: Path) -> tuple[Scenario, ...]`; `BadgeKind`, `CitationBadge`, `EvidenceChip`, `MessageView`, `ApprovalBannerState` (PENDING, FINALIZING, APPROVED, REJECTED), `ApprovalBanner`, `ChatView` (also `escalation_offered: bool` from the latest non-customer message's envelope, False when `result` is null) with `ChatView.from_snapshot(snapshot: ConversationSnapshot, approvals: Sequence[Approval]) -> ChatView`. Banner title derived from `ActionType` only (exhaustive match); payload never read. Evidence chips deduped by (tool, metric, value).
 
-- [ ] **Step 1:** Failing tests: scenarios loader returns 12 entries from `data/eval/scenarios.jsonl`; one parametrized `from_snapshot` check covering marker stripping, customer vs support role (any non-customer sender), chip dedupe, each approval status/`settled_at` combination mapping.
+- [ ] **Step 1:** Failing tests: scenarios loader returns 12 entries from `data/eval/scenarios.jsonl`; one parametrized `from_snapshot` check covering marker stripping, customer vs support role (any non-customer sender), chip dedupe, each approval status/`settled_at` combination mapping; escalation flag true/false/pre-envelope null.
 - [ ] **Step 2:** Run; expect FAIL.
 - [ ] **Step 3:** Add dependency, implement modules.
 - [ ] **Step 4:** Run `uv run pytest tests/ui -v`; expect PASS.
@@ -53,10 +53,10 @@
 - Test: `tests/ui/test_trace_panel.py`
 
 **Interfaces:**
-- Consumes: `TraceReplay`, `ReplayStep`, `TraceRecord`, `ToolCallRecord` (21 `replay.py`).
-- Produces: frozen `TracePanel`, `TraceTurn`, `TraceStep` (shapes per 42 design: per turn customer/reply text, steps with role, status, latency, tokens, cost, tool calls, redacted input/output, open flag, totals); `TracePanel.from_replay(replay: TraceReplay) -> TracePanel` (uses turns and steps only, never `replay.approvals`); `render_trace_panel(panel: TracePanel) -> None` (Streamlit, `st.expander` per turn, text via `st.code`/`st.text`). Tell 42 to import this module and delete its own copy; no other module defines trace view models.
+- Consumes: `TraceReplay`, `ReplayStep`, `TraceRecord`, `ToolCallRecord` (21 `replay.py`). `TraceRecord.model_messages` and tool-call `arguments`/`result` exist but must NOT be surfaced.
+- Produces: frozen `TracePanel`, `TraceTurn`, `TraceStep` (shapes per 42 design: per turn customer/reply text, steps with role, status, latency, tokens, cost, tool calls, redacted input/output, open flag, totals); `TracePanel.from_replay(replay: TraceReplay) -> TracePanel` (uses turns and steps only: never `replay.approvals`, `model_messages`, step input/output, or tool-call `arguments`/`result`); `render_trace_panel(panel: TracePanel) -> None` (Streamlit, `st.expander` per turn, text via `st.code`/`st.text`). Tell 42 to import this module and delete its own copy; no other module defines trace view models.
 
-- [ ] **Step 1:** Failing `AppTest` test: seed a conversation via scripted turn, render a tiny script calling `render_trace_panel`; assert each agent step and totals visible; assert a seeded approval with reviewer note does not appear.
+- [ ] **Step 1:** Failing `AppTest` test: seed a conversation via scripted turn, render a tiny script calling `render_trace_panel`; assert each agent step and totals visible; assert a seeded approval with reviewer note does not appear, and a sentinel seeded into a trace's `model_messages` and a tool call's `arguments` does not appear.
 - [ ] **Step 2:** Run; expect FAIL.
 - [ ] **Step 3:** Implement models and renderer.
 - [ ] **Step 4:** Run the file; expect PASS.
@@ -73,7 +73,7 @@
 
 **Interfaces:**
 - Consumes: plan 01 `build_workflow`, `warm_models`; `CustomerService.authenticate_caller`; `StateStore.create_conversation/rehydrate/list_approvals/replay_trace`; `RetrievalService.get_policy`; Task 1 and 2 models; `TurnLockTimeout`, `StateVersionError`.
-- Produces: runnable `streamlit run ui/customer_app.py`. Behavior: sidebar scenario select + email field + "new conversation" (identity via `authenticate_caller`, no tier/account claim inputs); "load opening message" prefills the input; transcript with citation badges (KB as link buttons to `url`, policy as button opening an `st.dialog` with the policy body), evidence chips (anomaly styled), banners fragment polled every 5 s with rerun on state change, trace expander via Task 2; `conversation_id` mirrored to query params; pending `message_id` held in session state until the turn returns; fixed notices for lock timeout (retry reuses id) and state-version error; spinner only; input stays enabled during pending approvals.
+- Produces: runnable `streamlit run ui/customer_app.py`. Behavior: sidebar scenario select + email field + "new conversation" (identity via `authenticate_caller`, no tier/account claim inputs); "load opening message" prefills the input; transcript with citation badges (KB as link buttons to `url`, policy as button opening an `st.dialog` with the policy body), evidence chips (anomaly styled), banners (approvals plus escalation notice) fragment polled every 5 s with rerun on state change, trace expander via Task 2; `conversation_id` mirrored to query params; pending `message_id` held in session state until the turn returns; fixed notices for lock timeout (retry reuses id) and state-version error; spinner only; input stays enabled during pending approvals.
 
 - [ ] **Step 1:** Write failing `AppTest` tests (scripted ports injected through a test seam: `ui/session.py` accepts an optional ports factory via a module-level setter used only by tests): scenario pick + send + reply; second turn sees history; reload with `conversation_id` restores; garbage id starts fresh; citations/chips render; CREDIT proposal shows PENDING banner titled by action only, amount absent, input enabled; resolve and settle flips banner and shows the AGENT notice; REJECTED with `customer_reason`; lock timeout then retry gives one customer row; HTML in a message is escaped; trace expander lists the turn.
 - [ ] **Step 2:** Run; expect FAIL.

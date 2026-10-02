@@ -4,7 +4,7 @@
 
 **Goal:** Replies persist structured citations, and one shared function assembles a production `Workflow` so the UI, eval harness and 42 use the same code path.
 
-**Architecture:** Marker parsing moves into one guardrails module reused by the output validator and by orchestration. `_finish` maps markers to the turn's `KnowledgeBundle` and hands the result to the existing `citations` argument of `StateStore.complete_turn` (column already exists, always empty today). `orchestration/runtime.py` replaces the harness-only assembly in `tests/orchestration/conftest.py`.
+**Architecture:** Marker parsing moves into one guardrails module reused by the output validator and by orchestration. `Citation`s are a field of `TurnResult` (the persisted envelope in `messages.result`); `_finish` computes them from the turn's `KnowledgeBundle` while building its single `TurnResult`, and `TurnRecorder.complete_turn(result, evidence, sender, state)` forwards `result.citations` as rows to the existing `citations` argument of `StateStore.complete_turn` (column exists, always empty today). `orchestration/runtime.py` replaces the harness-only assembly in `tests/orchestration/conftest.py`.
 
 **Tech Stack:** Python 3.12, pydantic v2 frozen models, PydanticAI (existing agents, no tracing vendor; Braintrust is NOT used), psycopg 3, pytest. No new dependency.
 
@@ -50,17 +50,17 @@
 ### Task 2: Persist citations at turn end
 
 **Files:**
-- Modify: `orchestration/models.py` (add `Citation`), `orchestration/recorder.py` (`complete_turn` gains a `citations` argument forwarded instead of `()`), `orchestration/workflow.py` (`_finish` takes the `KnowledgeBundle | None`; `_answer` passes it)
+- Modify: `orchestration/models.py` (add `Citation`; `TurnResult` gains `citations`), `orchestration/recorder.py` (`complete_turn` signature unchanged; passes `result.citations` rows instead of `()`), `orchestration/workflow.py` (`_finish` takes the `KnowledgeBundle | None`, builds citations into the one `TurnResult`; `_answer` passes the bundle; `_replay` already returns the stored envelope)
 - Test: `tests/orchestration/test_citation_persistence.py`
 
 **Interfaces:**
-- Consumes: Task 1 `extract_markers`; `KnowledgeBundle.retrieved_passages` (`slug`, `heading_anchor`, `heading`, `title`, `public_url`, `rerank_score`) and `referenced_policies` (`policy_id`, `title`); existing `StateStore.complete_turn(... citations: Sequence[dict[str, str]] ...)`.
-- Produces: frozen `Citation` with `kind` (KB or POLICY), `ref`, `title`, `url`; classmethod `Citation.from_marker(marker: CitationMarker, bundle: KnowledgeBundle | None) -> Citation | None` (None when not in bundle or telemetry kind) and `to_row() -> dict[str, str]`; a pure helper on `Citation` building the tuple for a reply: `Citation.for_reply(reply: str, bundle: KnowledgeBundle | None) -> tuple[Citation, ...]`. Stored message `citations` rows carry keys `kind`, `ref`, `title`, `url` (url empty string for policies).
+- Consumes: Task 1 `extract_markers`; `KnowledgeBundle.retrieved_passages` (`slug`, `heading_anchor`, `heading`, `title`, `public_url`, `rerank_score`) and `referenced_policies` (`policy_id`, `title`); existing `StateStore.complete_turn(... citations: Sequence[dict[str, str]] ...)`; CR-fix shapes (one `TurnResult` per `_finish`, one `complete_turn`).
+- Produces: frozen `Citation` with `kind` (KB or POLICY), `ref`, `title`, `url`; `Citation.for_reply(reply: str, bundle: KnowledgeBundle | None) -> tuple[Citation, ...]` (classmethod; drops markers not in the bundle and telemetry markers; dedupes) and `to_row() -> dict[str, str]`; `TurnResult.citations: tuple[Citation, ...] = ()`. Stored message `citations` rows carry keys `kind`, `ref`, `title`, `url` (url empty string for policies).
 
-- [ ] **Step 1:** Write failing tests with the scripted harness: (a) stub resolution reply with KB and policy markers and a stub `KnowledgeBundle` holding both -> stored reply message has two citation rows with the passage `public_url`; (b) marker not in bundle -> row dropped; (c) two passages same slug+anchor -> one row, best rerank; (d) injection-blocked message, agent failure pause, clarification-exhausted reply -> empty citations; (e) retry with the same `message_id` -> stored reply and citations identical, message row count unchanged.
+- [ ] **Step 1:** Write failing tests with the scripted harness: (a) stub resolution reply with KB and policy markers and a stub `KnowledgeBundle` holding both -> stored reply message has two citation rows with the passage `public_url`; (b) marker not in bundle -> row dropped; (c) two passages same slug+anchor -> one row, best rerank; (d) injection-blocked message, agent failure pause, clarification-exhausted reply -> empty citations; (e) retry with the same `message_id` -> `_replay` returns the stored envelope with identical `citations`, message row count unchanged; (f) `messages.citations` column rows equal `result.citations` rows.
 - [ ] **Step 2:** Run; expect FAIL.
-- [ ] **Step 3:** Implement `Citation`, thread the bundle into `_finish` (default None for early returns), forward through `TurnRecorder.complete_turn`; `_replay` untouched (reads stored message).
-- [ ] **Step 4:** Run `uv run pytest tests/orchestration tests/storage -v`; expect PASS (existing complete_turn callers updated, default `()` kept for system/pause paths).
+- [ ] **Step 3:** Implement `Citation`, thread the bundle into `_finish` (default None for early returns), map in `TurnRecorder.complete_turn`; `_replay` untouched (returns the stored envelope).
+- [ ] **Step 4:** Run `uv run pytest tests/orchestration tests/storage -v`; expect PASS (early-return and pause paths build `TurnResult` without citations).
 - [ ] **Step 5:** Cleanup: ruff + pyright on `orchestration`; no unused parameter, no second dedupe code path.
 - [ ] **Step 6:** Commit `feat(orchestration): persist reply citations`.
 

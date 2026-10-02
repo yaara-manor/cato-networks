@@ -41,7 +41,7 @@ flowchart LR
 | `request_*` "queues for human approval" | Approval queueing already exists: workflow writes an `approvals` row for `REQUIRE_APPROVAL` (21/23) | No new queueing at request time (decided: post-approval effect is enough; the approval row is the queue record). `CREDIT`/`MFA_RESET` handlers run only after approval via `dispatch_approved` and emit the simulated downstream effect (billing credit queue / CMA MFA reset) |
 | Audit/events in `data/simulated_actions/` or webhook | No `simulated_actions` table: dropped by 21 plan 01 delta 4. `data/` is repo-tracked and read-only in the container | Postgres table `simulated_actions` is the audit log and idempotency store; one structured log line per action. No JSON files, no webhook (§2.3). **Decided:** the `simulated_actions` table is the export location (reviewers/UI read it via `list_simulated_actions`) |
 | Tickets "in Postgres", `update_ticket` changes status, site, priority | `TicketService` has `create_ticket` and `update_ticket_status` only; `tickets` table has no conversation link | Add `TicketService.update_ticket(ticket_id, status, site_id, priority)` (each optional). Conversation link lives in the audit row |
-| Enums | Codebase uses `StrEnum` (ADR-005); user rule now allows any enum | Follow codebase `StrEnum` for consistency with 21-24 (string values are persisted and CHECK-constrained) |
+| Enums | Codebase uses `StrEnum` (ADR-005); user rule now allows any enum | Follow codebase `StrEnum` for consistency with 21-24 (string values are persisted) |
 
 ---
 

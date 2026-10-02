@@ -5,6 +5,7 @@ from uuid import UUID
 
 from pydantic import AwareDatetime
 
+from actions import approved_action_key
 from agents.models import AgentRole, DiagnosticEvidence
 from core.models import CustomerAccount, Ticket
 from services.approval_models import ReviewerDecision
@@ -45,7 +46,7 @@ class ApprovalCard(View):
             evidence_refs=diagnostics.evidence_items if diagnostics else (),
             can_resolve=approval.status is ApprovalStatus.PENDING,
             # the dispatcher's key for the approved action; `:pending` marks the ticket and is not the outcome
-            dispatch=next((a for a in actions if a.idempotency_key == f"approval:{approval.id}"), None),
+            dispatch=next((a for a in actions if a.idempotency_key == approved_action_key(approval.id)), None),
         )
 
 

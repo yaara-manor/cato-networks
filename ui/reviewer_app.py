@@ -6,7 +6,7 @@ import streamlit as st
 
 from storage import ApprovalStateError, BoardRow
 from ui import reviewer_session
-from ui.reviewer_view import ApprovalCard, DecisionForm, DecisionFormError, DecisionKind
+from ui.reviewer_view import ApprovalCard, DecisionForm, DecisionFormError
 from ui.reviewer_widgets import render_approval_card, render_context, render_evidence, render_model_messages
 from ui.session import load_trace
 from ui.trace_panel import render_trace_panel
@@ -55,20 +55,11 @@ def render_board() -> None:
         _render_escalated_tab(rows)
 
 
-def _decide(card: ApprovalCard, kind: DecisionKind, edited: dict[str, str] | None) -> None:
-    key = str(card.approval.id)
-    form = DecisionForm(
-        approval_id=card.approval.id,
-        kind=kind,
-        note=_STATE[f"note-{key}"],
-        customer_reason=_STATE[f"reason-{key}"],
-        original_payload=card.approval.payload,
-        edited_payload=edited,
-    )
+def _decide(form: DecisionForm) -> None:
     try:
         reviewer_session.decide(form.to_decision())
     except (DecisionFormError, ApprovalStateError) as error:
-        _STATE.setdefault("errors", {})[card.approval.id] = str(error)
+        _STATE.setdefault("errors", {})[form.approval_id] = str(error)
     st.rerun()  # redraw every card from the DB, never optimistic UI
 
 
@@ -83,14 +74,11 @@ def render_approvals(cards: tuple[ApprovalCard, ...]) -> None:
         st.text("No approvals.")
 
 
+@st.fragment(run_every=2)  # ponytail: polls even when IDLE (cheap read); stage-aware stop if load grows
 def render_live_trace(conversation_id: UUID) -> None:
-    @st.fragment(run_every=2)  # ponytail: polls even when IDLE (cheap read); stage-aware stop if load grows
-    def poll() -> None:
-        panel = load_trace(conversation_id)
-        if panel is not None:
-            render_trace_panel(panel, show_io=True)
-
-    poll()
+    panel = load_trace(conversation_id)
+    if panel is not None:
+        render_trace_panel(panel, show_io=True)
 
 
 def _query_conversation() -> UUID | None:

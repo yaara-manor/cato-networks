@@ -1,4 +1,4 @@
-from actions.dispatcher import ActionDispatcher
+from actions.dispatcher import ActionDispatcher, approved_action_key
 from actions.models import ActionResult, ActionStatus, DispatchContext, DispatchRequest
 from actions.payloads import (
     CloseTicketPayload,
@@ -21,4 +21,5 @@ __all__ = [
     "MfaResetPayload",
     "PageOnCallPayload",
     "UpdateTicketPayload",
+    "approved_action_key",
 ]

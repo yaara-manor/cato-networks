@@ -4,6 +4,7 @@ from typing import Any
 import pytest
 from streamlit.testing.v1 import AppTest
 
+from actions import approved_action_key
 from core.config import settings
 from services.approval_models import ReviewerDecision
 from storage import Approval, ApprovalStatus, SimulatedActionStatus
@@ -28,7 +29,7 @@ def _dispatches(desk: Desk, approval: Approval) -> list[Any]:
     return [
         a
         for a in desk.store.list_simulated_actions(approval.conversation_id)
-        if a.idempotency_key == f"approval:{approval.id}"
+        if a.idempotency_key == approved_action_key(approval.id)
     ]
 
 

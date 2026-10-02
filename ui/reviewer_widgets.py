@@ -3,14 +3,13 @@ from collections.abc import Callable
 
 import streamlit as st
 
-from services.approval_models import SettleOutcome
 from storage import ApprovalStatus
 from ui.reviewer_panels import ContextPanel, EvidencePanel, LinkChart, PassageScore
-from ui.reviewer_view import ApprovalCard, DecisionKind, ModelMessagesView
+from ui.reviewer_view import ApprovalCard, DecisionForm, DecisionKind, ModelMessagesView
 
 _NO_DATA = "No data"
 _CHART_METRICS = ("avg_packet_loss_pct", "avg_latency_ms", "avg_jitter_ms")
-Submit = Callable[[ApprovalCard, DecisionKind, dict[str, str] | None], None]
+Submit = Callable[[DecisionForm], None]
 
 
 def render_context(context: ContextPanel) -> None:
@@ -75,25 +74,36 @@ def _render_resolved(card: ApprovalCard) -> None:
     if approval.settled_at is None:
         st.info("Decision saved, customer notice pending.")
     else:
-        st.text(f"Settled: {SettleOutcome.SETTLED}")
+        st.text("Settled")
 
 
 def _render_decision_inputs(card: ApprovalCard, submit: Submit) -> None:
     key = str(card.approval.id)
-    st.text_input("Internal note (never shown to the customer)", key=f"note-{key}")
-    st.text_input("Customer reason (optional, guard-checked)", key=f"reason-{key}")
+    note = st.text_input("Internal note (never shown to the customer)", key=f"note-{key}")
+    reason = st.text_input("Customer reason (optional, guard-checked)", key=f"reason-{key}")
+
+    def form(kind: DecisionKind, edited: dict[str, str] | None = None) -> DecisionForm:
+        return DecisionForm(
+            approval_id=card.approval.id,
+            kind=kind,
+            note=note,
+            customer_reason=reason,
+            original_payload=card.approval.payload,
+            edited_payload=edited,
+        )
+
     approve, reject = st.columns(2)
     if approve.button("Approve", key=f"approve-{key}"):
-        submit(card, DecisionKind.APPROVE, None)
+        submit(form(DecisionKind.APPROVE))
     if reject.button("Reject", key=f"reject-{key}"):
-        submit(card, DecisionKind.REJECT, None)
+        submit(form(DecisionKind.REJECT))
     with st.expander("Edit"), st.form(f"edit-{key}"):
         edited = {
             name: st.text_input(name, value=value, key=f"edit-{key}-{name}")
             for name, value in card.approval.payload.items()
         }
         if st.form_submit_button("Submit edit"):
-            submit(card, DecisionKind.EDIT, edited)
+            submit(form(DecisionKind.EDIT, edited))
 
 
 def render_approval_card(card: ApprovalCard, submit: Submit) -> None:

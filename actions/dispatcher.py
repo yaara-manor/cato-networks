@@ -28,6 +28,11 @@ from storage import (
 logger = logging.getLogger(__name__)
 
 _ALREADY_PAGED = "conversation already paged"
+
+
+def approved_action_key(approval_id: UUID) -> str:
+    """Idempotency key of the action an approval executes; readers match the outcome row by it."""
+    return f"approval:{approval_id}"
 _OUTCOME_UNKNOWN = "outcome unknown; a previous attempt did not finish"
 
 
@@ -60,7 +65,7 @@ class ActionDispatcher:
         return self._run(
             DispatchRequest(
                 action=SupportAction(kind=kind, payload=payload, reason="approved"),
-                idempotency_key=f"approval:{approval.id}",
+                idempotency_key=approved_action_key(approval.id),
                 context=context,
                 approval_id=approval.id,
             )

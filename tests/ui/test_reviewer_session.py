@@ -1,6 +1,7 @@
 import psycopg
 import pytest
 
+from actions import approved_action_key
 from core.clock import SimulationClock
 from core.config import settings
 from encoders import embed, rerank
@@ -61,7 +62,8 @@ def test_runtime_start_settles_approved_but_unsettled(desk: Desk) -> None:
     settled = desk.store.get_approval(approval.id)
     assert settled is not None and settled.settled_at is not None
     actions = desk.store.list_simulated_actions(approval.conversation_id)
-    assert [a.status for a in actions if a.idempotency_key == f"approval:{approval.id}"] == [SimulatedActionStatus.DONE]
+    outcome = [a.status for a in actions if a.idempotency_key == approved_action_key(approval.id)]
+    assert outcome == [SimulatedActionStatus.DONE]
     assert len([m for m in desk.store.list_messages(approval.conversation_id) if m.turn > 1]) == 1
 
 

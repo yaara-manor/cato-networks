@@ -19,7 +19,6 @@ from agents import (
 )
 from guardrails import KB_REF, MarkerKind, ProposedAction, extract_markers
 from orchestration.degradation import DegradationNotice
-from retrieval.models import RetrievedPassage
 from storage import ConversationStage
 
 
@@ -46,11 +45,10 @@ class Citation(BaseModel):
         """Reply markers resolved against the turn's bundle; unknown and telemetry markers are dropped."""
         if bundle is None:
             return ()
-        best: dict[tuple[str, str], RetrievedPassage] = {}
-        for p in bundle.retrieved_passages:
-            key = (p.slug, p.heading_anchor)
-            if key not in best or p.rerank_score > best[key].rerank_score:
-                best[key] = p
+        # ascending rerank: the best passage per (slug, anchor) is written last
+        best = {
+            (p.slug, p.heading_anchor): p for p in sorted(bundle.retrieved_passages, key=lambda p: p.rerank_score)
+        }
         policies = {p.policy_id: p for p in bundle.referenced_policies}
         citations: list[Self] = []
         for marker in extract_markers(reply):

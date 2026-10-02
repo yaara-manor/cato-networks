@@ -3,6 +3,7 @@
 **Issue**: `#6` ([Phase 2] 2.1: Persistent State Machine & Trace Store (Postgres))
 **Date**: 2026-10-01
 **Status**: Draft for Review (user decisions applied: no Braintrust; no `simulated_actions` / conversation `status` / `close_conversation` / `list_conversations` per plan 01 delta 4; merge order 21 -> 22 -> 23, 21 owns `AgentTrace` fields)
+**Implementation**: see [plan-01](plan-01-schema-contracts.md) and [plan-02](plan-02-state-store.md). Superseded by plan deltas: §2.8 (`--exclude-table`), §3.1 (counters; no `simulated_actions`/`status`), §4 (`ConversationSnapshot` open-turn definition), §1/§6 (no Braintrust).
 **Target Files**: `db/migrations/20261001_0900_agent-runtime.sql`, `storage/__init__.py`, `storage/models.py`, `storage/state_store.py`, `db/init/build.py`, `agents/models.py`, `services/models.py`, `tests/storage/*`
 
 ---

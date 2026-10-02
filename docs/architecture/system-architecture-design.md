@@ -16,7 +16,7 @@ The system:
 3. Grounds every technical statement in Cato's public Knowledge Base using hybrid lexical and vector retrieval with cross-encoder reranking.
 4. Executes support actions (ticket updates, Sev-1 escalations, service credits, MFA resets) while pausing high-impact operations for human reviewer approval in a non-blocking workflow.
 5. Defends against prompt injections, social engineering, and unauthorized authority claims, while redacting sensitive credentials before persistence.
-6. Employs dual-layer observability: local Postgres traces for fully offline self-contained operation, and Braintrust for cloud waterfall tracing and evaluation scoring.
+6. Employs offline, self-contained observability: Postgres trace tables plus PydanticAI message history (no external tracing service).
 
 ---
 
@@ -79,7 +79,6 @@ flowchart TD
     subgraph Storage_Layer["Storage, External API Mocks & Observability"]
         PG_DB[("PostgreSQL 16 + pgvector\n(KB Passages, Policies, State, Traces,\nSimulated CRM/Tickets Store)")]
         TelemetryFiles[("data/telemetry/\n(Simulated Read-Only CMA API Files)")]
-        Braintrust["Braintrust Cloud Tracing & Evals"]
     end
 
     CustomerChat --> Redactor
@@ -101,7 +100,6 @@ flowchart TD
     RAGService --> PG_DB
     ApprovalService --> PG_DB
     StateMachine --> PG_DB
-    StateMachine -. "Optional Stream" .-> Braintrust
 
     ResolAgent --> CitationVerifier
     CitationVerifier --> CustomerChat
@@ -218,7 +216,7 @@ stateDiagram-v2
 
 The database schema is managed via sequential SQL migrations under `db/migrations/`:
 - `db/migrations/20260929_1500_kb-schema.sql`: Vector extension, `snapshots`, `kb_articles`, `passages`, `policies`, `accounts`, and `tickets`.
-- `db/migrations/20260930_1000_agent-runtime.sql`: Operational tables for persistent conversation state, messages, non-blocking approvals, execution traces, and simulated side effects.
+- `db/migrations/20261001_0900_agent-runtime.sql`: Operational tables for persistent conversation state, messages, non-blocking approvals, execution traces, and tool calls. These tables are excluded from `db/seed.dump` (`--exclude-table`) so a restore never wipes live conversations.
 
 The unified database connects the ingested Knowledge Base and seeded customer/ticket records with live operational state:
 
@@ -230,7 +228,7 @@ erDiagram
     conversations ||--o{ messages : contains
     conversations ||--o{ approvals : tracks
     conversations ||--o{ traces : records
-    conversations ||--o{ simulated_actions : logs
+    traces ||--o{ tool_calls : invokes
 
     snapshots {
         uuid id PK
@@ -302,14 +300,19 @@ erDiagram
         text contact_email
         text customer_tier
         text active_site_id
+        text stage
+        jsonb guard_history
+        int last_turn
+        int last_seq
+        jsonb state
         timestamptz created_at
         timestamptz updated_at
-        text status
     }
 
     messages {
         uuid id PK
         uuid conversation_id FK
+        int turn
         text sender
         text content
         jsonb citations
@@ -320,10 +323,13 @@ erDiagram
     approvals {
         uuid id PK
         uuid conversation_id FK
+        uuid message_id FK
         text action_type
         jsonb payload
         text status
+        text idempotency_key
         text reviewer_notes
+        jsonb edited_payload
         timestamptz requested_at
         timestamptz resolved_at
     }
@@ -332,21 +338,31 @@ erDiagram
         uuid id PK
         uuid conversation_id FK
         uuid message_id FK
+        int turn
+        int seq
         text agent_role
+        uuid parent_trace_id FK
+        jsonb input
+        jsonb output
+        jsonb model_messages
+        text status
         int latency_ms
         int prompt_tokens
         int completion_tokens
-        jsonb tool_calls
-        jsonb retrieval_scores
+        numeric cost_usd
         timestamptz created_at
     }
 
-    simulated_actions {
+    tool_calls {
         uuid id PK
+        uuid trace_id FK
         uuid conversation_id FK
-        text action_name
-        jsonb payload
-        timestamptz executed_at
+        int seq
+        text tool_name
+        jsonb arguments
+        text status
+        jsonb result
+        int latency_ms
     }
 ```
 
@@ -355,9 +371,9 @@ erDiagram
 - **`policies`**: Read-only store for the 6 internal governance policies.
 - **`accounts`**: Ground-truth customer account records (`ACC-1001`..`ACC-1012`) enriched with primary `-01` site `country` codes for SLA timezone resolution.
 - **`tickets`**: Historical and live support tickets (`TCK-*`), indexed on `(customer_id, created_at)` and `(customer_id, site_id)` for repeat-contact detection and live status updates.
-- **`conversations`**: Maintains persistent session lifecycle across process restarts.
-- **`approvals`**: Decoupled HITL table. Enables non-blocking workflow: status values are `pending`, `approved`, `edited`, `rejected`.
-- **`traces`**: Complete execution traces ensuring reproducible end-to-end replay.
+- **`conversations`**: Persistent session state across restarts: workflow `stage`, `guard_history`, versioned orchestrator `state`, and `last_turn`/`last_seq` counters assigned under a per-conversation row lock (`SELECT ... FOR UPDATE`).
+- **`approvals`**: Decoupled HITL table. Enables non-blocking workflow: status values are `PENDING`, `APPROVED`, `EDITED`, `REJECTED`; creation is idempotent per `(conversation_id, idempotency_key)` and resolution is a compare-and-set from `PENDING`.
+- **`traces`** / **`tool_calls`**: Append-only per-agent execution log (PydanticAI message history in `model_messages`, redacted `input`, cost) with each tool envelope in `tool_calls`; `StateStore.replay_trace` rebuilds the whole conversation graph from these rows alone.
 
 ---
 
@@ -383,23 +399,17 @@ The retrieval pipeline (`RetrievalService` in `retrieval/service.py`) implements
 
 ---
 
-## 8. Dual-Layer Observability & Tracing Architecture
+## 8. Observability & Tracing Architecture
+
+Tracing = Postgres trace tables + PydanticAI message history. No external tracing service.
 
 ```mermaid
 flowchart LR
-    PydanticAIRunner["PydanticAI Agent Execution"] --> TracerMiddleware["Tracing Middleware"]
-
-    TracerMiddleware --> LocalStore["1. Local Postgres Traces Table\n(Offline, Self-Contained, Reviewer UI)"]
-    TracerMiddleware --> BraintrustCheck{"BRAINTRUST_API_KEY\nConfigured?"}
-
-    BraintrustCheck -- Yes --> BraintrustSDK["2. Braintrust Cloud SDK\n(Waterfall Traces, Eval Scoring)"]
-    BraintrustCheck -- No --> SilentlyPass["Skip Cloud Tracing"]
+    PydanticAIRunner["PydanticAI Agent Execution"] --> Store["StateStore"]
+    Store --> Traces["Postgres traces / tool_calls\n(model_messages jsonb = ModelMessagesTypeAdapter dump)"]
 ```
 
-1. **Local Postgres Trace Layer (Offline Guarantee)**:
-   Every agent invocation records its role, prompt tokens, completion tokens, latency, tool calls, and RRF/rerank scores directly to the Postgres `traces` table. This satisfies the requirement that a reviewer running `docker compose` without external API credentials can inspect traces in the UI.
-2. **Braintrust Cloud Layer (Visual Live Demo & Evals)**:
-   When `BRAINTRUST_API_KEY` is present in `.env`, the system automatically logs spans to Braintrust via `@traced` and `braintrust.auto_instrument()`. This provides interactive waterfall visualizations for the interview presentation and powers the evaluation scorers.
+Every agent invocation records its role, prompt/completion tokens, latency, cost, tool calls and the serialized PydanticAI message history to Postgres `traces` / `tool_calls`. A reviewer running `docker compose` without external credentials can inspect traces in the UI.
 
 ---
 
@@ -479,7 +489,7 @@ The codebase is organized into clean, single-responsibility packages separating 
 │   │   └── build.py                   # Offline operator build entrypoint (loads KB + seed tables, writes db/seed.dump)
 │   └── migrations/
 │       ├── 20260929_1500_kb-schema.sql        # Vector extension + snapshots, kb_articles, passages, policies, accounts, tickets
-│       └── 20260930_1000_agent-runtime.sql    # conversations, messages, approvals, traces, simulated_actions
+│       └── 20261001_0900_agent-runtime.sql    # conversations, messages, approvals, traces, tool_calls
 │
 ├── docs/                              # Project documentation, plans & evaluation reports
 │   ├── overview/                      # Deliverable D diagrams (logical & deployment views)
@@ -518,8 +528,15 @@ The codebase is organized into clean, single-responsibility packages separating 
 │   ├── models.py                      # TelemetryStatus, TelemetryEvidence, TelemetryToolResult[T], payload schemas
 │   └── telemetry.py                   # TelemetryService and verbatim [telemetry] evidence extraction
 │
+├── storage/                           # Postgres runtime state (sync)
+│   ├── models.py                      # Frozen row models (Conversation, StoredMessage, TraceRecord, Approval, ConversationSnapshot)
+│   ├── state_store.py                 # StateStore: conversations, messages, traces, rehydrate, replay
+│   ├── approval_queries.py            # Approval row SQL (idempotent create, CAS resolve)
+│   ├── replay.py                      # TraceReplay: pure replay assembly from rows
+│   └── sql.py / jsonb.py              # Row-mapping helpers; NUL-safe jsonb
+│
 ├── services/                          # Business domain logic
-│   ├── models.py                      # Service-domain Pydantic schemas (CallerIdentity, SLADeadlines, RepeatContactResult, ApprovalRecord, CountryCodeOutput)
+│   ├── models.py                      # Service-domain Pydantic schemas (CallerIdentity, SLADeadlines, RepeatContactResult, CountryCodeOutput)
 │   ├── customer_service.py            # Account identification & SLA calculations
 │   ├── ticket_service.py              # Historical tickets & repeat contact analysis
 │   ├── approval_service.py            # Non-blocking HITL approvals lifecycle
@@ -556,7 +573,6 @@ The codebase is organized into clean, single-responsibility packages separating 
     ├── run_scenarios.py               # 12-scenario multi-turn replay harness
     ├── retrieval_metrics.py           # Recall@k and MRR computation
     ├── scenario_scorer.py             # Scores groundedness, citations, tool calls, guardrails
-    ├── braintrust_tracer.py           # Braintrust waterfall spans & eval logging
     ├── test_prompt.py                 # CLI playground to test & iterate on isolated prompts
     └── recorded_traces/               # Committed traces for the 3 representative conversations
 ```

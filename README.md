@@ -4,7 +4,7 @@ This repository implements a conversational AI support engineer grounded in Cato
 
 ## Knowledge Base & Database Seed Dump
 
-- **Database Seed Dump**: `db/seed.dump` is a custom-format PostgreSQL dump holding KB articles, passages, `tsvector` search data, vector embeddings, internal policies, customer accounts (enriched with primary `-01` site country codes), and historical tickets. It sits outside `data/kb_ingestion/` to allow instant startup without crawling or re-embedding.
+- **Database Seed Dump**: `db/seed.dump` is a custom-format PostgreSQL dump holding KB articles, passages, `tsvector` search data, vector embeddings, internal policies, customer accounts (enriched with primary `-01` site country codes), and historical tickets. It sits outside `data/kb_ingestion/` to allow instant startup without crawling or re-embedding. Runtime tables (`conversations`, `messages`, `traces`, `tool_calls`, `approvals`, owned by `storage/`) are intentionally absent from the dump so a restore never wipes live conversations.
 - **Model Weights**: The embedding model (`BAAI/bge-small-en-v1.5` at revision `5c38ec7c405ec4b44b94cc5a9bb96e735b38267a`) and reranker model (`cross-encoder/ms-marco-MiniLM-L12-v2` at revision `7b0235231ca2674cb8ca8f022859a6eba2b1c968`) are downloaded during container image build into `/opt/models`. They sit outside `data/kb_ingestion/` and are not committed to the git repository. At runtime, offline mode is enforced via `HF_HUB_OFFLINE=1` and `TRANSFORMERS_OFFLINE=1`.
 
 ## Reviewer Quickstart

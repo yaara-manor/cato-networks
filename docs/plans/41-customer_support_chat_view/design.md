@@ -38,7 +38,7 @@ flowchart LR
 |---|---|---|
 | Deliverable `ui/customer_app.py` | No `ui/` package, no API layer, no entrypoint that builds `Workflow`; no UI dependency in `pyproject.toml`; Dockerfile pip-lists deps by hand | Add `ui/` package, `streamlit` dep (pyproject + Dockerfile), composition root `ui/session.py` |
 | "Live responses" | `run_turn` is sync and returns the finished reply once; no token stream, no progress hook | Spinner during the turn + polled stage label (3.2); no streaming |
-| "Citation badges linking to KB / policy docs" | `RecorderTurn.complete_turn` passes `()` as citations to `StateStore.complete_turn`; the `messages.citations` column exists but is always empty. Reply text carries inline markers `[kb:slug#anchor]`, `[policy:ID]`, `[telemetry:tool]` (validated by `guardrails.check_citations`). `RetrievedPassage` has `public_url`, `title`, `heading` | Persist citations at turn end from the grounding bundle (4.2). Small change to 23 files |
+| "Citation badges linking to KB / policy docs" | `TurnRecorder.complete_turn` passes `()` as citations to `StateStore.complete_turn`; the `messages.citations` column exists but is always empty. Reply text carries inline markers `[kb:slug#anchor]`, `[policy:ID]`, `[telemetry:tool]` (validated by `guardrails.check_citations`). `RetrievedPassage` has `public_url`, `title`, `heading` | Persist citations at turn end from the grounding bundle (4.2). Small change to 23 files |
 | Policy docs "linking" | Policies are local `data/policies/*.md` / `policies` table, no public URL | Policy badge opens an in-app dialog with the body (4.2) |
 | "Pending escalation status banners" | `TurnResult.escalation_offered` is not persisted; only `approvals` rows are | Banners derive from approvals only; the escalation-offered flag shows for the live turn only (4.4, Q2) |
 | Telemetry chips | `StoredMessage.telemetry_evidence` persisted. Architecture doc quotes `[telemetry]`, code uses `[telemetry:<tool>]` | Chips from stored evidence; inline `[telemetry:tool]` markers stripped from display text |
@@ -58,7 +58,7 @@ flowchart LR
 Chosen A. Streamlit is a new dependency (only one added).
 
 ### 3.2 "Live" responses
-`run_turn` blocks for seconds. During it the page shows `st.spinner` plus a stage label. A second thread is NOT used for the turn; instead the turn runs in the script thread and a `st.fragment(run_every="1s")` is not possible while the script is blocked, so the stage label is dropped from v1: spinner text is "Working on it" (Q3). Rationale: the stage poll would need a second DB connection and thread plumbing for a cosmetic gain. Approval banners refresh via a fragment polled every 5 s while the script is idle.
+`run_turn` blocks for seconds and runs in the script thread. The page shows `st.spinner` ("Working on it") only; a live stage label would need a worker thread plus a second DB connection polling `conversations.stage`, cosmetic gain for v1 (Q3). Approval banners refresh via a fragment polled every 5 s while the script is idle.
 
 ### 3.3 Where logic lives (SRP)
 - `ui/customer_app.py`: rendering and event wiring only (chat input, sidebar, dialogs). No SQL, no parsing.

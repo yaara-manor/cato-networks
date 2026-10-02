@@ -30,6 +30,7 @@ from core.config import settings
 from orchestration import AgentPorts, Workflow, build_workflow
 from retrieval.models import KBSearchStatus, PolicyDocument, RetrievedPassage
 from storage import AgentRole, StateStore
+from tools.models import TelemetryEvidence
 
 PRIYA = "priya@bluebirdretail.com"  # verified member of ACC-1002, not admin
 STRANGER = "mark@example.com"  # unknown caller
@@ -63,6 +64,7 @@ class Scripted:
     actions: tuple[SupportAction, ...] = ()
     escalate: bool = False
     unavailable: tuple[UnavailableTool, ...] = ()
+    evidence: tuple[TelemetryEvidence, ...] = ()
     kb_status: KBSearchStatus = KBSearchStatus.CONFIDENT
     reply: str = "Here is your answer."
     passages: tuple[RetrievedPassage, ...] = ()
@@ -86,7 +88,9 @@ class Scripted:
     def diagnostics(self, data: DiagnosticsInput, deps: SupportDeps) -> AgentRun[DiagnosticEvidence]:
         self._seen("diagnostics", data)
         evidence = DiagnosticEvidence(
-            findings=DiagnosticsFindings(), unavailable_tools=self.unavailable, sev1_corroborated=self.sev1
+            findings=DiagnosticsFindings(),
+            evidence_items=self.evidence,
+            unavailable_tools=self.unavailable, sev1_corroborated=self.sev1
         )
         return AgentRun(output=evidence, trace=_trace(AgentRole.DIAGNOSTICS))
 

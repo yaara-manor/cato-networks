@@ -44,7 +44,7 @@ from orchestration.degradation import (
     derive_degradations,
 )
 from orchestration.gate import GatedActions, gate_actions
-from orchestration.models import AgentPorts, TurnResult
+from orchestration.models import AgentPorts, Citation, TurnResult
 from orchestration.recorder import TurnRecorder
 from orchestration.routing import compose_reply, next_stage_after_triage
 from orchestration.state import OrchestratorState
@@ -202,6 +202,7 @@ class Workflow:
             results=results,
             escalation_offered=plan.escalate_to_human or retrieval_down,
             degradations=degradations,
+            knowledge=knowledge,
         )
 
     def _execute(
@@ -315,6 +316,7 @@ class Workflow:
         results: tuple[ActionResult, ...] = (),
         escalation_offered: bool = False,
         degradations: tuple[DegradationNotice, ...] = (),
+        knowledge: KnowledgeBundle | None = None,
     ) -> TurnResult:
         """State and reply are one transaction: a retry never reapplies a transition."""
         result = TurnResult(
@@ -324,6 +326,7 @@ class Workflow:
             action_results=results,
             escalation_offered=escalation_offered or has_failure(results),
             degradations=degradations,
+            citations=Citation.for_reply(reply, knowledge),
         )
         turn.recorder.complete_turn(result, evidence, state=state.to_snapshot())
         return result

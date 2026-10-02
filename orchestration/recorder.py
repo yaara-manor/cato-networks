@@ -131,7 +131,7 @@ class TurnRecorder:
             self._turn,
             sender,
             result.reply,
-            (),
+            tuple(c.to_row() for c in result.citations),
             evidence,
             uuid5(self._message_id, "reply"),
             self._clock.now(),

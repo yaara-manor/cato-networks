@@ -6,10 +6,17 @@ from uuid import UUID, uuid4
 import psycopg
 from psycopg import sql
 
+from agents.models import ToolCall
 from guardrails.models import SessionGuardHistory
 from guardrails.redactor import redact
-from agents.models import ToolCall
-from storage import AgentRole, MessageSender, StateStore, ToolCallRecord, TraceRecord
+from storage import (
+    AgentRole,
+    MessageSender,
+    SimulatedActionStatus,
+    StateStore,
+    ToolCallRecord,
+    TraceRecord,
+)
 
 NOW = datetime(2026, 10, 1, 9, 0, tzinfo=UTC)
 PSK = "Fg7!qwe-DC-2026-tunnel"
@@ -86,6 +93,22 @@ def test_secret_in_trace_output_and_tool_calls_is_redacted(
             sql.SQL("select t::text from {} t where t.conversation_id = %s").format(sql.Identifier(table)),
             (cid,),
         )
+    )
+    assert PSK not in dump
+    assert "[REDACTED" in dump
+
+
+def test_secret_in_action_payload_and_result_is_redacted(
+    store: StateStore,
+    new_conversation: Callable[[], UUID],
+    conn: psycopg.Connection[Any],
+) -> None:
+    cid = new_conversation()
+    claimed = store.claim_action(cid, None, None, "CREATE_TICKET", "k", {"body": f"PSK is {PSK}"}, NOW)
+    store.finish_action(claimed.action.id, SimulatedActionStatus.DONE, {"note": f"PSK is {PSK}"}, NOW)
+
+    dump = " ".join(
+        row[0] for row in conn.execute("select t::text from simulated_actions t where conversation_id = %s", (cid,))
     )
     assert PSK not in dump
     assert "[REDACTED" in dump

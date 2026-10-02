@@ -39,6 +39,7 @@ PRIYA = "priya@bluebirdretail.com"  # verified member of ACC-1002, not admin
 STRANGER = "mark@example.com"  # unknown caller
 
 _CLEANUP_SQL = (
+    "delete from simulated_actions where conversation_id = any(%(ids)s)",
     "delete from tool_calls where conversation_id = any(%(ids)s)",
     "delete from approvals where conversation_id = any(%(ids)s)",
     "delete from traces where conversation_id = any(%(ids)s)",

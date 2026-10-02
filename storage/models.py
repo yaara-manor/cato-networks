@@ -173,6 +173,37 @@ class Approval(_StorageModel):
     resolved_at: AwareDatetime | None
 
 
+class SimulatedActionStatus(StrEnum):
+    CLAIMED = "CLAIMED"
+    DONE = "DONE"
+    FAILED = "FAILED"
+    INVALID = "INVALID"
+    REFUSED = "REFUSED"
+
+
+class SimulatedAction(_StorageModel):
+    id: UUID
+    conversation_id: UUID
+    message_id: UUID | None  # None on the approval path
+    idempotency_key: str
+    kind: str
+    approval_id: UUID | None
+    payload: dict[str, Any]
+    status: SimulatedActionStatus
+    result: dict[str, Any] | None
+    claimed_at: AwareDatetime
+    completed_at: AwareDatetime | None
+
+
+class ClaimedAction(_StorageModel):
+    action: SimulatedAction
+    is_new: bool
+
+
+class ActionStateError(Exception):
+    """Caller bug: finishing an action that is unknown or already finished."""
+
+
 class ApprovalResolution(_StorageModel):
     status: ApprovalStatus
     reviewer_notes: str | None = None

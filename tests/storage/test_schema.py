@@ -11,7 +11,7 @@ from guardrails.models import SessionGuardHistory
 from storage import Conversation, ConversationStage, StateSnapshot
 from tests.storage.conftest import NewConversation
 
-RUNTIME_TABLES = {"conversations", "messages", "traces", "tool_calls", "approvals"}
+RUNTIME_TABLES = {"conversations", "messages", "traces", "tool_calls", "approvals", "simulated_actions"}
 
 
 def test_runtime_tables_exist_and_apply_schema_is_idempotent(conn: psycopg.Connection[Any]) -> None:

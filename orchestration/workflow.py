@@ -98,10 +98,14 @@ class Workflow:
         try:
             return self._answer(turn, snapshot, OrchestratorState.from_snapshot(snapshot.conversation.state))
         except Exception as error:  # the one agent-failure boundary; the message is already saved
-            logger.exception("agent failure on turn %s", stored.turn)
-            recorder.record_failure(error)
-            recorder.complete_turn(AGENT_FAILURE_PAUSE, sender=MessageSender.SYSTEM)
-            return TurnResult(reply=AGENT_FAILURE_PAUSE, path=recorder.path)
+            return self._pause(recorder, error)
+
+    def _pause(self, recorder: TurnRecorder, error: Exception) -> TurnResult:
+        """State is not saved: carry-over flags stay as the last good turn left them."""
+        logger.error("agent failure: %s", type(error).__name__, exc_info=error)
+        recorder.record_failure(error)
+        recorder.complete_turn(AGENT_FAILURE_PAUSE, sender=MessageSender.SYSTEM)
+        return TurnResult(reply=AGENT_FAILURE_PAUSE, path=recorder.path)
 
     def _replay(self, snapshot: ConversationSnapshot, reply: StoredMessage, message_id: UUID) -> TurnResult:
         pending = tuple(

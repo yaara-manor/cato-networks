@@ -15,9 +15,9 @@ from storage.jsonb import redacted_json
 from storage.models import (
     Approval,
     ApprovalResolution,
+    ClaimedAction,
     Conversation,
     ConversationSnapshot,
-    ClaimedAction,
     ConversationStage,
     MessageSender,
     SimulatedAction,

@@ -5,7 +5,12 @@ from uuid import UUID, uuid4
 import psycopg
 
 from storage.jsonb import redacted_json
-from storage.models import ActionStateError, ClaimedAction, SimulatedAction, SimulatedActionStatus
+from storage.models import (
+    ActionStateError,
+    ClaimedAction,
+    SimulatedAction,
+    SimulatedActionStatus,
+)
 from storage.sql import fetch_all, fetch_one, jsonable
 
 

@@ -48,7 +48,7 @@ Same as plan 01 (typed, no inline imports, frozen tuples, functional tests with 
 
 **Files:** modify `agents/models.py`, `tests/agents/test_contracts.py`.
 
-**Interfaces:** `DiagnosticEvidence.from_tool_results(findings: DiagnosticsFindings, results: Sequence[TelemetryToolResult[Any]]) -> DiagnosticEvidence` (evidence of `OK` results flattened in call order; every non-OK result becomes `UnavailableTool(tool_name, status, error)` in the `unavailable_tools` field). `KnowledgeBundle.from_tool_results(findings: KnowledgeFindings, searches: Sequence[KBSearchResult], policies: Sequence[PolicyDocument]) -> KnowledgeBundle` per the rule above; `queries` = each search's `query` in call order; `needs_more_telemetry` copied from `findings`.
+**Interfaces:** `DiagnosticEvidence.from_tool_results(findings: DiagnosticsFindings, results: Sequence[TelemetryToolResult[Any]]) -> DiagnosticEvidence` (evidence of `OK` results flattened in call order; every non-OK result becomes `UnavailableTool(tool_name, status, error)` in the `unavailable_tools` field; `sev1_corroborated` is true when OK `list_sites` / `get_site_status` payloads show two or more distinct sites `disconnected` sharing a `country`, or every listed site disconnected; never model-set). `KnowledgeBundle.from_tool_results(findings: KnowledgeFindings, searches: Sequence[KBSearchResult], policies: Sequence[PolicyDocument]) -> KnowledgeBundle` per the rule above; `queries` = each search's `query` in call order; `needs_more_telemetry` copied from `findings`.
 
 - [ ] **Step 1: Failing test** status truth table (the only unit-style test; high-risk rule): all combinations of {CONFIDENT, LOW_CONFIDENCE_REFUSAL, UNAVAILABLE} over 0-2 searches, parameterized; dedup of duplicate passage ids; policy dedup.
 - [ ] **Step 2: Failing test** diagnostics assembly with real envelopes from `TelemetryService` (S-1007-01 BGP): `evidence_items` includes the `routes_count` anomaly entry, `has_anomaly` true, `unavailable_tools` empty; a `NOT_FOUND` envelope lands in `unavailable_tools`.
@@ -94,6 +94,10 @@ Same as plan 01 (typed, no inline imports, frozen tuples, functional tests with 
 
 ## Unresolved Questions
 
-1. Refuse `list_sites` for unverified callers too (plan says yes)?
-2. Evidence from `get_client_diagnostics` of a same-account but different user: allowed?
-3. Show scores/candidates to the Knowledge model, or hide (experiments D variants hid scores)?
+None.
+
+Decisions recorded:
+- `list_sites` is refused for unverified callers too (same envelope as other tools).
+- `get_client_diagnostics` evidence of a same-account but different user is allowed: the guard is account ownership (`customer_id`), not user identity.
+- Knowledge model sees passage text and ids only; rerank scores and candidates are hidden (matches experiments D variants); code keeps scores in the bundle.
+

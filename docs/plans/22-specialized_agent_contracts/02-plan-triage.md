@@ -86,5 +86,9 @@ Prompt contents per design §4.1/§4.5, fixed headings (Role, Inputs you receive
 
 ## Unresolved Questions
 
-1. `calculate_sla_deadlines` with unknown country: `None` SLA or crash? (verify; plan assumes `None` when clarification needed)
-2. Priority rubric: policy text from `POL-SLA`/`POL-SEV1` embedded in the prompt or referenced only?
+None.
+
+Decisions recorded:
+- SLA is computed only when `identity.account` exists and `needs_country_clarification` is false; otherwise `sla=None` (code guard, no reliance on `calculate_sla_deadlines` behaviour for unknown country).
+- Prompt embeds a condensed priority rubric (P1 criteria from `POL-SEV1`, P2-P4 summary from `POL-SLA`) and cites the policy ids; full policy text is fetched by Knowledge, not duplicated in the prompt.
+- No `claimed_tier` field; effective tier is always from the account record; `check_claims` runs in the 23 ingestion guard before Triage (design §8).

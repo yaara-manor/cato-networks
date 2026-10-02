@@ -112,4 +112,9 @@
 
 ## Unresolved Questions
 
-1. Is message history available on `UnexpectedModelBehavior` in 2.51, or is the failure trace empty?
+None.
+
+Decisions recorded:
+- Failure-path messages: `run_role` wraps `run_sync` in PydanticAI `capture_run_messages()`, which keeps the message list even when `UnexpectedModelBehavior` is raised; fallbacks (design §4.2, §4.3) use it. Task 3 test proves it with a scripted tool call followed by invalid output; if the installed 2.51 API differs, fall back to `messages=()` and weaken only those fallbacks.
+- Single `settings.llm_model` for all roles; per-role split not added.
+- Opt-in live-LLM smoke test is owned by plan 04 Task 3.

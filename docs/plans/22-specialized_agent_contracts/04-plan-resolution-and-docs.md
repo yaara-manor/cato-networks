@@ -19,7 +19,7 @@ Same as plan 01 (typed, no inline imports, frozen contracts, functional tests, n
 - Validators are plain module-level functions registered by `build_resolution_agent`; each does one check and returns the plan unchanged or raises `ModelRetry` with fixed text built from violation kind names only (never customer text, never matched secret text). Shared message formatting is one small helper.
 - `deps.grounding` is set by `run_resolution` via `dataclasses.replace(deps, grounding=data.grounding_context())`; validators read it and raise a clear programming error if `None`.
 - Canned holding message: one module constant in `agents/resolution.py`, no markers/numbers; test asserts it passes `check_citations` (as a refusal grounding) and `check_outgoing_message`.
-- Sev-1 hard gate lives in `guardrails.validator.check_action` (design §4.4), not in `agents/`: Resolution only proposes `PAGE_ON_CALL`; the orchestrator consumes the decision. Idempotent: no re-page when the snapshot already shows paged.
+- Sev-1 hard gate lives in `guardrails.validator.check_action` (design §4.4), not in `agents/`: Resolution only proposes `PAGE_ON_CALL`; the orchestrator consumes the decision. Gate = Triage `P1` AND `sev1_corroborated` (code-derived from telemetry, design §4.4) AND not already paged; LLM-judged priority alone never pages.
 - `identity.account is None`: `run_resolution` drops all actions (validated in code, not trusted to the prompt). `target_account_id` for `to_proposed_action` always comes from `identity.account`; the orchestrator calls it, this plan only guarantees the mapping.
 - Approval is not a model field (design §3.5); the 23 orchestrator derives pending approvals from `check_action`.
 - Escalation reason is a fixed string ("output validation retries exhausted" or "model failure") per plan 01 decision 7.
@@ -36,8 +36,8 @@ Same as plan 01 (typed, no inline imports, frozen contracts, functional tests, n
 ## File Structure
 
 - `guardrails/models.py` (modify, small): add `ActionType.PAGE_ON_CALL`.
-- `guardrails/validator.py` (modify, small): `check_action` gains a `PAGE_ON_CALL` rule and two keyword arguments with defaults (`priority: TicketPriority | None = None`, `already_paged: bool = False`) so existing callers/tests stay valid; ALLOW only when priority is `P1` and not already paged, else DENY `POL-SEV1`. Read the existing match statement and exhaustiveness handling first; `SupportActionKind` stays a separate enum (it has ungated kinds), mapped via the table.
-- `tests/guardrails/test_validator.py` (modify): P1 and not paged -> ALLOW; non-P1 -> DENY; already paged -> DENY; unknown identity -> existing POL-IDV DENY.
+- `guardrails/validator.py` (modify, small): `check_action` gains a `PAGE_ON_CALL` rule and three keyword arguments with defaults (`priority: TicketPriority | None = None`, `sev1_corroborated: bool = False`, `already_paged: bool = False`) so existing callers/tests stay valid; ALLOW only when priority is `P1`, `sev1_corroborated` and not already paged, else DENY `POL-SEV1`. Read the existing match statement and exhaustiveness handling first; `SupportActionKind` stays a separate enum (it has ungated kinds), mapped via the table.
+- `tests/guardrails/test_validator.py` (modify): P1 + corroborated + not paged -> ALLOW; non-P1 -> DENY; P1 without corroboration -> DENY; already paged -> DENY; unknown identity -> existing POL-IDV DENY.
 - `agents/resolution.py` (create): `HOLDING_MESSAGE`, two output validators, `build_resolution_agent`, `run_resolution`.
 - `prompts/resolution.md` (create).
 - `agents/__init__.py` (modify): re-exports only; public contracts, `build_*`, `run_*`, `SupportDeps`, `AgentRun`, `AgentTrace`.
@@ -83,10 +83,11 @@ Content per design §4.4/§4.5: empathetic tone under pressure; follow KB diagno
 
 ### Task 3: Exports and end-to-end contract flow
 
-**Files:** modify `agents/__init__.py`; add `tests/agents/test_pipeline_contracts.py`.
+**Files:** modify `agents/__init__.py`; add `tests/agents/test_pipeline_contracts.py`, `tests/agents/test_live_smoke.py`.
 
 - [ ] **Step 1: Failing test**: one scripted full chain (Triage, Diagnostics, Knowledge, Resolution) over a seeded account with scripted models, checking each role's assembled output is accepted as the next role's input and that `ResolutionPlan.customer_message` passes `check_citations` and `check_outgoing_message` end to end; also `from agents import ...` for every public name.
 - [ ] **Step 2:** Run; FAIL. Update `__init__.py` (re-exports only, zero logic); PASS.
+- [ ] **Step 2b:** `test_live_smoke.py`: one Triage run against the real `settings.llm_model`, `pytest.mark.skipif` on missing `OPENAI_API_KEY`; asserts only that a valid `TriageResult` returns.
 - [ ] **Step 3: Commit** `feat(agents): exports and chain test`.
 
 ### Task 4: Docs
@@ -106,6 +107,11 @@ Content per design §4.4/§4.5: empathetic tone under pressure; follow KB diagno
 
 ## Unresolved Questions
 
-1. Sev-1 gate keyed on Triage `P1` (LLM-judged) or telemetry-derived (2+ sites down)?
-2. Opt-in live-LLM smoke test here or Phase 5 (design Q4)?
-3. Per-role model split (design Q3): plan assumes single `settings.llm_model`.
+None.
+
+Decisions recorded:
+- Sev-1 gate: `P1` AND `sev1_corroborated` AND not paged (design §4.4). `sev1_corroborated` is built in plan 03 (`DiagnosticEvidence.from_tool_results`); the orchestrator passes it (False if Diagnostics skipped).
+- Live-LLM smoke test lives here: `tests/agents/test_live_smoke.py` (Task 3), skipped without `OPENAI_API_KEY`, one Triage run against the real model; no Phase 5 deferral.
+- Single `settings.llm_model` for all roles; no per-role split.
+- `check_claims` stays in the 23 ingestion guard (design §8); not called from `run_resolution`.
+

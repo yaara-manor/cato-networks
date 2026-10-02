@@ -8,6 +8,7 @@ from pydantic_ai.exceptions import ModelHTTPError
 from pydantic_ai.messages import ModelMessage, ModelRequest, ModelResponse, ToolCallPart
 from pydantic_ai.models.function import AgentInfo, FunctionModel
 
+from agents.models import AgentRole
 from agents.base import SupportDeps, build_agent, load_prompt
 from agents.messages import tool_call_dicts, tool_returns
 from agents.runner import run_role
@@ -67,7 +68,7 @@ def test_guard_note_reaches_model_only_with_bypass_history(make_deps: MakeDeps, 
         history = history.with_injection(verdict)
     seen: list[str] = []
 
-    run_role(_agent(_recording_model(seen)), "hi", make_deps(guard_history=history), "TRIAGE")
+    run_role(_agent(_recording_model(seen)), "hi", make_deps(guard_history=history), AgentRole.TRIAGE)
 
     joined = "\n".join(seen)
     assert "You are a test role." in joined
@@ -77,7 +78,7 @@ def test_guard_note_reaches_model_only_with_bypass_history(make_deps: MakeDeps, 
 def test_extractors_keep_typed_tool_returns(make_deps: MakeDeps) -> None:
     model = scripted_model([("search_kb", {"query": _q10()})], {"text": "done"})
 
-    outcome = run_role(_agent(model), "hi", make_deps(), "KNOWLEDGE")
+    outcome = run_role(_agent(model), "hi", make_deps(), AgentRole.KNOWLEDGE)
 
     assert outcome.output == Answer(text="done")
     (result,) = tool_returns(list(outcome.messages), "search_kb")
@@ -93,11 +94,13 @@ def test_extractors_keep_typed_tool_returns(make_deps: MakeDeps) -> None:
 def test_exhausted_output_retries_return_fallback_outcome(make_deps: MakeDeps) -> None:
     model = scripted_model([("search_kb", {"query": _q10()})], None)
 
-    outcome = run_role(_agent(model), "hi", make_deps(), "KNOWLEDGE")
+    outcome = run_role(_agent(model), "hi", make_deps(), AgentRole.KNOWLEDGE)
 
     assert outcome.output is None
     assert outcome.trace.agent_role == "KNOWLEDGE"
     assert outcome.trace.status == "ERROR"
+    assert outcome.trace.model_messages is not None
+    assert len(outcome.trace.model_messages) == len(outcome.messages)
     assert outcome.trace.error
     # Messages survive the failure, so fallbacks can still read tool returns.
     assert len(tool_returns(list(outcome.messages), "search_kb")) == 1
@@ -109,11 +112,11 @@ def test_transport_errors_propagate(make_deps: MakeDeps) -> None:
         raise ModelHTTPError(status_code=429, model_name="scripted")
 
     with pytest.raises(ModelHTTPError):
-        run_role(_agent(FunctionModel(boom)), "hi", make_deps(), "TRIAGE")
+        run_role(_agent(FunctionModel(boom)), "hi", make_deps(), AgentRole.TRIAGE)
 
 
 def test_no_tool_call_run_gives_empty_extracts_and_usage(make_deps: MakeDeps) -> None:
-    outcome = run_role(_agent(scripted_model([], {"text": "hi"})), "hi", make_deps(), "TRIAGE")
+    outcome = run_role(_agent(scripted_model([], {"text": "hi"})), "hi", make_deps(), AgentRole.TRIAGE)
 
     assert tool_returns(list(outcome.messages), "search_kb") == ()
     assert outcome.trace.tool_calls == []
@@ -125,7 +128,7 @@ def test_no_tool_call_run_gives_empty_extracts_and_usage(make_deps: MakeDeps) ->
 def test_cost_set_for_known_model(make_deps: MakeDeps) -> None:
     model = scripted_model([], {"text": "hi"}, model_name="gpt-5-nano")
 
-    outcome = run_role(_agent(model), "hi", make_deps(), "TRIAGE")
+    outcome = run_role(_agent(model), "hi", make_deps(), AgentRole.TRIAGE)
 
     assert outcome.trace.cost_usd is not None and outcome.trace.cost_usd > 0
 

@@ -7,7 +7,7 @@ from pydantic_ai.messages import ModelMessage
 from pydantic_ai.usage import RunUsage
 
 from agents.base import SupportDeps
-from agents.models import AgentTrace
+from agents.models import AgentRole, AgentTrace
 
 
 @dataclass(frozen=True)
@@ -19,7 +19,7 @@ class RoleOutcome[O]:
     trace: AgentTrace
 
 
-def run_role[O](agent: Agent[SupportDeps, O], prompt: str, deps: SupportDeps, role: str) -> RoleOutcome[O]:
+def run_role[O](agent: Agent[SupportDeps, O], prompt: str, deps: SupportDeps, role: AgentRole) -> RoleOutcome[O]:
     """Run one agent turn. Only `UnexpectedModelBehavior` is absorbed; transport errors propagate."""
     usage = RunUsage()
     output: O | None = None

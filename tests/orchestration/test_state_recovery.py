@@ -1,12 +1,12 @@
+from typing import Any
 from uuid import UUID, uuid4
 
 import pytest
 
 from core.clock import SimulationClock
 from orchestration.canned import AGENT_FAILURE_PAUSE
-from orchestration.recorder import TurnRecorder
 from orchestration.state import STATE_VERSION, OrchestratorState, StateVersionError
-from storage import StateSnapshot, StateStore
+from storage import MessageSender, StateSnapshot, StateStore, StoredMessage
 from tests.orchestration.conftest import PRIYA, Harness, Scripted
 from tests.orchestration.test_partial_failure import DOWN, TELEMETRY_TEXT
 
@@ -51,20 +51,36 @@ def test_newer_snapshot_is_refused_and_untouched(harness: Harness, scripted: Scr
     assert scripted.calls == []
 
 
-def test_state_save_crash_then_retry_replays_and_next_turn_works(
+def test_reply_write_failure_rolls_back_state_and_retry_replays(
     harness: Harness, scripted: Scripted, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    scripted.unavailable = DOWN  # a successful turn would set notice_shown
     conversation_id = harness.new_conversation(PRIYA)
     workflow = harness.workflow(scripted, None)
     retried = uuid4()
+    real_insert = StateStore._insert_message
+    failures = [True]
 
-    def boom(self: TurnRecorder, state: StateSnapshot) -> None:
-        raise RuntimeError("db down")
+    def fail_once(self: StateStore, *args: Any, **kwargs: Any) -> StoredMessage:
+        if failures and args[3] is MessageSender.AGENT:
+            failures.pop()
+            raise RuntimeError("db down")
+        return real_insert(self, *args, **kwargs)
 
-    with monkeypatch.context() as patch:
-        patch.setattr(TurnRecorder, "save_state", boom)
-        assert workflow.run_turn(conversation_id, "help", retried).reply == AGENT_FAILURE_PAUSE
+    monkeypatch.setattr(StateStore, "_insert_message", fail_once)
+    assert workflow.run_turn(conversation_id, "help", retried).reply == AGENT_FAILURE_PAUSE
+    assert not OrchestratorState.from_snapshot(_stored(harness, conversation_id)).notice_shown
     calls = list(scripted.calls)
     assert workflow.run_turn(conversation_id, "help", retried).reply == AGENT_FAILURE_PAUSE
     assert scripted.calls == calls
-    assert workflow.run_turn(conversation_id, "help", uuid4()).reply != AGENT_FAILURE_PAUSE
+    assert workflow.run_turn(conversation_id, "help", uuid4()).reply.startswith(TELEMETRY_TEXT)
+
+
+def test_idempotent_retry_returns_the_full_original_result(harness: Harness, scripted: Scripted) -> None:
+    scripted.unavailable = DOWN
+    conversation_id = harness.new_conversation(PRIYA)
+    workflow = harness.workflow(scripted, None)
+    message_id = uuid4()
+    first = workflow.run_turn(conversation_id, "help", message_id)
+    assert first.degradations
+    assert workflow.run_turn(conversation_id, "help", message_id) == first

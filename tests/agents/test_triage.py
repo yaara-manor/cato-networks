@@ -5,6 +5,7 @@ import pytest
 from pydantic_ai.messages import ModelMessage, ModelRequest, ModelResponse, ToolCallPart
 from pydantic_ai.models.function import AgentInfo, FunctionModel
 
+from agents.models import AgentRole
 from agents.messages import tool_returns
 from agents.models import Intent, TriageInput
 from agents.runner import run_role
@@ -34,7 +35,7 @@ def _triage(make_deps: MakeDeps, email: str, message: str, final: dict[str, Any]
 def _history_for(make_deps: MakeDeps, email: str) -> list[Ticket]:
     deps = make_deps(email)
     model = scripted_model([("get_ticket_history", {})], _decision())
-    outcome = run_role(build_triage_agent(model), "hi", deps, "triage")
+    outcome = run_role(build_triage_agent(model), "hi", deps, AgentRole.TRIAGE)
     (tickets,) = tool_returns(list(outcome.messages), "get_ticket_history")
     return tickets
 
@@ -64,7 +65,7 @@ def _instructions(make_deps: MakeDeps, email: str) -> str:
         seen.extend(m.instructions for m in messages if isinstance(m, ModelRequest) and m.instructions)
         return ModelResponse(parts=[ToolCallPart(info.output_tools[0].name, _decision())])
 
-    run_role(build_triage_agent(FunctionModel(respond)), "hi", make_deps(email), "triage")
+    run_role(build_triage_agent(FunctionModel(respond)), "hi", make_deps(email), AgentRole.TRIAGE)
     return "\n".join(seen)
 
 
@@ -81,7 +82,7 @@ def test_repeat_contact_on_prior_closed_tickets(make_deps: MakeDeps) -> None:
 
     assert run.output.repeat_contact.is_repeat_contact
     assert run.output.sla.priority == "P3"
-    assert run.trace.agent_role == "triage"
+    assert run.trace.agent_role is AgentRole.TRIAGE
 
 
 def test_tier_claim_does_not_raise_effective_tier(make_deps: MakeDeps) -> None:
@@ -120,7 +121,7 @@ def test_model_failure_keeps_identity_and_sla(make_deps: MakeDeps) -> None:
     assert run.output.decision.intent == Intent.KB_INQUIRY
     assert PSK not in run.output.decision.symptom_summary
     assert run.output.identity.account is not None and run.output.sla is not None
-    assert run.trace.agent_role == "triage" and run.trace.error
+    assert run.trace.agent_role is AgentRole.TRIAGE and run.trace.error
 
 
 @pytest.mark.parametrize("intent", list(Intent))

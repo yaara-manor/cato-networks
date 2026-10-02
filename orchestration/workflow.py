@@ -17,7 +17,7 @@ from agents import (
     TurnSender,
 )
 from core.clock import SimulationClock
-from guardrails import ProposedAction, check_claims, detect, redact
+from guardrails import ProposedAction, check_citations, check_claims, check_outgoing_message, detect, redact
 from orchestration.canned import AGENT_FAILURE_PAUSE, CLARIFICATION_ESCALATION, INJECTION_REFUSAL
 from orchestration.degradation import DegradationNotice, DegradedSource, derive_degradations
 from orchestration.gate import gate_actions
@@ -38,6 +38,18 @@ from tools.models import TelemetryEvidence
 logger = logging.getLogger(__name__)
 MAX_DIAG_KB_ROUNDS = 2
 _TURN_SENDERS = {MessageSender.CUSTOMER: TurnSender.CUSTOMER, MessageSender.AGENT: TurnSender.AGENT}
+
+
+class OutgoingMessageRejected(Exception):
+    """A resolution port returned a customer message that fails the outgoing guards."""
+
+
+def _require_clean_message(message: str, data: ResolutionInput, deps: SupportDeps) -> None:
+    """Workflow-boundary check, so no injected port can bypass the agent's own validators."""
+    kinds = {v.kind for v in check_outgoing_message(message, deps.guard_history, deps.approved_actions)}
+    kinds |= {v.kind for v in check_citations(message, data.grounding_context()).violations}
+    if kinds:
+        raise OutgoingMessageRejected(", ".join(sorted(kinds)))
 
 
 @dataclass(frozen=True)
@@ -94,8 +106,9 @@ class Workflow:
         history = snapshot.conversation.guard_history.with_redaction(redacted).with_injection(verdict)
         recorder.save_guard_history(history)
         if verdict.blocked:
-            recorder.complete_turn(INJECTION_REFUSAL)
-            return TurnResult(reply=INJECTION_REFUSAL, path=recorder.path)
+            refusal = TurnResult(reply=INJECTION_REFUSAL, path=recorder.completed_path)
+            recorder.complete_turn(refusal)
+            return refusal
         turn = _Turn(
             recorder,
             redacted.text,
@@ -112,10 +125,13 @@ class Workflow:
         """State is not saved: carry-over flags stay as the last good turn left them."""
         logger.error("agent failure: %s", type(error).__name__, exc_info=error)
         recorder.record_failure(error)
-        recorder.complete_turn(AGENT_FAILURE_PAUSE, sender=MessageSender.SYSTEM)
-        return TurnResult(reply=AGENT_FAILURE_PAUSE, path=recorder.path)
+        pause = TurnResult(reply=AGENT_FAILURE_PAUSE, path=recorder.completed_path)
+        recorder.complete_turn(pause, sender=MessageSender.SYSTEM)
+        return pause
 
     def _replay(self, snapshot: ConversationSnapshot, reply: StoredMessage, message_id: UUID) -> TurnResult:
+        if reply.result is not None:
+            return TurnResult.model_validate(reply.result)
         pending = tuple(
             ProposedAction(
                 action_type=a.action_type,
@@ -232,6 +248,7 @@ class Workflow:
         )
         run = self.ports.resolution(data, turn.deps)
         turn.recorder.record_run(AgentRole.RESOLUTION, data, run)
+        _require_clean_message(run.output.customer_message, data, turn.deps)
         return run.output
 
     def _finish(
@@ -245,14 +262,14 @@ class Workflow:
         escalation_offered: bool = False,
         degradations: tuple[DegradationNotice, ...] = (),
     ) -> TurnResult:
-        """State is saved before the reply: a crash in between never loses an on-call page."""
-        turn.recorder.save_state(state.to_snapshot())
-        turn.recorder.complete_turn(reply, evidence)
-        return TurnResult(
+        """State and reply are one transaction: a retry never reapplies a transition."""
+        result = TurnResult(
             reply=reply,
-            path=turn.recorder.path,
+            path=turn.recorder.completed_path,
             pending_actions=pending,
             executable_actions=executable,
             escalation_offered=escalation_offered,
             degradations=degradations,
         )
+        turn.recorder.complete_turn(result, evidence, state=state.to_snapshot())
+        return result

@@ -5,7 +5,7 @@ from enum import StrEnum
 from typing import Any, Self
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict
-from pydantic_ai.messages import ModelMessage
+from pydantic_ai.messages import ModelMessage, ModelMessagesTypeAdapter
 from pydantic_ai.usage import RunUsage
 
 from agents.messages import tool_call_dicts
@@ -28,6 +28,17 @@ class TraceStatus(StrEnum):
     RETRIED = "RETRIED"
 
 
+class AgentRole(StrEnum):
+    INGESTION_GUARD = "INGESTION_GUARD"
+    TRIAGE = "TRIAGE"
+    DIAGNOSTICS = "DIAGNOSTICS"
+    KNOWLEDGE = "KNOWLEDGE"
+    RESOLUTION = "RESOLUTION"
+    ACTION_GATE = "ACTION_GATE"
+    OUTPUT_GUARD = "OUTPUT_GUARD"
+    ORCHESTRATOR = "ORCHESTRATOR"
+
+
 class ToolCall(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -39,7 +50,7 @@ class ToolCall(BaseModel):
 
 
 class AgentTrace(BaseModel):
-    agent_role: str
+    agent_role: AgentRole
     tool_calls: list[ToolCall]
     latency_ms: int
     prompt_tokens: int
@@ -54,7 +65,7 @@ class AgentTrace(BaseModel):
     @classmethod
     def from_run(
         cls,
-        role: str,
+        role: AgentRole,
         messages: list[ModelMessage],
         usage: RunUsage,
         latency_ms: int,
@@ -64,6 +75,7 @@ class AgentTrace(BaseModel):
         return cls(
             agent_role=role,
             tool_calls=[ToolCall(**call) for call in tool_call_dicts(messages)],
+            model_messages=ModelMessagesTypeAdapter.dump_python(messages, mode="json"),
             latency_ms=latency_ms,
             prompt_tokens=usage.input_tokens,
             completion_tokens=usage.output_tokens,
@@ -80,7 +92,6 @@ class _AgentModel(BaseModel):
 class TurnSender(StrEnum):
     CUSTOMER = "CUSTOMER"
     AGENT = "AGENT"
-    REVIEWER = "REVIEWER"
 
 
 class ConversationTurn(_AgentModel):

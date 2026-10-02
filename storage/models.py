@@ -6,7 +6,7 @@ from uuid import UUID, uuid4
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, model_validator
 
-from agents.models import AgentTrace, ToolCall, TraceStatus
+from agents.models import AgentRole, AgentTrace, ToolCall, TraceStatus
 from core.models import AccountTier
 from guardrails.models import ActionType, SessionGuardHistory
 from tools.models import TelemetryEvidence
@@ -32,17 +32,6 @@ class MessageSender(StrEnum):
     CUSTOMER = "CUSTOMER"
     AGENT = "AGENT"
     SYSTEM = "SYSTEM"
-
-
-class AgentRole(StrEnum):
-    INGESTION_GUARD = "INGESTION_GUARD"
-    TRIAGE = "TRIAGE"
-    DIAGNOSTICS = "DIAGNOSTICS"
-    KNOWLEDGE = "KNOWLEDGE"
-    RESOLUTION = "RESOLUTION"
-    ACTION_GATE = "ACTION_GATE"
-    OUTPUT_GUARD = "OUTPUT_GUARD"
-    ORCHESTRATOR = "ORCHESTRATOR"
 
 
 class ApprovalStatus(StrEnum):
@@ -86,6 +75,7 @@ class StoredMessage(_StorageModel):
     content: str
     citations: tuple[dict[str, str], ...]
     telemetry_evidence: tuple[TelemetryEvidence, ...]
+    result: dict[str, Any] | None = None  # replies only: the TurnResult envelope, JSON
     created_at: AwareDatetime
 
 
@@ -153,7 +143,7 @@ class TraceRecord(_StorageModel):
             message_id=message_id,
             turn=turn,
             seq=None,
-            agent_role=AgentRole(agent_trace.agent_role),
+            agent_role=agent_trace.agent_role,
             parent_trace_id=parent_trace_id,
             input=agent_trace.input,
             output=agent_trace.output,

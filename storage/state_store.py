@@ -33,14 +33,44 @@ from tools.models import TelemetryEvidence
 _TRACE_INPUT_MAX_CHARS = 20_000
 
 
-def _redacted_input(trace_input: dict[str, Any]) -> dict[str, Any]:
-    text = redact(json.dumps(trace_input, ensure_ascii=False)).text
-    if len(text) > _TRACE_INPUT_MAX_CHARS:
-        return {"truncated": text[:_TRACE_INPUT_MAX_CHARS]}
+def _redact_leaves(value: Any) -> Any:
+    """Redact string leaves only, so JSON structure survives; ISO timestamps are not secrets."""
+    match value:
+        case str():
+            return value if _is_timestamp(value) else redact(value).text
+        case dict():
+            return {key: _redact_leaves(item) for key, item in value.items()}
+        case list():
+            return [_redact_leaves(item) for item in value]
+        case _:
+            return value
+
+
+def _is_timestamp(text: str) -> bool:
     try:
-        return json.loads(text)
-    except ValueError:  # a redaction span cut through JSON syntax
-        return {"text": text}
+        datetime.fromisoformat(text)
+    except ValueError:
+        return False
+    return True
+
+
+def _redacted_json(payload: dict[str, Any], max_chars: int | None = None) -> dict[str, Any]:
+    """Redact secrets in any untrusted JSON payload; `max_chars` truncates (None keeps it whole)."""
+    redacted: dict[str, Any] = _redact_leaves(payload)
+    if max_chars is None:
+        return redacted
+    text = json.dumps(redacted, ensure_ascii=False)
+    return {"truncated": text[:max_chars]} if len(text) > max_chars else redacted
+
+
+def _redacted_trace_row(trace: TraceRecord) -> dict[str, Any]:
+    row = trace.model_dump(mode="json")
+    row["input"] = _redacted_json(trace.input, _TRACE_INPUT_MAX_CHARS)
+    if trace.output is not None:
+        row["output"] = _redacted_json(trace.output)
+    if trace.model_messages is not None:
+        row["model_messages"] = [_redacted_json(message) for message in trace.model_messages]
+    return row
 
 
 def _open_turn(messages: Sequence[StoredMessage]) -> int | None:
@@ -112,6 +142,7 @@ class StateStore:
         citations: Sequence[dict[str, str]],
         telemetry_evidence: Sequence[TelemetryEvidence],
         at: datetime,
+        result: dict[str, Any] | None = None,
     ) -> StoredMessage:
         insert_row(
             self._conn,
@@ -124,6 +155,7 @@ class StateStore:
                 "content": content,
                 "citations": list(citations),
                 "telemetry_evidence": [e.model_dump(mode="json") for e in telemetry_evidence],
+                "result": result,
                 "created_at": at,
             },
         )
@@ -240,13 +272,18 @@ class StateStore:
         telemetry_evidence: Sequence[TelemetryEvidence],
         message_id: UUID,
         at: datetime,
+        state: StateSnapshot | None = None,
+        result: dict[str, Any] | None = None,
     ) -> StoredMessage:
+        """`state` is saved in the same transaction as the reply: a retry never sees one without the other."""
         if sender is MessageSender.CUSTOMER:
             raise ValueError("complete_turn stores a reply; sender cannot be CUSTOMER")
         with self._conn.transaction():
             conversation = self._lock_conversation(conversation_id)
             if (existing := self._get_message(message_id)) is not None:
                 return existing
+            if state is not None:
+                self.save_state(conversation_id, state, at)
             if turn == conversation.last_turn:  # a stale retry must not flip a newer turn's stage
                 self._update_conversation(conversation_id, at, {"stage": ConversationStage.IDLE.value})
             return self._insert_message(
@@ -258,6 +295,7 @@ class StateStore:
                 citations,
                 telemetry_evidence,
                 at,
+                result,
             )
 
     def list_messages(self, conversation_id: UUID) -> list[StoredMessage]:
@@ -280,11 +318,7 @@ class StateStore:
                 "update conversations set last_seq = %(seq)s where id = %(id)s",
                 {"seq": seq, "id": trace.conversation_id},
             )
-            insert_row(
-                self._conn,
-                "traces",
-                trace.model_dump(mode="json") | {"seq": seq, "input": _redacted_input(trace.input)},
-            )
+            insert_row(self._conn, "traces", _redacted_trace_row(trace) | {"seq": seq})
             for position, call in enumerate(tool_calls):
                 row = call.model_copy(
                     update={
@@ -293,7 +327,12 @@ class StateStore:
                         "conversation_id": trace.conversation_id,
                     }
                 )
-                insert_row(self._conn, "tool_calls", row.model_dump(mode="json"))
+                insert_row(
+                    self._conn,
+                    "tool_calls",
+                    row.model_dump(mode="json")
+                    | {"arguments": _redacted_json(row.arguments), "result": _redacted_json(row.result)},
+                )
 
     def list_traces(self, conversation_id: UUID, turn: int | None = None) -> list[TraceRecord]:
         return fetch_all(

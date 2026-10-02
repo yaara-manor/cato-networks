@@ -2,7 +2,7 @@ from pydantic_ai import Agent, RunContext
 from pydantic_ai.models import Model
 
 from agents.base import SupportDeps, build_agent, conversation_prompt, load_prompt
-from agents.models import AgentRun, Intent, TriageDecision, TriageInput, TriageResult
+from agents.models import AgentRole, AgentRun, Intent, TriageDecision, TriageInput, TriageResult
 from agents.runner import run_role
 from core.models import Ticket
 from guardrails import quarantine, redact
@@ -72,7 +72,7 @@ def _repeat_contact(
 
 def run_triage(data: TriageInput, deps: SupportDeps, model: Model | None = None) -> AgentRun[TriageResult]:
     outcome = run_role(
-        build_triage_agent(model), conversation_prompt(data.message, data.history), deps, "triage"
+        build_triage_agent(model), conversation_prompt(data.message, data.history), deps, AgentRole.TRIAGE
     )
     decision = outcome.output or _fallback_decision(data.message)
     result = TriageResult(

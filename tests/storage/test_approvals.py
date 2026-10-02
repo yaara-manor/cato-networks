@@ -128,3 +128,14 @@ def test_pending_approval_does_not_block_conversation(
     assert conversation is not None
     assert conversation.stage is ConversationStage.IDLE
     assert len(store.list_pending_approvals(cid)) == 1
+
+
+def test_approval_cannot_point_at_another_conversations_message(
+    store: StateStore, new_conversation: NewConversation
+) -> None:
+    owner, other = new_conversation(), new_conversation()
+    message_id = uuid4()
+    store.append_customer_message(owner, message_id, "hi", NOW)
+    with pytest.raises(psycopg.errors.ForeignKeyViolation):
+        store.create_approval(other, message_id, ActionType.CREDIT, CREDIT, "k", NOW)
+    assert store.list_pending_approvals(other) == []

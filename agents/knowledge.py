@@ -3,7 +3,7 @@ from pydantic_ai.models import Model
 
 from agents.base import SupportDeps, build_agent, load_prompt
 from agents.messages import tool_returns
-from agents.models import AgentRun, KnowledgeBundle, KnowledgeFindings, KnowledgeInput
+from agents.models import AgentRole, AgentRun, KnowledgeBundle, KnowledgeFindings, KnowledgeInput
 from agents.runner import run_role
 from retrieval.models import KBSearchResult, PolicyDocument
 
@@ -39,7 +39,7 @@ def _prompt(data: KnowledgeInput) -> str:
 def run_knowledge(
     data: KnowledgeInput, deps: SupportDeps, model: Model | None = None
 ) -> AgentRun[KnowledgeBundle]:
-    outcome = run_role(build_knowledge_agent(model), _prompt(data), deps, "knowledge")
+    outcome = run_role(build_knowledge_agent(model), _prompt(data), deps, AgentRole.KNOWLEDGE)
     messages = list(outcome.messages)
     bundle = KnowledgeBundle.from_tool_results(
         outcome.output or KnowledgeFindings(),

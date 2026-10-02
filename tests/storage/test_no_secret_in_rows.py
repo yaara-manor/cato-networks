@@ -8,7 +8,8 @@ from psycopg import sql
 
 from guardrails.models import SessionGuardHistory
 from guardrails.redactor import redact
-from storage import AgentRole, MessageSender, StateStore, TraceRecord
+from agents.models import ToolCall
+from storage import AgentRole, MessageSender, StateStore, ToolCallRecord, TraceRecord
 
 NOW = datetime(2026, 10, 1, 9, 0, tzinfo=UTC)
 PSK = "Fg7!qwe-DC-2026-tunnel"
@@ -49,3 +50,42 @@ def test_raw_secret_never_reaches_any_row(
     assert PSK not in dump
     assert "[REDACTED" in dump
     assert redaction.findings[0].sha256 in dump
+
+
+def test_secret_in_trace_output_and_tool_calls_is_redacted(
+    store: StateStore,
+    new_conversation: Callable[[], UUID],
+    make_trace: Callable[..., TraceRecord],
+    conn: psycopg.Connection[Any],
+) -> None:
+    cid = new_conversation()
+    trace = make_trace(
+        cid,
+        output={"reply": f"PSK is {PSK}"},
+        model_messages=[{"content": f"PSK is {PSK}"}],
+    )
+    call = ToolCallRecord.from_tool_call(
+        trace.id,
+        cid,
+        0,
+        ToolCall(
+            tool_name="t",
+            arguments={"q": f"PSK is {PSK}"},
+            status="OK",
+            result={"text": f"PSK is {PSK}"},
+            latency_ms=1,
+        ),
+        NOW,
+    )
+    store.record_trace(trace, [call])
+
+    dump = " ".join(
+        row[0]
+        for table in ("traces", "tool_calls")
+        for row in conn.execute(
+            sql.SQL("select t::text from {} t where t.conversation_id = %s").format(sql.Identifier(table)),
+            (cid,),
+        )
+    )
+    assert PSK not in dump
+    assert "[REDACTED" in dump

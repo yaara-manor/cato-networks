@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from agents import AgentRun, AgentTrace, TraceStatus
 from core.clock import SimulationClock
 from guardrails import ProposedAction, SessionGuardHistory
+from orchestration.models import TurnResult
 from services.models import CallerIdentity
 from storage import (
     AgentRole,
@@ -55,15 +56,12 @@ class TurnRecorder:
             self._clock.now(),
         )
 
-    def save_state(self, state: StateSnapshot) -> None:
-        self._store.save_state(self._conversation_id, state, self._clock.now())
-
     def record_run[T: BaseModel](self, role: AgentRole, data: BaseModel, run: AgentRun[T]) -> None:
         """Trace ids derive from the message id, so a resumed turn does not duplicate traces."""
         self._write_trace(
             run.trace.model_copy(
                 update={
-                    "agent_role": role.value,
+                    "agent_role": role,
                     "input": data.model_dump(mode="json"),
                     "output": run.output.model_dump(mode="json"),
                 }
@@ -74,7 +72,7 @@ class TurnRecorder:
         """Class name only: the message may carry customer data."""
         self._write_trace(
             AgentTrace(
-                agent_role=AgentRole.ORCHESTRATOR.value,
+                agent_role=AgentRole.ORCHESTRATOR,
                 tool_calls=[],
                 latency_ms=0,
                 prompt_tokens=0,
@@ -114,20 +112,29 @@ class TurnRecorder:
             self._clock.now(),
         )
 
+    @property
+    def completed_path(self) -> tuple[ConversationStage, ...]:
+        """The path the turn will have once `complete_turn` lands it in IDLE."""
+        return (*self._path, ConversationStage.IDLE)
+
     def complete_turn(
         self,
-        text: str,
+        result: TurnResult,
         evidence: tuple[TelemetryEvidence, ...] = (),
         sender: MessageSender = MessageSender.AGENT,
+        state: StateSnapshot | None = None,
     ) -> None:
+        """Reply, `result` envelope and `state` land in one transaction."""
         self._store.complete_turn(
             self._conversation_id,
             self._turn,
             sender,
-            text,
+            result.reply,
             (),
             evidence,
             uuid5(self._message_id, "reply"),
             self._clock.now(),
+            state,
+            result.model_dump(mode="json"),
         )
         self._path.append(ConversationStage.IDLE)

@@ -5,7 +5,7 @@ from pydantic_ai import Agent, ModelRetry, RunContext
 from pydantic_ai.models import Model
 
 from agents.base import SupportDeps, build_agent, conversation_prompt, load_prompt
-from agents.models import AgentRun, ResolutionInput, ResolutionPlan
+from agents.models import AgentRole, AgentRun, ResolutionInput, ResolutionPlan
 from agents.runner import run_role
 from guardrails import check_citations, check_outgoing_message
 
@@ -70,7 +70,7 @@ def run_resolution(
     data: ResolutionInput, deps: SupportDeps, model: Model | None = None
 ) -> AgentRun[ResolutionPlan]:
     grounded = replace(deps, grounding=data.grounding_context())
-    outcome = run_role(build_resolution_agent(model), _prompt(data), grounded, "resolution")
+    outcome = run_role(build_resolution_agent(model), _prompt(data), grounded, AgentRole.RESOLUTION)
     plan = outcome.output or _holding_plan()
     if deps.identity.account is None:
         plan = plan.model_copy(update={"actions": ()})

@@ -6,7 +6,7 @@ from pydantic_ai.models import Model
 
 from agents.base import SupportDeps, build_agent, conversation_prompt, load_prompt
 from agents.messages import tool_returns
-from agents.models import AgentRun, DiagnosticEvidence, DiagnosticsFindings, DiagnosticsInput
+from agents.models import AgentRole, AgentRun, DiagnosticEvidence, DiagnosticsFindings, DiagnosticsInput
 from agents.runner import run_role
 from tools.models import TelemetryStatus, TelemetryToolResult
 
@@ -84,6 +84,10 @@ def get_client_diagnostics(ctx: RunContext[SupportDeps], user_email: str) -> Tel
     if account_id is None:
         return _refusal("get_client_diagnostics")
     result = ctx.deps.telemetry.get_client_diagnostics(user_email)
+    # Ownership is only knowable from the payload, so a NOT_FOUND must read like a foreign user
+    # (no probing which emails exist); UNAVAILABLE stays visible as a real outage.
+    if result.status is TelemetryStatus.NOT_FOUND:
+        return _refusal("get_client_diagnostics")
     if result.data is not None and result.data.customer_id != account_id:
         return _refusal("get_client_diagnostics")
     return result
@@ -119,7 +123,7 @@ def _prompt(data: DiagnosticsInput) -> str:
 def run_diagnostics(
     data: DiagnosticsInput, deps: SupportDeps, model: Model | None = None
 ) -> AgentRun[DiagnosticEvidence]:
-    outcome = run_role(build_diagnostics_agent(model), _prompt(data), deps, "diagnostics")
+    outcome = run_role(build_diagnostics_agent(model), _prompt(data), deps, AgentRole.DIAGNOSTICS)
     results = tool_returns(list(outcome.messages), *(tool.__name__ for tool in _TOOLS))
     evidence = DiagnosticEvidence.from_tool_results(outcome.output or DiagnosticsFindings(), results)
     if not evidence.inspected_tools:

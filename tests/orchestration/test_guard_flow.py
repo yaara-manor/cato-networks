@@ -4,7 +4,7 @@ from uuid import uuid4
 import psycopg
 
 from agents import Intent, SupportAction, SupportActionKind, TurnSender
-from orchestration.canned import INJECTION_REFUSAL
+from orchestration.canned import AGENT_FAILURE_PAUSE, INJECTION_REFUSAL
 from storage import ApprovalStatus, StateStore
 from storage import ConversationStage as S
 from tests.orchestration.conftest import PRIYA, STRANGER, Harness, Scripted
@@ -112,3 +112,10 @@ def test_unrecognised_caller_actions_are_dropped(
     result = harness.workflow(scripted, None).run_turn(conversation_id, "site down", uuid4())
     assert result.executable_actions == () and result.pending_actions == ()
     assert StateStore(conn).list_approvals(conversation_id) == []
+
+
+def test_port_message_with_unknown_citation_is_paused_not_sent(harness: Harness, scripted: Scripted) -> None:
+    conversation_id = harness.new_conversation(PRIYA)
+    scripted.scoping_question = "See [kb:made-up#nowhere] for details."
+    result = harness.workflow(scripted, None).run_turn(conversation_id, "help", uuid4())
+    assert result.reply == AGENT_FAILURE_PAUSE

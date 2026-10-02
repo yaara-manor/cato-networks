@@ -3,6 +3,7 @@ from typing import Any
 
 import pytest
 
+from agents.models import AgentRole
 from agents.diagnostics import build_diagnostics_agent, run_diagnostics
 from agents.messages import tool_returns
 from agents.models import DiagnosticsInput, Intent, TriageDecision, TriageResult
@@ -21,7 +22,7 @@ HYPOTHESIS = {"root_cause_hypothesis": "BGP route limit hit"}
 
 def _call_tool(deps: Any, name: str, args: dict[str, Any]) -> Any:
     model = scripted_model([(name, args)], {})
-    outcome = run_role(build_diagnostics_agent(model), "hi", deps, "diagnostics")
+    outcome = run_role(build_diagnostics_agent(model), "hi", deps, AgentRole.DIAGNOSTICS)
     (result,) = tool_returns(list(outcome.messages), name)
     return result
 
@@ -49,6 +50,12 @@ def test_foreign_site_refused_by_every_site_tool(make_deps: MakeDeps, tool: str)
     assert result.status == TelemetryStatus.INVALID_ARGUMENT
     assert result.tool_name == tool
     assert result.data is None and result.evidence == []
+    assert result.error == "site not in caller account"
+
+
+def test_unknown_client_looks_like_a_foreign_one(make_deps: MakeDeps) -> None:
+    result = _call_tool(make_deps(OWN_EMAIL), "get_client_diagnostics", {"user_email": "nobody@nowhere.example"})
+    assert result.status == TelemetryStatus.INVALID_ARGUMENT
     assert result.error == "site not in caller account"
 
 

@@ -32,7 +32,7 @@ from orchestration import AgentPorts, Workflow
 from retrieval.models import KBSearchStatus
 from retrieval.service import RetrievalService
 from services import CustomerService, TicketService
-from storage import StateStore
+from storage import AgentRole, StateStore
 from tools.telemetry import TelemetryService
 
 PRIYA = "priya@bluebirdretail.com"  # verified member of ACC-1002, not admin
@@ -47,7 +47,7 @@ _CLEANUP_SQL = (
 )
 
 
-def _trace(role: str) -> AgentTrace:
+def _trace(role: AgentRole) -> AgentTrace:
     return AgentTrace(agent_role=role, tool_calls=[], latency_ms=1, prompt_tokens=1, completion_tokens=1)
 
 
@@ -81,14 +81,14 @@ class Scripted:
         self._seen("triage", data)
         decision = self.decision.model_copy(update={"scoping_question": self.scoping_question})
         result = TriageResult(decision=decision, identity=data.identity)
-        return AgentRun(output=result, trace=_trace("triage"))
+        return AgentRun(output=result, trace=_trace(AgentRole.TRIAGE))
 
     def diagnostics(self, data: DiagnosticsInput, deps: SupportDeps) -> AgentRun[DiagnosticEvidence]:
         self._seen("diagnostics", data)
         evidence = DiagnosticEvidence(
             findings=DiagnosticsFindings(), unavailable_tools=self.unavailable, sev1_corroborated=self.sev1
         )
-        return AgentRun(output=evidence, trace=_trace("diagnostics"))
+        return AgentRun(output=evidence, trace=_trace(AgentRole.DIAGNOSTICS))
 
     def knowledge(self, data: KnowledgeInput, deps: SupportDeps) -> AgentRun[KnowledgeBundle]:
         self._seen("knowledge", data)
@@ -97,7 +97,7 @@ class Scripted:
             confidence_status=self.kb_status,
             needs_more_telemetry=self.needs_more_telemetry,
         )
-        return AgentRun(output=bundle, trace=_trace("knowledge"))
+        return AgentRun(output=bundle, trace=_trace(AgentRole.KNOWLEDGE))
 
     def resolution(self, data: ResolutionInput, deps: SupportDeps) -> AgentRun[ResolutionPlan]:
         self._seen("resolution", (data, deps))
@@ -106,7 +106,7 @@ class Scripted:
             actions=self.actions,
             escalate_to_human=self.escalate,
         )
-        return AgentRun(output=plan, trace=_trace("resolution"))
+        return AgentRun(output=plan, trace=_trace(AgentRole.RESOLUTION))
 
     @property
     def ports(self) -> AgentPorts:

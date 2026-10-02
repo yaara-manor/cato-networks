@@ -4,6 +4,7 @@ from pydantic_ai.messages import ModelMessage, ModelResponse, ToolCallPart
 from pydantic_ai.models.function import AgentInfo, FunctionModel
 
 from agents.models import (
+    AgentRole,
     DiagnosticEvidence,
     DiagnosticsFindings,
     Intent,
@@ -124,7 +125,7 @@ def test_echoed_redacted_secret_is_retried(make_deps: MakeDeps) -> None:
 def test_model_failure_returns_holding_plan_with_trace(make_deps: MakeDeps) -> None:
     run = run_resolution(_input(make_deps), make_deps(), scripted_model([], None))
     assert run.output.customer_message == HOLDING_MESSAGE and run.output.escalate_to_human
-    assert run.trace.agent_role == "resolution" and run.trace.error
+    assert run.trace.agent_role is AgentRole.RESOLUTION and run.trace.error
 
 
 def test_unknown_caller_actions_are_dropped(make_deps: MakeDeps) -> None:

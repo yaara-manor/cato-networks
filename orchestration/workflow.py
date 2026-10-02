@@ -69,7 +69,7 @@ class OutgoingMessageRejected(Exception):
 
 def _require_clean_message(message: str, data: ResolutionInput, deps: SupportDeps) -> None:
     """Workflow-boundary check, so no injected port can bypass the agent's own validators."""
-    kinds = {v.kind for v in check_outgoing_message(message, deps.guard_history, deps.approved_actions)}
+    kinds = {v.kind for v in check_outgoing_message(message, deps.guard_history, deps.approved_grants)}
     kinds |= {v.kind for v in check_citations(message, data.grounding_context()).violations}
     if kinds:
         raise OutgoingMessageRejected(", ".join(sorted(kinds)))

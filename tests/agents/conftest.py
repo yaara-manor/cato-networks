@@ -10,7 +10,7 @@ from pydantic_ai.models.function import AgentInfo, FunctionModel
 from agents.base import SupportDeps
 from core.clock import SimulationClock
 from core.config import REPO_ROOT, settings
-from guardrails import ActionType, SessionGuardHistory
+from guardrails import SessionGuardHistory
 from retrieval.models import KBSearchResult
 from retrieval.service import RetrievalService
 from services import CustomerService, TicketService
@@ -52,7 +52,6 @@ def make_deps(connection: psycopg.Connection[Any], retrieval: RetrievalService) 
             "retrieval": retrieval,
             "identity": customers.authenticate_caller(email),
             "guard_history": SessionGuardHistory(),
-            "approved_actions": frozenset[ActionType](),
         }
         return SupportDeps(**{**fields, **overrides})
 

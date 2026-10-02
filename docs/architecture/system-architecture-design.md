@@ -119,7 +119,7 @@ Every agent receives a typed context container via PydanticAI dependency injecti
 - `customers: CustomerService`, `tickets: TicketService` — Account tier / SLA and ticket history services over the shared Postgres connection (no pool object in deps).
 - `telemetry: TelemetryService` — Interface to read synthetic CMA telemetry files directly from `data/telemetry/` with `(resolved_path, mtime_ns)` caching, returning typed `TelemetryToolResult[T]` envelopes with pre-extracted `TelemetryEvidence`.
 - `retrieval: RetrievalService` — Unified interface in `retrieval/service.py` for hybrid KB search (`search_kb` returning `KBSearchResult`) and authoritative internal policy lookup (`get_policy(policy_id) -> PolicyDocument | None`, `list_policies() -> list[PolicyDocument]`). Policies are loaded once at construction and served from memory, so lookup cannot fail at runtime (it keeps working during a DB outage); an unknown id returns `None`.
-- `identity: CallerIdentity`, `guard_history: SessionGuardHistory`, `approved_actions: frozenset[ActionType]` — resolved by the orchestrator and injected; `grounding: GroundingContext | None` is set by `run_resolution` for the output validators.
+- `identity: CallerIdentity`, `guard_history: SessionGuardHistory`, `approved_grants: tuple[ApprovedGrant, ...]` — resolved by the orchestrator and injected; `grounding: GroundingContext | None` is set by `run_resolution` for the output validators.
 
 ---
 

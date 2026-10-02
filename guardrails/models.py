@@ -1,5 +1,6 @@
 from enum import StrEnum
 from typing import Self
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
@@ -156,6 +157,14 @@ class ActionType(StrEnum):
 class ProposedAction(_GuardModel):
     action_type: ActionType
     target_account_id: str
+    payload: dict[str, str]
+
+
+class ApprovedGrant(_GuardModel):
+    """A settled human approval; output rules license only what its (effective) payload says."""
+
+    action_type: ActionType
+    approval_id: UUID
     payload: dict[str, str]
 
 

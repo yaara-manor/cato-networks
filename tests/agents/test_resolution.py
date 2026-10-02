@@ -1,4 +1,5 @@
 from typing import Any
+from uuid import uuid4
 
 from pydantic_ai.messages import ModelMessage, ModelResponse, ToolCallPart
 from pydantic_ai.models.function import AgentInfo, FunctionModel
@@ -16,7 +17,14 @@ from agents.models import (
     UnavailableTool,
 )
 from agents.resolution import HOLDING_MESSAGE, run_resolution
-from guardrails import ActionType, SessionGuardHistory, check_citations, check_outgoing_message, secret_hash
+from guardrails import (
+    ActionType,
+    ApprovedGrant,
+    SessionGuardHistory,
+    check_citations,
+    check_outgoing_message,
+    secret_hash,
+)
 from retrieval.models import KBSearchResult, KBSearchStatus
 from tests.agents.conftest import MakeDeps, scripted_model
 from tools.models import TelemetryStatus
@@ -92,7 +100,8 @@ def test_credit_amount_twice_falls_back_to_holding_plan(make_deps: MakeDeps) -> 
 
 def test_credit_amount_passes_when_credit_is_approved(make_deps: MakeDeps) -> None:
     model, attempts = _plans(CREDIT_SENTENCE)
-    deps = make_deps(approved_actions=frozenset({ActionType.CREDIT}))
+    grant = ApprovedGrant(action_type=ActionType.CREDIT, approval_id=uuid4(), payload={"amount": "3600"})
+    deps = make_deps(approved_grants=(grant,))
     run = run_resolution(_input(make_deps), deps, model)
     assert len(attempts) == 1 and run.output.customer_message == CREDIT_SENTENCE
 
@@ -141,4 +150,4 @@ def test_unknown_caller_actions_are_dropped(make_deps: MakeDeps) -> None:
 def test_holding_message_passes_both_guards(make_deps: MakeDeps) -> None:
     context = _input(make_deps, _refusal(KBSearchStatus.UNAVAILABLE)).grounding_context()
     assert check_citations(HOLDING_MESSAGE, context).is_grounded
-    assert not check_outgoing_message(HOLDING_MESSAGE, SessionGuardHistory(), frozenset())
+    assert not check_outgoing_message(HOLDING_MESSAGE, SessionGuardHistory(), ())

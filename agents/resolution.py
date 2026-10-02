@@ -32,7 +32,7 @@ def _validate_citations(ctx: RunContext[SupportDeps], plan: ResolutionPlan) -> R
 
 def _validate_outgoing(ctx: RunContext[SupportDeps], plan: ResolutionPlan) -> ResolutionPlan:
     violations = check_outgoing_message(
-        plan.customer_message, ctx.deps.guard_history, ctx.deps.approved_actions
+        plan.customer_message, ctx.deps.guard_history, ctx.deps.approved_grants
     )
     if violations:
         raise _retry(v.kind for v in violations)

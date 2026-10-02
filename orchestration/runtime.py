@@ -10,7 +10,7 @@ from agents import SupportDeps, run_diagnostics, run_knowledge, run_resolution, 
 from core.clock import SimulationClock
 from encoders.embed import load_embedder
 from encoders.rerank import load_reranker
-from guardrails import ActionType, SessionGuardHistory
+from guardrails import SessionGuardHistory
 from orchestration.models import AgentPorts
 from orchestration.workflow import Workflow
 from retrieval.service import RetrievalService
@@ -61,9 +61,9 @@ def build_workflow(
         retrieval=RetrievalService(connection),
         identity=services.customers.authenticate_caller(None),  # placeholder; triage sets the real one
         guard_history=SessionGuardHistory(),
-        approved_actions=frozenset[ActionType](),
     )
-    return Workflow(ports or build_ports(), services.store, clock, deps, ActionDispatcher(services.store, services.tickets, clock))
+    dispatcher = ActionDispatcher(services.store, services.tickets, clock)
+    return Workflow(ports or build_ports(), services.store, clock, deps, dispatcher)
 
 
 def warm_models() -> None:

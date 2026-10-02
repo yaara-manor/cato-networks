@@ -22,7 +22,7 @@ ToolScript = list[tuple[str, dict[str, Any]]]
 
 @pytest.fixture(scope="session")
 def connection() -> Iterator[psycopg.Connection[Any]]:
-    with psycopg.connect(settings.database_url) as conn:
+    with psycopg.connect(settings.database_url, autocommit=True) as conn:
         yield conn
 
 

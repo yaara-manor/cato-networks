@@ -103,7 +103,7 @@
 - Customer-line templates are module constants (ticket created with id, ticket updated, ticket closed, paged with incident ref and 15 minutes), asserted verbatim in Task 5 tests. Credit/MFA handlers return no customer line (issue #10).
 
 - [ ] **Step 1: Implement** the six handlers plus constants; each function small, one effect.
-- [ ] **Step 2: Add the exhaustiveness check** as a test in `tests/actions/test_schema.py`: every `SupportActionKind` is in `HANDLERS` or `REFUSED_KINDS`, and the two sets are disjoint.
+- [ ] **Step 2: Add the exhaustiveness check** as a test in `tests/actions/test_handler_coverage.py`: every `SupportActionKind` is in `HANDLERS` or `REFUSED_KINDS`, and the two sets are disjoint.
 - [ ] **Step 3: Run** that test, expect PASS.
 - [ ] **Step 4: Cleanup**: ruff, pyright; no handler calls `check_action` or reads settings; no duplicate ownership logic.
 - [ ] **Step 5: Commit.**
@@ -115,7 +115,7 @@
 **Files:**
 - Create: `actions/dispatcher.py`, `tests/actions/conftest.py` (fixtures: connection, store, `TicketService`, clock, a verified-member identity and a registered-admin identity from seeded accounts, cleanup of created conversations, `simulated_actions` rows and tickets)
 - Modify: `actions/__init__.py`
-- Test: `tests/actions/test_dispatch_tickets.py`, `tests/actions/test_sev1_paging.py` (dispatcher-level part), `tests/actions/test_dispatch_approved.py`, `tests/actions/test_schema.py` (finish)
+- Test: `tests/actions/test_dispatch_tickets.py`, `tests/actions/test_sev1_paging.py` (dispatcher-level part), `tests/actions/test_dispatch_approved.py`, `tests/actions/test_handler_coverage.py` (renamed from test_schema: pytest basename clash with tests/storage)
 
 **Interfaces:**
 - Produces: `ActionDispatcher(store: StateStore, tickets: TicketService, clock: SimulationClock)`; `dispatch_turn(actions: tuple[SupportAction, ...], context: DispatchContext) -> tuple[ActionResult, ...]` (key `{message_id}:{kind}:{index}`, page key `{conversation_id}:PAGE_ON_CALL`); `dispatch_approved(approval: Approval, context: DispatchContext) -> ActionResult` (key `approval:{approval_id}`; `EDITED` uses `edited_payload` and rejects an edit that drops or changes `ticket_id` as `INVALID`; `PENDING`/`REJECTED` -> `REFUSED`); `mark_pending(approval: Approval, context: DispatchContext) -> ActionResult` (key `approval:{approval_id}:pending`, sets ticket `pending_approval` via the shared ticket-handler path, ownership checked); private `_run(request)` implementing design §5.1 in order: defensive `check_action` re-check, payload validation, claim, handler in one `try/except Exception` (class name only logged), finish, one log line.

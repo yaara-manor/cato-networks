@@ -71,11 +71,12 @@ Files in `data/simulated_actions/` give no atomic idempotency, race under two wo
 
 ## 3. Persistence: `simulated_actions`
 
-Migration `db/migrations/20261002_0900_simulated-actions.sql`, idempotent (`CREATE TABLE IF NOT EXISTS`), re-applied after every `pg_restore` like the 21 migration. File sorts after the CR-fix `20261002_1000_message-result` and `20261002_1100_approval-message-conversation`.
+Migration `db/migrations/20261002_1200_simulated-actions.sql`, idempotent (`CREATE TABLE IF NOT EXISTS`), re-applied after every `pg_restore` like the 21 migration. File sorts after the CR-fix `20261002_1000_message-result` and `20261002_1100_approval-message-conversation`.
 
 - Columns: `id uuid PK`, `conversation_id uuid FK RESTRICT`, `message_id uuid NULL` (turn that claimed it; NULL for approval-path rows; composite FK `(message_id, conversation_id)` to `messages (id, conversation_id)` using the CR-fix `messages_id_conversation_uq` constraint, so a row cannot point at another conversation's message; MATCH SIMPLE leaves NULL unchecked), `idempotency_key text UNIQUE`, `kind text`, `approval_id uuid NULL FK RESTRICT`, `payload jsonb` (validated payload as dumped), `status text` (CLAIMED, DONE, FAILED, INVALID, REFUSED; enum-validated in Pydantic, no SQL CHECK, as 21 plan delta 3), `result jsonb NULL` (e.g. ticket id, event reference), `claimed_at`, `completed_at NULL`.
 - Index `(conversation_id, claimed_at)`.
 - Added to `RUNTIME_TABLES` in `db/init/build.py` (excluded from `seed.dump`, 21 §2.8).
+- `result` holds the `ActionResult` dump plus an `effect` key (handler detail); replays validate it back into `ActionResult`.
 - Append-mostly: a row is inserted once (`CLAIMED`) and finalized once (`CLAIMED -> terminal`); no deletes.
 
 Keys:
@@ -114,8 +115,8 @@ All frozen Pydantic, `StrEnum`s, full typing.
 ## 5. Dispatcher & Handlers
 
 ### 5.1 `_run(request)` (the 80% of correctness)
-1. Defensive gate re-check (§5.2). `REFUSED` result on failure; row written `REFUSED`, no handler.
-2. Validate payload with the kind's `from_payload`; `INVALID` on error (row `INVALID`).
+1. Defensive gate re-check (§5.2). `REFUSED` result on failure; no handler and NO row (a persisted `REFUSED` row on the conversation-scoped page key would block every later legitimate page).
+2. Validate payload with the kind's `from_payload`; `INVALID` on error (no row, same reason). Handler-raised `InvalidActionError` (e.g. no caller email) and `OwnershipError` are post-claim and finalize the row `INVALID`/`REFUSED`.
 3. `store.claim_action(...)`. If not new: same `message_id` (crash retry) -> stored result with `replayed=True`; a different `message_id` (only possible for the conversation-scoped page key, e.g. after a corrupt-state rebuild) -> `REFUSED` "already paged" with no customer line, so a later turn never re-announces an old page. `CLAIMED` without result -> failed/"outcome unknown".
 4. Run handler inside `try`; one `except Exception` around the handler only (logs class name, never message; same rule as 23 §5.4) -> `FAILED`.
 5. `store.finish_action(...)`, emit one `logging` line (`action kind status reference conversation_id`), return `ActionResult`.
@@ -160,7 +161,7 @@ Fixed templates, asserted verbatim in tests: ticket created (with id), ticket up
 - `Workflow` gains `dispatcher: ActionDispatcher`; `base_deps` unchanged.
 - `_answer`: after approvals are created and degradations derived, build `DispatchContext`, call `dispatch_turn(gated.executable)`, pass results into `_finish`.
 - `compose_reply` (routing.py) gains a `confirmations: tuple[str, ...]` part appended after the model message and before denial reasons.
-- State update: `oncall_paged` becomes true when the PAGE result is `DONE` (not merely gated ALLOW); a failed page leaves it false so the next turn may retry, and the conversation-scoped key keeps that safe.
+- State update: `oncall_paged` becomes true when the PAGE result is `DONE` (not merely gated ALLOW); a failed page leaves it false; the page handler is pure so it cannot realistically fail, and a `FAILED` page row stays terminal for the conversation (no retry).
 - `_finish`: dispatch results in hand -> build `TurnResult` (path from `recorder.completed_path`, `action_results`) -> one `recorder.complete_turn(result, evidence, state=...)`. Failed results set `escalation_offered=True`. Coupling: the CR-fix `_require_clean_message` (outgoing + citation guards on the Resolution message, using `deps.approved_actions`) runs in `_resolve`, before gating and dispatch; confirmation lines are fixed text added after it, so never guard-checked. 32 replaces `approved_actions` with grants; nothing here depends on that field.
 - `TurnResult.executable_actions` is replaced by `action_results: tuple[ActionResult, ...]`. `_replay` (answered-turn retry) already returns `TurnResult.model_validate(reply.result)`, so `action_results` come from the stored envelope; no dispatch, no `simulated_actions` read. Old envelopes still carrying `executable_actions` validate (extra keys ignored; a test pins it); the null-`result` legacy branch has no actions to report. `list_simulated_actions` stays only for 41/42 and tests.
 - `gate_actions` is unchanged except `GatedActions.oncall_paged` semantics note: it reports "page allowed this turn"; the workflow confirms with the result.

@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-Same as plan 01 (typed, no inline imports, frozen contracts, functional tests, no brainstruct, f-strings only, no new dependencies).
+Same as plan 01 (typed, no inline imports, frozen contracts, functional tests, no Braintrust, f-strings only, no new dependencies).
 
 ## Design Decisions (this plan)
 
@@ -92,9 +92,9 @@ Content per design §4.4/§4.5: empathetic tone under pressure; follow KB diagno
 
 ### Task 4: Docs
 
-**Files:** modify `docs/architecture/system-architecture-design.md` (§4.1 `SupportDeps`, §4.2 role outputs split + `ResolutionPlan` without `pending_approval` + no `propose_action` tool + identity resolved by the orchestrator and passed in `TriageInput` + Sev-1 gate in `check_action`), `docs/overview/decisions.md` (next free ADR number at implementation time, "LLM decides, code records; native output-validator retry; no brainstruct, PydanticAI-native tracing").
+**Files:** modify `docs/architecture/system-architecture-design.md` (§4.1 `SupportDeps`, §4.2 role outputs split + `ResolutionPlan` without `pending_approval` + no `propose_action` tool + identity resolved by the orchestrator and passed in `TriageInput` + Sev-1 gate in `check_action`), `docs/overview/decisions.md` (next free ADR number at implementation time, "LLM decides, code records; native output-validator retry; no Braintrust, PydanticAI-native tracing").
 
-- [ ] **Step 1:** Edit both docs; grep the architecture doc and `docs/` for `brainstruct` and replace per decision 1 of plan 01.
+- [ ] **Step 1:** Edit both docs; grep the architecture doc and `docs/` for `Braintrust` and replace per decision 1 of plan 01.
 - [ ] **Step 2: Commit** `docs: agent contracts ADR and architecture updates`.
 
 ### Task 5: Cleanup, lint, type check (final)
@@ -102,7 +102,7 @@ Content per design §4.4/§4.5: empathetic tone under pressure; follow KB diagno
 - [ ] Ruff and pyright (repo config) over the whole `agents/` and `tests/agents/`; fix.
 - [ ] Final unused-code sweep across plans 1-4: every `Intent` and `SupportActionKind` member exercised by a test; no unused contract field; no unused helper.
 - [ ] Confirm file sizes stay small (`agents/models.py` under about 350 lines, others well below); split only if exceeded.
-- [ ] Grep: no `brainstruct`, no inline imports, no `datetime.now`, no `Literal` for enum-like fields in `agents/`.
+- [ ] Grep: no `Braintrust`, no inline imports, no `datetime.now`, no `Literal` for enum-like fields in `agents/`.
 - [ ] Run `uv run pytest tests/agents -v`; all green. Commit `chore(agents): final cleanup`.
 
 ## Unresolved Questions

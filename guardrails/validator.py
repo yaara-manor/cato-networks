@@ -1,8 +1,9 @@
-from collections.abc import Iterator
 import re
+from collections.abc import Iterator
 from re import Pattern
 from typing import NamedTuple
 
+from core.models import TicketPriority
 from guardrails.models import (
     ActionType,
     CitationReport,
@@ -21,7 +22,6 @@ from guardrails.models import (
 )
 from guardrails.normalize import normalize
 from guardrails.redactor import redact, secret_hash
-from core.models import TicketPriority
 from services.models import CallerIdentity
 
 # ponytail: every matched tier word means "Premium"; Standard-side claims ("we're on basic") are not extracted.

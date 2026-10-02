@@ -12,7 +12,7 @@
 
 ## Design Decisions (up front; they override the design where they differ)
 
-1. **No brainstruct anywhere.** Design/architecture text mentioning it is superseded. Tracing = PydanticAI's own data: `result.all_messages()` (tool calls/returns) + `result.usage()` (`input_tokens`, `output_tokens`, verified present on 2.51 `RunUsage`) + `time.perf_counter`. No OpenTelemetry/Logfire `instrument` call. Persistence of traces is plan 21's `StateStore` (`TraceRecord.from_agent_trace`, `ToolCallRecord`); agents write nothing to the DB.
+1. **No Braintrust anywhere.** Design/architecture text mentioning it is superseded. Tracing = PydanticAI's own data: `result.all_messages()` (tool calls/returns) + `result.usage()` (`input_tokens`, `output_tokens`, verified present on 2.51 `RunUsage`) + `time.perf_counter`. No OpenTelemetry/Logfire `instrument` call. Persistence of traces is plan 21's `StateStore` (`TraceRecord.from_agent_trace`, `ToolCallRecord`); agents write nothing to the DB.
 2. **`AgentTrace` ownership.** Issue 21 (§7) owns *new fields* on `AgentTrace` (input, output, status, error, retrieval_scores, cost_usd, parent_trace_id). Issue 22 only adds one classmethod `AgentTrace.from_run` that fills the five existing fields (`agent_role`, `tool_calls`, `latency_ms`, `prompt_tokens`, `completion_tokens`) plus `cost_usd`, computed with the already-installed `genai_prices` (transitive dep of pydantic-ai, no new dependency); `cost_usd` is `None` when the model is unknown. 21's fields must have defaults. Merge order: 21 -> 22 -> 23. `tool_calls` stays `list[dict[str, Any]]` with keys `tool_name`, `arguments`, `status`, `result` (envelope dump) so 21's `ToolCallRecord.from_envelope` can consume it. Retrieval scores for traces: orchestrator reads `KnowledgeBundle.candidates`.
 3. **`SupportDeps` is owned by 22** (`agents/base.py`); 21 does not define it, 23 only constructs and passes it. Signature of every runner: `run_<role>(Input, SupportDeps)`. No builder function (YAGNI): the orchestrator constructs it per turn; tests use one conftest fixture.
 4. **Sync vs async.** 22 ships sync `run_<role>()` (`agent.run_sync`, sync tools, matches sync psycopg services). 23's agent ports are async `Protocol`s: 23 adapts with `asyncio.to_thread` at the boundary (21 §1 already prescribes this). 22 contains no async code. Caveat: one psycopg connection must not be used by two threads at once; turns are sequential so this holds.
@@ -107,7 +107,7 @@
 
 - [ ] Run the repo's ruff and pyright configs from `pyproject.toml` over `agents` and `tests/agents`; fix all findings.
 - [ ] Grep for unused imports, functions, contract fields; every model and every `SupportActionKind` / `Intent` member must be used by a later plan or test; delete leftovers (final re-check after plan 4).
-- [ ] Grep: no `brainstruct`, no inline imports, no `datetime.now` in `agents/`.
+- [ ] Grep: no `Braintrust`, no inline imports, no `datetime.now` in `agents/`.
 - [ ] Commit `chore(agents): lint and types`.
 
 ## Unresolved Questions

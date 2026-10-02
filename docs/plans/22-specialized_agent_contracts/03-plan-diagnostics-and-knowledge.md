@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-Same as plan 01 (typed, no inline imports, frozen tuples, functional tests with scripted `FunctionModel`, real services and seeded DB, no brainstruct, f-strings only, conversions as classmethods, no new dependencies).
+Same as plan 01 (typed, no inline imports, frozen tuples, functional tests with scripted `FunctionModel`, real services and seeded DB, no Braintrust, f-strings only, conversions as classmethods, no new dependencies).
 
 ## Design Decisions (this plan)
 
@@ -89,7 +89,7 @@ Same as plan 01 (typed, no inline imports, frozen tuples, functional tests with 
 
 - [ ] Ruff and pyright (repo config) on `agents` and `tests/agents`; fix.
 - [ ] Confirm the ownership guard exists once; no duplicated refusal-envelope construction; no unused tool wrapper (each of the 7 is exercised by at least one test).
-- [ ] Grep: no `brainstruct`, no inline imports, no `SC-`/`expected` in the two prompts.
+- [ ] Grep: no `Braintrust`, no inline imports, no `SC-`/`expected` in the two prompts.
 - [ ] Commit `chore(agents): diagnostics/knowledge cleanup`.
 
 ## Unresolved Questions

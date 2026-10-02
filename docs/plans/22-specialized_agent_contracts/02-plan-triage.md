@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-Same as plan 01: typed everywhere, no inline imports, frozen contracts, functional tests with scripted models and real seeded services, no brainstruct, no new dependencies, f-strings only, conversions as classmethods.
+Same as plan 01: typed everywhere, no inline imports, frozen contracts, functional tests with scripted models and real seeded services, no Braintrust, no new dependencies, f-strings only, conversions as classmethods.
 
 ## Design Decisions (this plan)
 
@@ -81,7 +81,7 @@ Prompt contents per design §4.1/§4.5, fixed headings (Role, Inputs you receive
 
 - [ ] Ruff and pyright (repo config) on `agents` and `tests/agents`; fix.
 - [ ] Remove unused imports/helpers; confirm the sanitizer has exactly one definition and one use site.
-- [ ] Grep: no `brainstruct`, no inline imports, no `SC-`/`expected` in `prompts/triage.md`.
+- [ ] Grep: no `Braintrust`, no inline imports, no `SC-`/`expected` in `prompts/triage.md`.
 - [ ] Commit `chore(agents): triage cleanup`.
 
 ## Unresolved Questions

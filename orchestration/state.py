@@ -1,12 +1,22 @@
-from typing import Self
+import logging
+from collections.abc import Callable
+from typing import Any, Self
 
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 from orchestration.degradation import DegradationNotice, DegradedSource
 from storage import StateSnapshot
 
-SCHEMA_VERSION = 1
+logger = logging.getLogger(__name__)
+
+STATE_VERSION = 1
+# MIGRATIONS[v] is a pure step turning a version-v payload into version v+1.
+MIGRATIONS: dict[int, Callable[[dict[str, Any]], dict[str, Any]]] = {}
 MAX_CLARIFICATION_TURNS = 3
+
+
+class StateVersionError(Exception):
+    """Stored snapshot is newer than this code; refuse rather than overwrite it."""
 
 
 class OrchestratorState(BaseModel):
@@ -20,16 +30,22 @@ class OrchestratorState(BaseModel):
 
     @classmethod
     def from_snapshot(cls, snapshot: StateSnapshot) -> Self:
-        """Fail safe: unknown version or malformed data starts from empty."""
-        if snapshot.version != SCHEMA_VERSION:
+        """Empty or corrupt data rebuilds to safe defaults; older versions migrate; newer ones raise."""
+        if snapshot.version > STATE_VERSION:
+            raise StateVersionError(f"state version {snapshot.version} > supported {STATE_VERSION}")
+        if not snapshot.data:
             return cls()
+        data = snapshot.data
         try:
-            return cls.model_validate(snapshot.data)
-        except ValidationError:
+            for version in range(snapshot.version, STATE_VERSION):
+                data = MIGRATIONS[version](data)
+            return cls.model_validate(data)
+        except (ValidationError, KeyError, TypeError, ValueError):
+            logger.warning("state snapshot v%s unreadable, rebuilt empty", snapshot.version)
             return cls()
 
     def to_snapshot(self) -> StateSnapshot:
-        return StateSnapshot(version=SCHEMA_VERSION, data=self.model_dump(mode="json"))
+        return StateSnapshot(version=STATE_VERSION, data=self.model_dump(mode="json"))
 
     def clarification_exhausted(self) -> bool:
         return self.clarification_turns >= MAX_CLARIFICATION_TURNS

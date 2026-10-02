@@ -102,8 +102,9 @@ class Workflow:
             _history(snapshot, stored.turn),
             replace(self.base_deps, guard_history=history),
         )
+        state = OrchestratorState.from_snapshot(snapshot.conversation.state)  # StateVersionError propagates
         try:
-            return self._answer(turn, snapshot, OrchestratorState.from_snapshot(snapshot.conversation.state))
+            return self._answer(turn, snapshot, state)
         except Exception as error:  # noqa: BLE001  the one agent-failure boundary; the message is already saved
             return self._pause(recorder, error)
 

@@ -134,3 +134,10 @@
 - **Chosen Approach**: `storage/turn_lock.py` takes `pg_advisory_lock(hashtextextended('turn:' || id, 0))` on the same connection `StateStore` writes through, wrapped around the whole of `run_turn`. `lock_timeout` (`settings.turn_lock_timeout_s`, 30 s) applies to the acquire only; timeout raises `TurnLockTimeout` with nothing written. Release is a `finally` unlock or Postgres dropping the lock when the backend dies.
 - **Rejected**: lease/heartbeat table and fencing tokens (a dead connection already loses both lock and write ability); transaction-level lock (would hold a transaction open for the whole LLM turn).
 - **Cost if wrong**: one connection per in-flight turn (pool later); waiters are not FIFO; half-open TCP connections hold the lock until keepalives fire.
+
+## ADR-012: Versioned OrchestratorState Snapshot with Safe-Direction Rebuild
+
+- **Context / Problem**: `OrchestratorState` is stored in `conversations.state` and outlives deploys; old blobs must load, newer ones must not be clobbered, corrupt ones must not block a customer.
+- **Chosen Approach**: `orchestration/state.py` holds `STATE_VERSION` and a `MIGRATIONS` chain (pure `v -> v+1` steps). `from_snapshot`: empty data -> defaults; older -> migrate; newer -> `StateVersionError` (raised outside the agent-failure boundary, blob untouched); migration/validation failure -> defaults plus a warning (no blob content logged).
+- **Rejected**: new column/table (21 owns storage); treating newer as empty (next save would overwrite newer data).
+- **Cost if wrong**: a rebuild resets `oncall_paged`, so a corroborated P1 may be paged once more (a duplicate page beats a missed one); notices may repeat once.

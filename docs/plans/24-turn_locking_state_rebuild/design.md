@@ -2,7 +2,7 @@
 
 **Issue**: `#34` ([Phase 2] 2.4: Cross-Worker Turn Locking & ConversationState Rebuild from Snapshot)
 **Date**: 2026-10-02
-**Status**: Ready for Review (aligned to final 21 and 23; ponytail: Postgres advisory lock + a version hook on 21's existing snapshot, no new column, table, infra or dependency)
+**Status**: Implemented (see plan-01, plan-02)
 **Target Files**: `core/config.py`, `storage/turn_lock.py`, `storage/state_store.py`, `storage/__init__.py`, `orchestration/state.py`, `orchestration/workflow.py`, `tests/storage/test_turn_lock.py`, `tests/orchestration/*`
 
 ---

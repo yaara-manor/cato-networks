@@ -4,6 +4,7 @@ from re import Pattern
 from typing import NamedTuple
 
 from core.models import TicketPriority
+from guardrails.citations import ANY_MARKER, KB_MARKER, KB_REF, POLICY_MARKER, TELEMETRY_MARKER
 from guardrails.models import (
     ActionType,
     CitationReport,
@@ -61,12 +62,6 @@ def check_claims(text: str, identity: CallerIdentity) -> EntitlementVerdict:
     return EntitlementVerdict(false_claims=tuple(dict.fromkeys(claims)))
 
 
-# anchors are [\w-]+ per kbindex.chunk.heading_anchor; tool names match TelemetryEvidence.format_citation
-_KB_MARKER: Pattern[str] = re.compile(r"\[kb:(?P<ref>[^\]]*)\]")
-_POLICY_MARKER: Pattern[str] = re.compile(r"\[policy:(?P<ref>[^\]]*)\]")
-_TELEMETRY_MARKER: Pattern[str] = re.compile(r"\[telemetry:(?P<ref>[^\]]*)\]")
-_KB_REF: Pattern[str] = re.compile(r"(?P<slug>[a-z0-9-]+)#(?P<anchor>[\w-]+)")
-_ANY_MARKER: Pattern[str] = re.compile(r"\[(?:kb|policy|telemetry):[^\]]*\]")
 _CLAIM_SIGNALS: tuple[Pattern[str], ...] = (
     re.compile(r"(?<![\w.])\d[\d,]*(?:\.\d+)?\s?(?:ms|sec|s|bytes|B|KB|MB|GB|kbps|Mbps|Gbps|dBm|%)(?!\w)"),
     re.compile(r"(?i)\b(?:UDP|TCP)\s+\d+\b|\bport\s+\d+\b"),
@@ -82,21 +77,21 @@ def _sentences(block: str) -> list[str]:
 
 
 def _has_claim_signal(sentence: str) -> bool:
-    bare = _ANY_MARKER.sub("", sentence)
+    bare = ANY_MARKER.sub("", sentence)
     return any(signal.search(bare) for signal in _CLAIM_SIGNALS)
 
 
 def _kb_key(ref: str) -> tuple[str, str] | None:
-    parsed = _KB_REF.fullmatch(ref)
+    parsed = KB_REF.fullmatch(ref)
     return (parsed["slug"], parsed["anchor"]) if parsed else None
 
 
 def check_citations(message: str, context: GroundingContext) -> CitationReport:
     violations: list[CitationViolation] = []
     for kind, pattern, known, key in (
-        (CitationViolationKind.UNKNOWN_KB, _KB_MARKER, context.kb_refs, lambda m: _kb_key(m["ref"])),
-        (CitationViolationKind.UNKNOWN_POLICY, _POLICY_MARKER, context.policy_ids, lambda m: m["ref"]),
-        (CitationViolationKind.UNKNOWN_TELEMETRY, _TELEMETRY_MARKER, context.telemetry_tools, lambda m: m["ref"]),
+        (CitationViolationKind.UNKNOWN_KB, KB_MARKER, context.kb_refs, lambda m: _kb_key(m["ref"])),
+        (CitationViolationKind.UNKNOWN_POLICY, POLICY_MARKER, context.policy_ids, lambda m: m["ref"]),
+        (CitationViolationKind.UNKNOWN_TELEMETRY, TELEMETRY_MARKER, context.telemetry_tools, lambda m: m["ref"]),
     ):
         violations.extend(
             CitationViolation(kind=kind, detail=match.group())
@@ -105,13 +100,13 @@ def check_citations(message: str, context: GroundingContext) -> CitationReport:
         )
     claims: list[str] = []
     for paragraph in _PARAGRAPH_BREAK.split(message):
-        cited = _ANY_MARKER.search(paragraph) is not None
+        cited = ANY_MARKER.search(paragraph) is not None
         for sentence in _sentences(paragraph):
             if _has_claim_signal(sentence):
                 claims.append(sentence)
                 if not cited:
                     violations.append(CitationViolation(kind=CitationViolationKind.UNCITED_CLAIM, detail=sentence))
-    offenders = [match.group() for match in _KB_MARKER.finditer(message)] + claims
+    offenders = [match.group() for match in KB_MARKER.finditer(message)] + claims
     if context.is_refusal and offenders:
         violations.append(CitationViolation(kind=CitationViolationKind.REFUSAL_BREACH, detail=offenders[0]))
     return CitationReport(violations=tuple(violations))
@@ -218,7 +213,7 @@ def _phrases(segment: str) -> Iterator[str]:
 def check_outgoing_message(
     message: str, history: SessionGuardHistory, approved: frozenset[ActionType]
 ) -> list[OutputViolation]:
-    body = _ANY_MARKER.sub(" ", message)
+    body = ANY_MARKER.sub(" ", message)
     violations = [
         OutputViolation(kind=rule.kind, detail=sentence)
         for sentence in _sentences(body)
@@ -227,7 +222,7 @@ def check_outgoing_message(
     ]
     # details are fixed descriptions: a SECRET_ECHO must never carry the secret it reports
     findings = redact(body).findings
-    phrases = (phrase for segment in _ANY_MARKER.split(message) for phrase in _phrases(segment))
+    phrases = (phrase for segment in ANY_MARKER.split(message) for phrase in _phrases(segment))
     repeats_secret = any(finding.sha256 in history.secret_hashes for finding in findings) or (
         bool(history.secret_hashes)
         and any(

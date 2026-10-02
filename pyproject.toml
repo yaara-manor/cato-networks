@@ -9,6 +9,7 @@ dependencies = [
     "pydantic-ai>=2.51.0",
     "pydantic-settings>=2.0.0",
     "sentence-transformers>=6.1.0",
+    "streamlit>=1.64.0",
 ]
 
 [dependency-groups]

@@ -81,11 +81,9 @@ def test_edited_resolution_keeps_original_payload(
 
 def test_queue_spans_conversations(store: StateStore, new_conversation: NewConversation) -> None:
     first, second = new_conversation(), new_conversation()
-    ids = {_propose(store, first), _propose(store, second)}
-    assert ids <= {a.id for a in store.list_pending_approvals()}
-    assert [a.id for a in store.list_pending_approvals(first)] != [
-        a.id for a in store.list_pending_approvals(second)
-    ]
+    first_id, second_id = _propose(store, first), _propose(store, second)
+    assert {first_id, second_id} <= {a.id for a in store.list_pending_approvals()}
+    assert [a.id for a in store.list_pending_approvals(first)] == [first_id]
 
 
 def test_racing_reviewers_yield_one_winner(store: StateStore, new_conversation: NewConversation) -> None:

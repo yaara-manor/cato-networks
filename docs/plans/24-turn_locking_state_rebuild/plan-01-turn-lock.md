@@ -4,11 +4,11 @@
 
 **Goal:** Two workers never run a turn for the same conversation concurrently; a killed worker never leaves the conversation locked; a client retry of an answered `message_id` never re-runs agents.
 
-**Architecture:** One session-level Postgres advisory lock per conversation, acquired on the same connection `StateStore` writes through, wrapped around the whole of `Workflow.run_turn` (dedupe check included). Release is a `finally` unlock, or the server dropping the lock when the backend dies.
+**Architecture:** One session-level Postgres advisory lock per conversation, acquired on the same connection `StateStore` writes through, wrapped around the whole of `Workflow.run_turn` (23's `_ingest` dedupe runs inside it). Release is a `finally` unlock, or the server dropping the lock when the backend dies.
 
 **Tech Stack:** Python 3.12, psycopg 3 (sync), PostgreSQL 18, pytest, threads for concurrency tests. No new dependency.
 
-**Spec:** [design.md](design.md) sections 2.1-2.8, 2.14, 5, 6. Depends on plans 21 and 23 merged (`StateStore`, `Workflow`, `TurnRecorder`).
+**Spec:** [design.md](design.md) sections 2.1-2.7, 3, 4. Depends on plans 21 and 23 merged (`StateStore`, `Workflow`, `TurnRecorder`). The `message_id` dedupe already lives in 23 `_ingest` and is reused, not rewritten.
 
 ## Global Constraints
 
@@ -51,7 +51,7 @@
 
 ---
 
-### Task 2: Wrap `run_turn` in the lock, dedupe inside it
+### Task 2: Wrap `run_turn` in the lock
 
 **Files:**
 - Modify: `orchestration/workflow.py` (split `run_turn` into the locking shell and private `_run_locked`; no behavior change inside)
@@ -60,7 +60,7 @@
 
 **Interfaces:**
 - Consumes: 23 `Workflow.run_turn(conversation_id: UUID, message: str, message_id: UUID) -> TurnResult`, `StateStore.turn_lock`, stub agents from `conftest.py` (sleeping stub variant records enter/exit `time.monotonic()` pairs).
-- Produces: unchanged public signature. `run_turn` = `with store.turn_lock(conversation_id)` around `_run_locked(...)`, and the already-answered check (customer message with this `message_id` plus a reply in that turn, read from `rehydrate`) is the first step inside `_run_locked`. `TurnLockTimeout` propagates (the 23 agent-exception boundary lives inside `_run_locked`, so it cannot swallow it).
+- Produces: unchanged public signature. `run_turn` = `with store.turn_lock(conversation_id)` around `_run_locked(...)` (23's current body, untouched; its `_ingest` already returns the stored result for an answered `message_id`, now race-free). No new dedupe code. `TurnLockTimeout` propagates (the 23 agent-exception boundary lives inside `_run_locked`, so it cannot swallow it).
 
 - [ ] **Step 1: Write failing tests:** (a) *serialize:* two threads, two workers, one conversation, different `message_id`s, Triage stub sleeps 0.5 s; enter/exit intervals do not overlap; stored turns are 1 and 2; the second Triage call's history contains the first turn's reply. (b) *concurrent duplicate:* two threads, same `message_id`; Triage/Resolution stubs each called exactly once in total, both callers return the same reply, one customer message row. (c) *timeout:* worker A stuck in a 2 s stub, worker B built with a small lock timeout (monkeypatch `settings.turn_lock_timeout_s` to 0.3) raises `TurnLockTimeout`; afterwards zero rows for B's `message_id`. (d) *crash:* the Diagnostics stub of worker A sleeps; a watcher thread terminates A's backend; A's `run_turn` raises a psycopg error; worker B retries the same `message_id`, acquires the lock, finishes, exactly one agent reply in the conversation and stage `IDLE`.
 - [ ] **Step 2:** Run `uv run pytest tests/orchestration/test_turn_serialization.py -v`. Expected: FAIL.

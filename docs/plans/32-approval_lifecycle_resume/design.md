@@ -51,7 +51,7 @@ Not built, by decision (ponytail): outbox table, job queue/worker, message broke
 | `services/approval_service.py` owns "approval lifecycle" | 21 already ships row CRUD + CAS in `StateStore` (`approval_queries.py`); `ApprovalRecord` was deleted (21) | Service is a thin orchestration layer over `StateStore`; no second approval model or SQL. |
 | "Credits/refunds of any amount (`POL-CREDIT`)" | `check_action(CREDIT)` -> `REQUIRE_APPROVAL` regardless of amount, only for verified account members; else `DENY` | Matches. Nothing to add. |
 | "MFA resets (`POL-IDV`)" | `REQUIRE_APPROVAL` only for registered admin; else `DENY` | Matches. |
-| "Malware/C2 verdict overrides ... support must reject/escalate" | `VERDICT_OVERRIDE` is always `DENY` (`POL-SEC`); the denial reason is appended to the reply; no approval row is ever created (21 §7 note) | No approval path. Ticket line is satisfied by the gate; `ApprovalService` refuses to create rows for it (guard in `settle` dispatch map, §4.4) and a test pins "override never produces a row". Divergence flagged. |
+| "Malware/C2 verdict overrides ... support must reject/escalate" | `VERDICT_OVERRIDE` is always `DENY` (`POL-SEC`); the denial reason is appended to the reply; no approval row is ever created (21 §7 note) | No approval path. The ticket line is satisfied by the gate alone (single policy source, `check_action`); `StateStore` stays a pure persistence boundary and gets no duplicate type guard. A functional test pins "override proposal -> DENY text, zero approval rows". Divergence flagged. |
 | "Reviewer action updates approval record" | `StateStore.resolve_approval(approval_id, ApprovalResolution, at)` exists | Reused. |
 | "triggers conversation event to notify user" | `MessageSender` is `CUSTOMER/AGENT/SYSTEM` (no `REVIEWER`; 21 §4 draft had it, code dropped it); `complete_turn` only attaches a reply to an existing customer turn | New store primitive `append_event_message` (§3.2): a message in its own turn, no customer row. |
 | "Conversation persists while waiting" | True: stage returns to `IDLE`; no `APPROVAL_PENDING` stage exists | Pinned by test only. |
@@ -82,10 +82,10 @@ Not built, by decision (ponytail): outbox table, job queue/worker, message broke
 
 ## 4. Contracts
 
-### 4.1 Models (`services/models.py`, frozen Pydantic, enums `AtiIntEnum` per user rule where new)
-- **`ReviewerDecision`**: `approval_id: UUID`, `resolution: ApprovalResolution` (reused from `storage`; carries status, notes, `edited_payload`; EDITED-needs-payload validation already there) plus `customer_reason: str | None` (optional, customer-safe, reviewer-supplied; see §4.3). `customer_reason` is persisted in new column `approvals.customer_reason text null` (same migration as `settled_at`), set by the same CAS `resolve_approval` (`ApprovalResolution` gains the field; `Approval` gains it and `settled_at`). Internal `reviewer_notes` stays internal.
-- **`SettleOutcome(AtiIntEnum)`**: `SETTLED`, `ALREADY_SETTLED`, `EXECUTION_FAILED` (dispatcher returned `FAILED`/`REFUSED`/`INVALID`), `BUSY` (`TurnLockTimeout`). Returned, not raised: callers (UI, sweep) branch on it; unknown ids and `PENDING` rows raise `ApprovalStateError` (caller bug).
-- **`ApprovalNotice`** (frozen model, deterministic text): `from_approval(approval: Approval) -> ApprovalNotice` classmethod (user rule: classmethod on the target, no `format_x`). Fixed templates per (`ActionType`, status): credit approved / credit edited (shows edited fields) / credit rejected; MFA reset approved / edited / rejected. Fields shown come from an explicit per-`ActionType` allowlist of payload keys, so free-form payload content never leaks; text carries no citation markers or numbers other than payload amounts, so it passes `check_outgoing_message` by construction (asserted by a test, the same property 22 asserts for the canned message). Lives in `services/models.py`.
+### 4.1 Models (`services/approval_models.py` for decision/outcome contracts, `services/approval_notice.py` for notice text; frozen Pydantic, `StrEnum` per repo ADR-005, user-confirmed)
+- **`ReviewerDecision`**: `approval_id: UUID`, `resolution: ApprovalResolution` (reused from `storage`; carries status, notes, `edited_payload`; EDITED-needs-payload validation already there) plus `customer_reason: str | None` (optional, customer-safe, reviewer-supplied; see §4.3). `customer_reason` is persisted in new column `approvals.customer_reason text null` (same migration as `settled_at`), written by the same CAS: `StateStore.resolve_approval` gains an optional `customer_reason` argument (default `None`); `ApprovalResolution` is NOT changed, so the field has one home (`ReviewerDecision`) and matches what #12 builds. `Approval` gains `customer_reason` and `settled_at`. Internal `reviewer_notes` stays internal.
+- **`SettleOutcome(StrEnum)`**: `SETTLED`, `ALREADY_SETTLED`, `EXECUTION_FAILED` (dispatcher returned `FAILED`/`REFUSED`/`INVALID`), `BUSY` (`TurnLockTimeout`). Returned, not raised: callers (UI, sweep) branch on it; unknown ids and `PENDING` rows raise `ApprovalStateError` (caller bug).
+- **`ApprovalNotice`** (frozen model, deterministic text): `from_approval(approval: Approval) -> ApprovalNotice` classmethod (user rule: classmethod on the target, no `format_x`). Fixed templates per (`ActionType`, status): credit approved / credit edited (shows edited fields) / credit rejected; MFA reset approved / edited / rejected. Fields shown come from an explicit per-`ActionType` allowlist of payload keys, so free-form payload content never leaks; text carries no citation markers or numbers other than payload amounts, so it passes `check_outgoing_message` **when the approval's own grant is supplied** (a credit amount in a credit sentence is a violation without a grant); asserted by a test that builds the grant with the Task-3 helper. Lives in `services/approval_notice.py`.
 - **Dispatcher dependency (#9, no local port)**: `ActionDispatcher.dispatch_approved(approval: Approval, context: DispatchContext) -> ActionResult` (#9 §5.3): rejects `PENDING`/`REJECTED`, uses `edited_payload` for `EDITED` (must keep `ticket_id`), idempotent via `simulated_actions` key `approval:{approval_id}`; #9 `mark_pending` already audited key `approval:{approval_id}:pending` at creation. `DispatchContext` (#9 §4: `identity`, `priority`, `sev1_corroborated`, `already_paged`, `conversation_id`, `message_id`) is built by `ApprovalService` from the conversation row: `identity = CustomerService.authenticate_caller(conversation.contact_email, conversation.account_id)`, `conversation_id`, `message_id = approval.message_id`; `priority="P4"`, `sev1_corroborated=False`, `already_paged=False` are neutral defaults, irrelevant for CREDIT/MFA (not Sev-1 gated; #9 §5.3; accepted). Only `CREDIT` and `MFA_RESET` ever reach it. `Approval.effective_payload` property (edited else original) added to `storage/models.py` for notices and grants.
 
 ### 4.2 `ApprovalService` (`services/approval_service.py`)
@@ -94,7 +94,7 @@ Not built, by decision (ponytail): outbox table, job queue/worker, message broke
 | Method | Input -> Output | Behavior |
 |---|---|---|
 | `list_pending` | `conversation_id: UUID \| None = None` -> `list[Approval]` | Query; reviewer queue. Delegates to `StateStore.list_pending_approvals`. |
-| `resolve` | `decision: ReviewerDecision` -> `Approval` | Command. `StateStore.resolve_approval` CAS (second reviewer gets `ApprovalStateError`). Returns the resolved row. Does **not** settle: reviewer UI calls `settle` next (CQS; also lets the sweep reuse `settle`). |
+| `resolve` | `decision: ReviewerDecision` -> `Approval` | Command. Pre-CAS checks (pure, fail fast with `ApprovalStateError`): for `EDITED`, same payload keys as the original (so `ticket_id` is kept, §3.11) and `check_action` re-run on the edited payload with the conversation's identity must still be `REQUIRE_APPROVAL` (an edit cannot turn a request into one the gate would DENY; #12 expects this); `customer_reason` guard check (§4.3, uses the conversation's `guard_history`). `StateStore.resolve_approval` CAS (second reviewer gets `ApprovalStateError`). Returns the resolved row. Does **not** settle: reviewer UI calls `settle` next (CQS; also lets the sweep reuse `settle`). |
 | `settle` | `approval_id: UUID` -> `SettleOutcome` | Command, idempotent: (1) load row; `PENDING` -> `ApprovalStateError`; `settled_at` set -> `ALREADY_SETTLED`. (2) `APPROVED`/`EDITED` -> `dispatcher.dispatch_approved(row, context)`; result status other than `DONE` -> log, `EXECUTION_FAILED`. (2b) clear ticket per §3.10 (all outcomes, including REJECTED, which skips step 2). (3) `with store.turn_lock(conversation_id)`: `StateStore.settle_approval(...)` writes the notice + `settled_at` atomically; `TurnLockTimeout` -> `BUSY`. (4) `SETTLED`. |
 | `decide` | `decision: ReviewerDecision` -> `DecisionResult` | Command. `resolve` then `settle`; see §5b. |
 | `settle_unsettled` | `limit: int = 50` -> `tuple[SettleOutcome, ...]` | Command. Called from the app lifespan only (decided; no timer, no hot-path call); retries failing rows on every call, forever (demo scope). `StateStore.list_unsettled_approvals(limit)` then `settle` each; one failing row never stops the rest. |
@@ -108,24 +108,26 @@ Template per outcome; credit approved example in prose: "Your service credit req
 - `append_event_message` is internal to `settle_approval` (not public): inserts `AGENT` message with `turn = last_turn + 1` (row-locked `_lock_conversation`, bumps `last_turn`; stage untouched), id `uuid5(approval_id, "outcome")` so a replay returns the existing row.
 - `settle_approval(approval_id: UUID, content: str, at: datetime) -> StoredMessage`: one transaction: lock conversation, no-op if `settled_at` already set (returns stored message), else insert event message + `update approvals set settled_at`. Requires non-`PENDING`.
 - `list_unsettled_approvals(limit: int) -> list[Approval]`: `status <> 'PENDING' and settled_at is null order by resolved_at`.
-- Guard: `create_approval` rejects `ActionType.VERDICT_OVERRIDE` and `PAGE_ON_CALL` / `CLOSE_TICKET` (types that never require approval) with `ValueError`, making "override never has a row" structural (the ticket's POL-SEC line), not only a gate outcome.
+- No type guard in the store (see §2 VERDICT_OVERRIDE row).
+- `get_message`-style lookups reuse `list_messages` filtered by id (small per-conversation read); no new public method.
 
 ### 4.5 Per-payload grants (replaces type-level `approved_actions`)
 Problem: `check_outgoing_message(message, history, approved: frozenset[ActionType])` and `SupportDeps.approved_actions` authorize by action type, so an approved $500 credit would also license a promised $5,000. Decided: authorize by the approved payload.
 - `guardrails/models.py`: new frozen `ApprovedGrant(action_type: ActionType, approval_id: UUID, payload: dict[str, str])`. `payload` is the approval's effective payload (edited when EDITED), so an edit binds the edited amount, not the original.
 - `guardrails/validator.py::check_outgoing_message` takes `grants: tuple[ApprovedGrant, ...]` instead of `approved`. The rule table (`_OUTPUT_RULES`) replaces `approved_by: ActionType | None` with a matcher per rule: `CREDIT_AMOUNT_PROMISE` passes only when every currency amount in the sentence equals (as `Decimal`, same currency) the `amount` of some `CREDIT` grant; `MFA_RESET_CLAIM` passes when any `MFA_RESET` grant exists (the claim sentence names no payload field; MFA binds to the approval, one grant per approved reset). No grant -> violation as today (SC-03 unchanged).
 - `agents/base.py::SupportDeps.approved_actions` becomes `approved_grants: tuple[ApprovedGrant, ...]`; `agents/resolution.py` passes it to the validator; every test constructing `SupportDeps` is updated (one shared fixture default `()`).
-- `orchestration/approvals.py`: pure `approved_grants(approvals: Sequence[Approval]) -> tuple[ApprovedGrant, ...]` (status `APPROVED`/`EDITED` only, effective payload). `Workflow._run_locked` builds `SupportDeps` grants from `StateStore.list_approvals(conversation_id)`; `base_deps` default is `()`.
+- `orchestration/approvals.py`: one frozen `ApprovalContext(grants, unsettled)` with classmethod `from_approvals(approvals: Sequence[Approval]) -> ApprovalContext` (one read, two derived views, no duplicated filtering). `grants` = APPROVED/EDITED rows **with `settled_at` set** (effective payload): a grant exists only once the customer was notified and the action executed, so a reply can never quote an amount whose dispatch failed or is still retrying. `unsettled` = §4.6 views. `Workflow._run_locked` builds it from `StateStore.list_approvals(conversation_id)` and sets `SupportDeps.approved_grants`; `base_deps` default is `()`.
+- Currency match: payload `currency` (default `USD`) is compared with the symbol/code adjacent to the quoted amount (`$`/USD, `€`/EUR, `£`/GBP), amount compared as `Decimal` after stripping thousands separators.
 - Consequence: after approval of $500, a reply quoting $500 passes; quoting $5,000 or an unrelated credit is `CREDIT_AMOUNT_PROMISE`.
 
-### 4.6 Pending approvals fed to Resolution (customer status questions)
-- `agents/models.py`: new frozen `PendingApprovalView(action_type: ActionType, requested_at: AwareDatetime)`; deliberately no payload (an amount in a reply would be an unapproved promise and the guard would reject it). `ResolutionInput` gains `pending_approvals: tuple[PendingApprovalView, ...] = ()`.
-- `Workflow._resolve` fills it from `snapshot.pending_approvals` (already loaded by `rehydrate`; `PENDING` rows of this conversation, including ones created this turn are not included, they are `pending_actions` of this turn).
-- `prompts/resolution.md`: when asked about a request listed in `pending_approvals`, say it is awaiting Escalation Board review, give no amount, outcome or ETA beyond POL-CREDIT / POL-IDV text, do not propose a duplicate action. Resolved outcomes already reach the model as the AGENT event message in history.
-- Test: "status of my credit?" while PENDING -> stub Resolution receives the view; real guard still rejects an amount promise.
+### 4.6 Unsettled approvals fed to Resolution (customer status questions)
+- `agents/models.py`: new frozen `UnsettledApprovalView(action_type: ActionType, status: ApprovalStatus, requested_at: AwareDatetime)` (renamed from `UnsettledApprovalView`: it also covers APPROVED/EDITED/REJECTED rows whose notice has not gone out yet, otherwise a customer asking during the "finalizing" window would see nothing); deliberately no payload (an amount in a reply would be an unapproved promise and the guard would reject it). `ResolutionInput` gains `unsettled_approvals: tuple[UnsettledApprovalView, ...] = ()`.
+- `Workflow._resolve` fills it from `ApprovalContext.unsettled` (rows of this conversation read before the turn; approvals created this turn are `pending_actions`, not included).
+- `prompts/resolution.md`: when asked about a request listed in `unsettled_approvals`: `PENDING` -> awaiting Escalation Board review; other statuses -> "reviewed, you will get a confirmation here shortly" (never state the decision, the notice does); give no amount, outcome or ETA beyond POL-CREDIT / POL-IDV text, do not propose a duplicate action. Settled outcomes reach the model as the AGENT event message in history.
+- Test: "status of my credit?" while PENDING and again while APPROVED-unsettled -> stub Resolution receives the view; real guard still rejects an amount promise.
 
 ### 4.7 Workflow changes summary
-Only: grants built per conversation (§4.5), `pending_approvals` passed to Resolution (§4.6). No lock change, no new stage, `run_turn` signature unchanged.
+Only: grants built per conversation (§4.5), `unsettled_approvals` passed to Resolution (§4.6). No lock change, no new stage, `run_turn` signature unchanged.
 
 ---
 
@@ -154,7 +156,7 @@ Single module: `services/approval_service.py`, class `ApprovalService` (sync; ca
 | **`decide`** | `(decision: ReviewerDecision) -> DecisionResult` | **The one entry point for Approve / Edit / Reject.** Runs `resolve` then `settle`. |
 | `resolve`, `settle` | as §4.2 | Lower-level pair; UIs should not need them. |
 
-- `ReviewerDecision(approval_id: UUID, resolution: ApprovalResolution, customer_reason: str | None = None)`; build `ApprovalResolution(status=APPROVED)`, `(status=EDITED, edited_payload=...)` or `(status=REJECTED, reviewer_notes=...)`. Both models live in `services/models.py` / `storage/models.py` and are re-exported from `services/__init__.py`.
+- `ReviewerDecision(approval_id: UUID, resolution: ApprovalResolution, customer_reason: str | None = None)`; build `ApprovalResolution(status=APPROVED)`, `(status=EDITED, edited_payload=...)` or `(status=REJECTED, reviewer_notes=...)`. Models live in `services/approval_models.py` / `storage/models.py`. **`ApprovalService` is not re-exported from `services/__init__.py`**: `actions.dispatcher` imports `services.ticket_service`, and `services/approval_service.py` imports `actions`, so an eager re-export would create an import cycle. Import by module path.
 - `DecisionResult(approval: Approval, settle: SettleOutcome)`, frozen. `settle != SETTLED` still means the decision is durable (e.g. `BUSY`, `EXECUTION_FAILED`); the UI shows "decision saved, customer notice pending" and the lifespan sweep finishes it.
 - Errors: `ApprovalStateError` (unknown id, already resolved, edit without/with changed `ticket_id`, unsafe `customer_reason`): show to the reviewer, do not retry. Reviewer UI must not write `approvals`/`messages` directly.
 - `decide` is `resolve` + `settle` in sequence with no logic of its own (SRP); crash between them is covered by the sweep (§5).
@@ -164,7 +166,7 @@ Single module: `services/approval_service.py`, class `ApprovalService` (sync; ca
 ## 6. Data Flow, End to End (SC-03 shape)
 
 1. Turn N: customer asks for a $500 credit; Resolution proposes `CREDIT`; gate returns `REQUIRE_APPROVAL`; recorder inserts `PENDING` row keyed `"{message_id}:{index}"`; reply says it is filed. Stage `IDLE`.
-2. Turn N+1 (still pending): unrelated question answered normally; `approved_grants` empty so a credit-amount promise is still blocked; if the customer asks for status, Resolution sees the `PendingApprovalView`.
+2. Turn N+1 (still pending): unrelated question answered normally; `approved_grants` empty so a credit-amount promise is still blocked; if the customer asks for status, Resolution sees the `UnsettledApprovalView`.
 3. Reviewer (other process) `resolve(APPROVED)` then `settle`: dispatcher runs, ticket cleared to `open`, lock taken for one short tx, event turn N+2 inserted: "approved".
 4. Process restarts at any moment between 1 and 3: nothing lost (§5).
 5. Turn N+3: customer asks "so is it done?": history contains the approval event; `approved_grants` holds the $500 grant; Resolution may quote $500, but not any other amount.
@@ -215,7 +217,7 @@ User decisions (applied above):
 6. MFA: no identity re-verification at approval time.
 7. Grants bound per payload (§4.5); edited payload binds the edited value.
 8. Rejection notice carries an optional reviewer-supplied, guard-checked `customer_reason` (§4.3).
-9. Pending approvals fed to Resolution as `PendingApprovalView` (§4.6).
+9. Unsettled approvals fed to Resolution as `UnsettledApprovalView` (§4.6).
 10. Post-approval event sender: `AGENT`.
 11. Multiple approvals: one notice each.
 12. Neutral `DispatchContext` defaults accepted; MFA grant not payload-bound; ticket-update failure in `settle` logged + traced + swallowed; changing 15/22 guardrails signatures and tests inside this issue.
@@ -223,3 +225,14 @@ User decisions (applied above):
 
 ## 11. Open questions
 None.
+
+## 12. Design fixes found while planning
+1. Removed the store-level `VERDICT_OVERRIDE`/type guard (duplicated `check_action`, broke `StateStore` purity).
+2. Notice text is only guard-clean with its own grant; claim corrected.
+3. Grants require `settled_at`: no quoting an amount whose dispatch failed or is retrying.
+4. Status view covers APPROVED-unsettled rows (finalizing window).
+5. `customer_reason` lives only on `ReviewerDecision` (not duplicated in `ApprovalResolution`).
+6. `resolve` re-runs `check_action` and key-set check on edits (expected by #12).
+7. No eager `services/__init__` re-export of `ApprovalService` (import cycle with `actions`).
+8. `SettleOutcome` is `StrEnum`.
+9. Tracing: no Braintrust anywhere; ticket-clear failure uses the existing `traces` table via `StateStore.record_trace`; PydanticAI agents untouched except `ResolutionInput` field and prompt text.

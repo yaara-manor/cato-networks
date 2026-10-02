@@ -22,6 +22,10 @@ When run:
 
 If `db/seed.dump` is absent, startup exits with an error indicating that the operator must run the build (`python -m db.init.build`).
 
+## Customer Chat UI
+
+`docker compose up ui` serves the customer chat at http://localhost:8501 (needs `OPENAI_API_KEY` in the environment for real agents). Locally: `DATABASE_URL=... uv run streamlit run ui/customer_app.py`.
+
 ## Running Tests
 
 To run the test suite against the running database:

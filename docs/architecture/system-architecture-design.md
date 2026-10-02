@@ -39,7 +39,7 @@ The architecture strictly adheres to the following system-wide invariants:
 4. **Non-Blocking HITL Approval**:
    When an action requires human approval, the approval request is persisted in Postgres, but the customer conversation remains active. The customer can continue asking unrelated questions while awaiting escalation board action.
 5. **Grounded Evidence & Refusal Contract**:
-   - Telemetry findings must be quoted verbatim with the tool named (e.g. `routes_count 1024/1024 [telemetry]`).
+   - Telemetry findings must be quoted verbatim with the tool named (e.g. `routes_count 1024/1024 [telemetry:<tool>]`).
    - Technical answers must cite specific article slugs and section heading anchors (`[kb:<slug>#<anchor>]`).
    - If retrieval confidence falls below `RERANK_MIN_SCORE` or the topic has no KB coverage (e.g., unreleased roadmap features like IPv6-only sites), the system must refuse to speculate and offer human routing.
 
@@ -560,7 +560,7 @@ The codebase is organized into clean, single-responsibility packages separating 
 │
 ├── tools/                             # Typed CMA Telemetry inspection tools
 │   ├── models.py                      # TelemetryStatus, TelemetryEvidence, TelemetryToolResult[T], payload schemas
-│   └── telemetry.py                   # TelemetryService and verbatim [telemetry] evidence extraction
+│   └── telemetry.py                   # TelemetryService and verbatim [telemetry:<tool>] evidence extraction
 │
 ├── actions/                           # Action dispatcher: gate-cleared actions -> simulated effects + audit rows
 │   ├── dispatcher.py                  # ActionDispatcher (dispatch_turn, dispatch_approved, mark_pending)
@@ -607,7 +607,12 @@ The codebase is organized into clean, single-responsibility packages separating 
 │   └── workflow.py                    # Multi-turn coordinator with partial-failure fallbacks
 │
 ├── ui/                                # Presentation layer (Deliverable B)
-│   ├── customer_app.py                # Customer support chat with citation badges
+│   ├── customer_app.py                # Customer support chat (Streamlit): scenario switcher, badges, banners, trace tab
+│   ├── customer_widgets.py            # Rendering helpers for the customer page
+│   ├── chat_view.py                   # Frozen view models over ConversationSnapshot + approvals
+│   ├── session.py                     # Connection-per-call glue over orchestration.runtime
+│   ├── scenarios.py                   # Scenario switcher data (data/eval/scenarios.jsonl)
+│   ├── trace_panel.py                 # Shared trace component (customer and reviewer apps)
 │   └── reviewer_app.py                # Reviewer workspace: context, evidence, traces, approvals
 │
 └── eval/                              # Evaluation harness & benchmarks (Deliverables C, F, G)

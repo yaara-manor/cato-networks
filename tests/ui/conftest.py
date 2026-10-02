@@ -195,7 +195,11 @@ def seed_case(store: StateStore, new_conversation: Callable[[], UUID], make_trac
             data=LinkQualityPayload(site_id="S-1", window="24h", links=[link]),
         )
         kb_search = KBSearchResult(
-            status=KBSearchStatus.CONFIDENT, query="loss", passages=[], candidates=[], snapshot_date=None
+            status=KBSearchStatus.CONFIDENT,
+            query="loss",
+            passages=[_passage("p1", 0.03, 0.9)],
+            candidates=[_passage("p1", 0.03, 0.9), _passage("p2", 0.02, 0.1)],
+            snapshot_date=None,
         )
         bundle = KnowledgeBundle(
             findings=KnowledgeFindings(),

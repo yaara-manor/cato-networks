@@ -1,7 +1,7 @@
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models import Model
 
-from agents.base import SupportDeps, build_agent, load_prompt
+from agents.base import SupportDeps, build_agent, conversation_prompt, load_prompt
 from agents.models import AgentRun, Intent, TriageDecision, TriageInput, TriageResult
 from agents.runner import run_role
 from core.models import Ticket
@@ -48,13 +48,6 @@ def build_triage_agent(model: Model | None = None) -> Agent[SupportDeps, TriageD
     return agent
 
 
-def _prompt(data: TriageInput) -> str:
-    if not data.history:
-        return data.message
-    turns = "\n".join(f"{turn.sender}: {turn.content}" for turn in data.history)
-    return f"Conversation so far:\n{turns}\n\nNew message:\n{data.message}"
-
-
 def _fallback_decision(message: str) -> TriageDecision:
     return TriageDecision(intent=Intent.KB_INQUIRY, priority="P3", symptom_summary=redact(message).text)
 
@@ -78,7 +71,9 @@ def _repeat_contact(
 
 
 def run_triage(data: TriageInput, deps: SupportDeps, model: Model | None = None) -> AgentRun[TriageResult]:
-    outcome = run_role(build_triage_agent(model), _prompt(data), deps, "triage")
+    outcome = run_role(
+        build_triage_agent(model), conversation_prompt(data.message, data.history), deps, "triage"
+    )
     decision = outcome.output or _fallback_decision(data.message)
     result = TriageResult(
         decision=decision,

@@ -7,13 +7,13 @@ from pydantic_core import to_jsonable_python
 _OUTPUT_TOOL_PREFIX = "final_result"
 
 
-def tool_returns(messages: list[ModelMessage], tool_name: str) -> tuple[Any, ...]:
-    """Raw returned objects of `tool_name`, in call order."""
+def tool_returns(messages: list[ModelMessage], *tool_names: str) -> tuple[Any, ...]:
+    """Raw returned objects of the named tools, in call order."""
     return tuple(
         part.content
         for message in messages
         for part in message.parts
-        if isinstance(part, ToolReturnPart) and part.tool_name == tool_name
+        if isinstance(part, ToolReturnPart) and part.tool_name in tool_names
     )
 
 

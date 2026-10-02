@@ -1,9 +1,11 @@
+from collections.abc import Sequence
 from dataclasses import dataclass
 from functools import cache
 
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models import Model
 
+from agents.models import ConversationTurn
 from core.clock import SimulationClock
 from core.config import settings
 from guardrails import ActionType, GroundingContext, SessionGuardHistory
@@ -48,3 +50,10 @@ def build_agent[O](
         instructions=[role_prompt, _guard_note],
         retries={"output": 1},
     )
+
+
+def conversation_prompt(message: str, history: Sequence[ConversationTurn]) -> str:
+    if not history:
+        return message
+    turns = "\n".join(f"{turn.sender}: {turn.content}" for turn in history)
+    return f"Conversation so far:\n{turns}\n\nNew message:\n{message}"

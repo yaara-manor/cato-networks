@@ -4,7 +4,7 @@
 
 **Goal:** The workflow degrades explicitly when telemetry or KB retrieval is down, refuses to guess, recovers on the next healthy turn, and survives an agent raising an exception.
 
-**Architecture:** Degradation is a pure function of the statuses already on issue 7's `DiagnosticEvidence` and `KnowledgeBundle`, evaluated fresh every turn (no sticky flag). Disclosure text is deterministic and prepended by the workflow. "Refuse to guess" is enforced by the existing guardrails through `GroundingContext`, via issue 7's `run_resolution` validators; the workflow adds no second enforcement path.
+**Architecture:** Degradation is a pure function of the statuses already on issue 7's `DiagnosticEvidence` and `KnowledgeBundle`, evaluated fresh every turn (no sticky degradation state). Only the customer-visible notice is deduplicated, via `OrchestratorState.notice_shown` (Plan 1 Task 4) in the 21 snapshot. Disclosure text is deterministic and prepended by the workflow. "Refuse to guess" is enforced by the existing guardrails through `GroundingContext`, via issue 7's `run_resolution` validators; the workflow adds no second enforcement path.
 
 **Tech Stack:** Same as Plan 1. No new dependencies.
 
@@ -27,14 +27,14 @@ Same as Plan 1 (typing, no inline imports, frozen models, tuples, f-strings, cla
 | `NOT_FOUND` / `INVALID_ARGUMENT` tool results | none | no | agent reports "no data" itself |
 | agent raises | none | no | fixed pause message, state intact |
 
-Which `UnavailableTool.status` values count as an outage: only `TelemetryStatus.UNAVAILABLE`. Other non-OK statuses are listed by the agent but produce no notice. Notice is shown once per outage per conversation: a per-source "notice shown" flag lives in the issue 21 `StateStore` snapshot, set when the notice is shown and cleared when that source is healthy again. Degradation itself is still derived fresh each turn. Retrieval down = escalation offer only, no auto-ticket.
+`DiagnosticEvidence.unavailable_tools` is `tuple[UnavailableTool, ...]` (22: every non-OK result, with `tool_name`, `status`, `error`). Which entries count as an outage: only `status == TelemetryStatus.UNAVAILABLE`; `derive_degradations` filters on that and passes the tool names to `DegradationNotice.from_telemetry`. Other non-OK statuses are listed by the agent but produce no notice. Notice is shown once per outage per conversation: `OrchestratorState.notice_shown` (Plan 1 Task 4, stored in the 21 versioned snapshot column) gets the source via `with_notice_shown` when the notice is shown and loses it via `with_source_healthy` when that source is healthy again. Saved once at turn end with the reply; the agent-failure turn saves nothing. Degradation itself is still derived fresh each turn. Retrieval down = escalation offer only, no auto-ticket.
 
 ## Review Focus
 
 1. Evidence from healthy tools kept while one tool is down (true partial result): the healthy tool's evidence is still citable, the down tool's marker is rejected.
 2. Fabricated telemetry number (SC-01 `1024/1024`) with telemetry down: rejected by validators, reply is the canned handoff, not the number.
 3. Resolution tries a `[kb:...]` marker while retrieval is down: rejected (`REFUSAL_BREACH`); a `[policy:POL-...]` citation (policies served from memory) still passes.
-4. Source recovers on turn 2: no notice, KB citation accepted, nothing sticky in stored state.
+4. Source recovers on turn 2: no notice, KB citation accepted, the source's `notice_shown` flag cleared, no other degradation state stored.
 5. Agent exception mid-turn after the customer message was saved: customer message and error trace persisted, reply is the pause message, stage back to `IDLE`, next turn works.
 
 ## File Structure
@@ -54,7 +54,7 @@ Which `UnavailableTool.status` values count as an outage: only `TelemetryStatus.
 
 **Interfaces:**
 - Consumes: Plan 1 `TurnResult`, `compose_reply`; issue 7 contracts above.
-- Produces: `DegradedSource`, `DegradationNotice(source, detail, customer_text)`, `derive_degradations(...)`. `detail` carries tool names and status only. Notice order is always telemetry then retrieval.
+- Produces: `DegradedSource`, `DegradationNotice(source, detail, customer_text)`, `derive_degradations(...)` (filters `unavailable_tools` to `UNAVAILABLE` status, passes names to `from_telemetry`). `detail` carries tool names and status only. Notice order is always telemetry then retrieval.
 
 - [ ] **Step 1:** Write the failing tests using real `DiagnosticEvidence` / `KnowledgeBundle` objects: telemetry `UNAVAILABLE` -> exactly one telemetry notice with the exact template text; `NOT_FOUND` / `INVALID_ARGUMENT` only -> no notice; retrieval `UNAVAILABLE` -> retrieval notice; `LOW_CONFIDENCE_REFUSAL` -> no notice; both -> telemetry first; both inputs `None` -> empty.
 - [ ] **Step 2:** Run `uv run pytest tests/orchestration/test_partial_failure.py -v`. Expected: FAIL.
@@ -78,9 +78,10 @@ Which `UnavailableTool.status` values count as an outage: only `TelemetryStatus.
   - SC-09 low confidence: no outage notice, refusal enforced.
   - `NOT_FOUND` site: no notice.
   - Recovery: turn 1 retrieval down, turn 2 healthy -> turn 2 has no notice and KB citation accepted; flag cleared.
-  - Outage persisting over turns 1-2: notice on turn 1 only, refusal enforcement still applied on turn 2.
+  - Outage persisting over turns 1-2: notice on turn 1 only, refusal enforcement still applied on turn 2; after a restart (new connection, new `Workflow`) between turns the notice is still not repeated; outage, recovery, outage again -> notice shown again on the second outage.
+  - Agent-failure turn during an outage: flags unchanged.
 - [ ] **Step 2:** Run the file. Expected: FAIL.
-- [ ] **Step 3:** Implement in `workflow.py`. Issue 22's `grounding_context` already excludes unavailable tools (22 adds it); the workflow adds no check and no patch, the partial-down test covers it. Persist the "notice shown" flag through `StateStore` and filter notices by it before `compose_reply`.
+- [ ] **Step 3:** Implement in `workflow.py`. Issue 22's `grounding_context` already excludes unavailable tools (22 adds it); the workflow adds no check and no patch, the partial-down test covers it. Use the Plan 1 Task 4 `OrchestratorState` already loaded in `run_turn`: filter notices by `notice_shown`, then `with_notice_shown` for shown sources and `with_source_healthy` for sources not degraded this turn; the single end-of-turn save persists it (no second persistence path).
 - [ ] **Step 4:** Re-run. Expected: PASS.
 - [ ] **Step 5:** Commit: `feat(orchestration): partial failure handling`.
 
@@ -90,7 +91,7 @@ Which `UnavailableTool.status` values count as an outage: only `TelemetryStatus.
 
 **Interfaces:**
 - Consumes: `canned.AGENT_FAILURE_PAUSE`, `TurnRecorder`, `TraceStatus.ERROR`, `AgentRole.ORCHESTRATOR`.
-- Produces: `run_turn` catches `Exception` at exactly one site (around steps 2-5), logs via stdlib `logging`, records one error trace with the exception class name only (no message text, may contain customer data), appends the pause message as a system message, returns to `IDLE`, returns a `TurnResult` whose reply is the pause message. The ingestion step stays outside the handler so the redacted customer message and guard history are already saved.
+- Produces: `run_turn` catches `Exception` at exactly one site (around steps 2-5), logs via stdlib `logging`, records one error trace with the exception class name only (no message text, may contain customer data), appends the pause message as a SYSTEM message via 21 `complete_turn` (which also returns the stage to `IDLE`), saves no `OrchestratorState`, returns a `TurnResult` whose reply is the pause message. The ingestion step stays outside the handler so the redacted customer message and guard history are already saved.
 
 - [ ] **Step 1:** Write tests: Diagnostics stub raises `RuntimeError` -> reply equals the pause constant, customer message persisted, one `ERROR` trace, stage `IDLE`, `guard_history` unchanged; next turn with a healthy stub succeeds on the same conversation.
 - [ ] **Step 2:** Run. Expected: FAIL.
@@ -101,7 +102,7 @@ Which `UnavailableTool.status` values count as an outage: only `TelemetryStatus.
 ### Task 4: Docs, cleanup, lint, type check (final)
 
 - [ ] **Step 1:** Update `docs/architecture/system-architecture-design.md` section 5 diagram and recovery matrix to the table above and the Plan 1 routing (back-edge kept with cap 2, no workflow-level OUTPUT_GUARD re-prompt); remove its Braintrust export mention if present. Add the next free ADR to `docs/overview/decisions.md`: hand-rolled sync workflow over `pydantic_graph`, stateless per-turn degradation, no Braintrust.
-- [ ] **Step 2:** Mark `design.md` status "Implemented (see plan-01, plan-02)" and add a one-line pointer that the plans override sections 3, 4.5, 5.4, 9 (back-edge in 4.3 is kept).
+- [ ] **Step 2:** Mark `design.md` status "Implemented (see plan-01, plan-02)" and keep the "Superseded by the plans" paragraph in design.md section 1 accurate (back-edge in 4.3 is kept).
 - [ ] **Step 3:** Read all `orchestration/` files end to end; remove unused code (every `DegradedSource` member, model field and constant used and asserted by a test; every `ConversationStage` the workflow enters appears in some asserted `path`).
 - [ ] **Step 4:** Run `uv run ruff check`, `uv run ruff format --check`, `uv run pyright orchestration`, then `uv run pytest tests/orchestration tests/guardrails -q`. Expected: clean and PASS. Grep for `datetime.now`, `braintrust`, inline imports in `orchestration/`.
 - [ ] **Step 5:** Commit: `docs(orchestration): architecture, ADR, cleanup`.

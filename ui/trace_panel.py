@@ -15,8 +15,8 @@ class _View(BaseModel):
     model_config = ConfigDict(frozen=True)
 
 
-def _dump(data: dict[str, Any] | None) -> str | None:
-    return None if data is None else json.dumps(data, indent=2, default=str)
+def _dump(data: dict[str, Any]) -> str:
+    return json.dumps(data, indent=2, default=str)
 
 
 class TraceToolCall(_View):
@@ -51,8 +51,8 @@ class TraceStep(_View):
             tool_calls=tuple(
                 TraceToolCall(tool_name=c.tool_name, status=c.status, latency_ms=c.latency_ms) for c in step.tool_calls
             ),
-            input_json=_dump(trace.input) or "{}",
-            output_json=_dump(trace.output),
+            input_json=_dump(trace.input),
+            output_json=None if trace.output is None else _dump(trace.output),
         )
 
 

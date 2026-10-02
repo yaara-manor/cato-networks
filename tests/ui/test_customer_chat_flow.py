@@ -56,10 +56,6 @@ def _conversation_id(at: AppTest) -> UUID:
     return at.session_state.conversation_id
 
 
-def _store(conn: psycopg.Connection[Any]) -> StateStore:
-    return StateStore(conn)
-
-
 def test_multi_turn_history_reload_and_garbage_id(
     make_app: MakeApp, scripted: Scripted, conn: psycopg.Connection[Any]
 ) -> None:
@@ -146,7 +142,7 @@ def test_pending_banner_titles_action_only_and_input_stays_enabled(
     assert not at.chat_input[0].disabled
 
     service = Desk.create(conn).service
-    (approval,) = _store(conn).list_approvals(_conversation_id(at))
+    (approval,) = StateStore(conn).list_approvals(_conversation_id(at))
     approved = ApprovalResolution(status=ApprovalStatus.APPROVED)
     service.resolve(ReviewerDecision(approval_id=approval.id, resolution=approved))
     at.run()
@@ -155,7 +151,7 @@ def test_pending_banner_titles_action_only_and_input_stays_enabled(
     service.settle_unsettled()
     at.run()
     assert any(str(s.value) == "Approved: Service credit" for s in at.success)
-    notices = [m for m in _store(conn).list_messages(_conversation_id(at)) if m.turn > 1]
+    notices = [m for m in StateStore(conn).list_messages(_conversation_id(at)) if m.turn > 1]
     assert len(notices) == 1 and notices[0].sender is MessageSender.AGENT
     assert notices[0].content in _page(at)
 
@@ -166,7 +162,7 @@ def test_rejection_shows_customer_reason_never_reviewer_notes(
     scripted.actions = (TICKET, CREDIT)
     at = _as_priya(make_app())
     _send(at, "credit please")
-    (approval,) = _store(conn).list_approvals(_conversation_id(at))
+    (approval,) = StateStore(conn).list_approvals(_conversation_id(at))
     rejection = ApprovalResolution(status=ApprovalStatus.REJECTED, reviewer_notes="INTERNAL-NOTE-XYZ")
     service = Desk.create(conn).service
     reason = "Outside the credit window"
@@ -210,7 +206,8 @@ def test_lock_timeout_notice_then_retry_reuses_message_id(
 
     assert len(seen) == 2 and seen[0] == seen[1]
     assert not any(LOCK_NOTICE in str(w.value) for w in at.warning)
-    customer_rows = [m for m in _store(conn).list_messages(_conversation_id(at)) if m.sender is MessageSender.CUSTOMER]
+    messages = StateStore(conn).list_messages(_conversation_id(at))
+    customer_rows = [m for m in messages if m.sender is MessageSender.CUSTOMER]
     assert len(customer_rows) == 1
 
 

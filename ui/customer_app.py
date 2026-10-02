@@ -5,7 +5,6 @@ import streamlit as st
 from orchestration.state import StateVersionError
 from storage import TurnLockTimeout
 from ui import session
-from ui.chat_view import ChatView
 from ui.customer_widgets import render_banners, render_message, render_trace
 from ui.scenarios import load_scenarios
 
@@ -75,11 +74,6 @@ def _run_pending(conversation_id: UUID) -> None:
     st.rerun()  # redraw the transcript, or the notice with its retry button
 
 
-def _transcript(view: ChatView) -> None:
-    for index, message in enumerate(view.messages):
-        render_message(message, index)
-
-
 def main() -> None:
     session.warm()
     _STATE.setdefault("scenario", next(iter(_SCENARIOS)))
@@ -101,7 +95,8 @@ def main() -> None:
         _banners(conversation_id)
         view = session.load_view(conversation_id)
         assert view is not None
-        _transcript(view)
+        for index, message in enumerate(view.messages):
+            render_message(message, index)
         retry = _STATE.notice is not None and st.button("Retry")
         if _STATE.notice:
             st.warning(_STATE.notice)

@@ -583,6 +583,12 @@ The codebase is organized into clean, single-responsibility packages separating 
 
 ---
 
+## Concurrency
+
+`Workflow.run_turn` runs under a per-conversation Postgres session advisory lock (`storage/turn_lock.py`, key `hashtextextended('turn:' || conversation_id, 0)`), taken on the `StateStore` connection, so one conversation runs one turn at a time across workers. Waiting is bounded by `turn_lock_timeout_s` (default 30 s); on timeout `TurnLockTimeout` is raised with no state written and the caller retries with the same `message_id` (idempotent). If a worker dies, Postgres releases the lock with its backend. Use one connection per concurrent turn. The production DSN must set TCP keepalives (`keepalives_idle`, `keepalives_interval`, `keepalives_count`) so half-open connections release their locks. See ADR-010.
+
+---
+
 ## 13. Cleanup & Deprecation
 
 - All code files are structured strictly under the packages defined above.

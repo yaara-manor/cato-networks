@@ -141,3 +141,11 @@
 - **Chosen Approach**: `orchestration/state.py` holds `STATE_VERSION` and a `MIGRATIONS` chain (pure `v -> v+1` steps). `from_snapshot`: empty data -> defaults; older -> migrate; newer -> `StateVersionError` (raised outside the agent-failure boundary, blob untouched); migration/validation failure -> defaults plus a warning (no blob content logged).
 - **Rejected**: new column/table (21 owns storage); treating newer as empty (next save would overwrite newer data).
 - **Cost if wrong**: a rebuild resets `oncall_paged`, so a corroborated P1 may be paged once more (a duplicate page beats a missed one); notices may repeat once.
+
+## ADR-013: Action Dispatcher After the Gate, Postgres Audit with Unique Keys
+
+- **Context / Problem**: gate-cleared actions had no executor; effects must be exactly-once-ish under retries, crashes and corrupt state rebuilds, and never bypass `check_action`.
+- **Chosen Approach**: `actions.ActionDispatcher(store, tickets, clock)` runs after `gate_actions` inside the turn lock. `simulated_actions` is both audit log and idempotency store: the unique `idempotency_key` is claimed before the effect (`{message_id}:{kind}:{index}`, `approval:{id}`, and conversation-scoped `{conversation_id}:PAGE_ON_CALL` as the DB backstop behind `oncall_paged`). Dispatch happens before the single end-of-turn `complete_turn(state=...)` write, so a crash leaves state unsaved and the retry replays stored results. Ticket effects are at-most-once on a crash between write and finalize (reported as "outcome unknown"). Pre-claim refusals and invalid payloads write no row, so they cannot poison a key.
+- **Ticket binding**: credit/MFA approvals carry the conversation's `OrchestratorState.active_ticket_id`, stamped in code over any model-written value. The workflow sets the ticket `pending_approval` (`mark_pending`); issue #10's settle step clears it; `dispatch_approved` never changes ticket status.
+- **Rejected**: execution inside agents (breaks pure agents); JSON files / webhook (no atomic idempotency); event bus (YAGNI).
+- **Cost if wrong**: a failed page row is terminal for the conversation (no retry); a crash mid ticket write needs human follow-up.

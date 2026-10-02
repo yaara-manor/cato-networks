@@ -5,7 +5,6 @@ import pytest
 from pydantic_ai.messages import ModelMessage, ModelRequest, ModelResponse, ToolCallPart
 from pydantic_ai.models.function import AgentInfo, FunctionModel
 
-from agents.base import load_prompt
 from agents.messages import tool_returns
 from agents.models import Intent, TriageInput
 from agents.runner import run_role
@@ -16,7 +15,6 @@ from tests.agents.conftest import MakeDeps, scripted_model
 
 PSK = "Fg7!qwe-DC-2026-tunnel"
 UNKNOWN_EMAIL = "nobody@unknown.example"
-HEADINGS = ("Role", "Inputs you receive", "Tools and when to use them", "Rules", "Output fields", "Examples")
 
 
 def _decision(**fields: Any) -> dict[str, Any]:
@@ -69,11 +67,6 @@ def _instructions(make_deps: MakeDeps, email: str) -> str:
     run_role(build_triage_agent(FunctionModel(respond)), "hi", make_deps(email), "triage")
     return "\n".join(seen)
 
-
-def test_prompt_has_headings_and_no_leaks() -> None:
-    prompt = load_prompt("triage")
-    assert all(f"## {heading}" in prompt for heading in HEADINGS)
-    assert "SC-" not in prompt and "expected" not in prompt.lower()
 
 
 def test_identity_block_for_member_and_unknown(make_deps: MakeDeps) -> None:

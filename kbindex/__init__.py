@@ -1,4 +1,1 @@
-import braintrust
-
-braintrust.init_logger(project="My Project")
-braintrust.auto_instrument()
+# kbindex package: ingestion, chunking, and index storage.

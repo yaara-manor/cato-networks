@@ -14,11 +14,11 @@ A deterministic, LLM-free routing layer (`Workflow`) that runs one customer turn
 Flow (issue): Triage -> (Diagnostics <-> Knowledge) -> Resolution. Refines architecture §5 state diagram.
 
 Design choices:
-- **Agents are injected ports**, not imported. Triage / Diagnostics / Knowledge / Resolution are async callables with typed in/out (contracts from architecture §4.2, built in the agent issues). Keeps this issue independent of agent prompts and testable with scripted stubs.
+- **Agents are injected ports**, not imported. Triage / Diagnostics / Knowledge / Resolution are sync callables `(Input, SupportDeps) -> AgentRun[Output]`, the shape of issue 22's `run_<role>` (contracts from 22; the API layer adapts the whole sync `run_turn` with `asyncio.to_thread`). Keeps this issue independent of agent prompts and testable with scripted stubs.
 - **Guards reused, not re-implemented**: `guardrails.redactor.redact`, `injection.detect`, `validator.check_claims`, `check_citations`, `check_action`, `check_outgoing_message`, `SessionGuardHistory` (all pure, 1.5).
 - **Degradation is derived from typed statuses already on the contracts**: `TelemetryStatus.UNAVAILABLE` (1.3) and `KBSearchStatus.UNAVAILABLE` (1.4). No new exception channel, no try/except around agents for these two cases.
 - **Customer-visible notice is deterministic text** prepended by the workflow, so disclosure never depends on the Resolution LLM remembering to say it.
-- **State is per-turn in/out**: `run_turn(state, message) -> (state, TurnResult)`. Persistence (`conversations`/`messages` tables, migration `20260930_1000_agent-runtime.sql`) is the caller's job (Phase 2.4).
+- **State lives in the 21 `StateStore`**, not in a per-turn in/out object: `run_turn(conversation_id, message, message_id) -> TurnResult` (see plan-01 decisions 3, 4, 10, 11). Workflow-owned state (clarification counter, outage-notice flags, on-call-paged flag) is one versioned snapshot in the JSONB column on `conversations`; cross-worker locking and rebuild stay in #34 / 2.4.
 
 ```mermaid
 stateDiagram-v2
@@ -43,6 +43,8 @@ stateDiagram-v2
 ```
 
 **Resolved decisions** (user, override anything below): merge order 21 -> 22 -> 23; issue 22 adds `KnowledgeBundle.needs_more_telemetry`, `DiagnosticEvidence.unavailable_tools` and a `grounding_context` that excludes unavailable tools; back-edge restored, round cap 2; Triage identity built by the orchestrator via plain-function `authenticate_caller` and passed in `TriageInput`; `run_<role>(Input, SupportDeps)` are sync, adapted via `asyncio.to_thread`; `SupportDeps` owned by 22; `message_id` supplied by caller and used as idempotency key (duplicate submit returns stored result, turn not re-run); retrieval down = escalation offer only, no auto-ticket; max 3 clarification turns then escalate; partial-failure notice once per outage per conversation (flag in 21 `StateStore` snapshot); tests use stub/`FunctionModel`/`TestModel` in CI plus one opt-in live-LLM smoke test skipped without key.
+
+**Superseded by the plans** (plan-01 "Design Decisions", plan-02): §2 and §3 (`ConversationState`, `WorkflowState`, async ports; the plans use 21's `ConversationStage` and `OrchestratorState`), §4.5 re-prompt and §5.4 (22 `run_resolution` validates, retries once and returns the handoff plan), §7 file layout. Everything else (routing table, back-edge cap 2, degradation semantics) stands.
 
 **Out of scope**: cross-worker turn locking and `ConversationState` rebuild (GitHub issue #34, 2.4), agent prompts and tool wiring (agent issues), `ApprovalService` persistence and reviewer UI, conversation/trace persistence, model-API retry/fallback (architecture §5 row 4, lives in the agent runner), UI.
 
@@ -78,9 +80,9 @@ Enums use `StrEnum`, matching `tools/models.py` / `guardrails/models.py` (ADR-00
   - `messages: tuple[tuple[str, str], ...]` (sender, redacted text); the agents' conversation history.
   - Methods return new instances (`with_triage`, `with_message`, `with_history`, `with_evidence`), no mutation.
 - **`TurnResult`**: `reply: str`, `path: tuple[WorkflowState, ...]`, `degradations: tuple[DegradationNotice, ...]`, `pending_actions: tuple[ProposedAction, ...]` (REQUIRE_APPROVAL; handed to Phase 2.4 approval persistence), `escalation_offered: bool`.
-- **Agent ports** (`Protocol`, one `__call__` each, all async): `TriageStep`, `DiagnosticsStep`, `KnowledgeStep`, `ResolutionStep`. Inputs/outputs are the architecture §4.2 types (`TriageDecision`, `DiagnosticEvidence`, `KnowledgeBundle`, `ResolutionPlan`). `ResolutionStep` additionally takes `tuple[DegradationNotice, ...]` and prior `OutputViolation`/`CitationViolation` list for the single re-prompt.
+- **Agent ports** (`Protocol`, one `__call__` each, sync; see plan-01 `AgentPorts`): `TriageStep`, `DiagnosticsStep`, `KnowledgeStep`, `ResolutionStep`. Inputs/outputs are the architecture §4.2 types (`TriageDecision`, `DiagnosticEvidence`, `KnowledgeBundle`, `ResolutionPlan`). `ResolutionStep` takes `ResolutionInput` only (22 has no notices or violations field): Resolution sees degradation through the degraded `DiagnosticEvidence` / `KnowledgeBundle` and its `grounding_context()`; notices are prepended by the workflow, not passed in.
 
-Contract additions are built by issue 22 (merged before this issue): `DiagnosticEvidence.unavailable_tools: tuple[str, ...]` (tools whose `TelemetryToolResult.status == UNAVAILABLE`) and `KnowledgeBundle.needs_more_telemetry: bool`.
+Contract additions are built by issue 22 (merged before this issue): `DiagnosticEvidence.unavailable_tools: tuple[UnavailableTool, ...]` (every non-OK tool result with `tool_name`, `status`, `error`; the workflow treats only `UNAVAILABLE` as an outage and passes the tool names to the notice) and `KnowledgeBundle.needs_more_telemetry: bool`. Triage returns `TriageResult` (wraps `TriageDecision`).
 
 ---
 
@@ -88,7 +90,7 @@ Contract additions are built by issue 22 (merged before this issue): `Diagnostic
 
 `Workflow.__init__(triage, diagnostics, knowledge, resolution, clock)` takes the four ports and `SimulationClock`; no DB/telemetry handles (agents own those via `SupportDeps`).
 
-`Workflow.run_turn(state: ConversationState, message: str) -> tuple[ConversationState, TurnResult]` — async; orchestrates only, each step is its own method (single concern).
+`Workflow.run_turn(conversation_id, message, message_id) -> TurnResult` — sync, state in the 21 `StateStore` (see plan-01 Task 3); orchestrates only, each step is its own method (single concern).
 
 ### 4.1 Ingestion guard
 1. `redact(message)` -> redacted text; `with_redaction` on history. Only redacted text enters state, agents, traces.
@@ -111,7 +113,7 @@ Fixed edges: `DIAGNOSTICS -> KNOWLEDGE` always; `KNOWLEDGE -> RESOLUTION`; `RESO
 ### 4.4 Conversational diagnosis (vague input)
 - Triage returns `scoping_question` -> Resolution renders it as the reply; state stores `awaiting_scoping_answer=True`, the question, and `triage`.
 - Next turn: Triage receives the prior `TriageDecision` + the answer + history, so it merges scope instead of restarting; once `scoping_question` is `None` the normal routing table applies (SC-02 vague -> scoping -> Diagnostics).
-- Workflow caps clarification at 3 turns (counter in the 21 `StateStore` snapshot); after the 3rd unanswered scoping turn it escalates to a human instead of asking again.
+- Workflow caps clarification at 3 turns: `OrchestratorState.clarification_turns` in the 21 versioned snapshot is incremented per scoping-question turn and reset when Triage stops asking; when it is already 3 and Triage still asks, the workflow escalates to a human (`escalation_offered`) instead of asking a 4th time (plan-01 Task 4).
 
 ### 4.5 Resolution, action gate, output guard
 - `ResolutionStep` -> `ResolutionPlan`.
@@ -123,10 +125,10 @@ Fixed edges: `DIAGNOSTICS -> KNOWLEDGE` always; `KNOWLEDGE -> RESOLUTION`; `RESO
 
 ## 5. Partial Failure Handling — ~35% of effort
 
-Health is evaluated **every turn from that turn's statuses**, so a source that recovers mid-conversation is used again on the next turn automatically. Only the customer-visible notice is deduplicated: shown once per outage per conversation, via a per-source "notice shown" flag in the 21 `StateStore` snapshot, cleared when that source is healthy again.
+Health is evaluated **every turn from that turn's statuses**, so a source that recovers mid-conversation is used again on the next turn automatically. Only the customer-visible notice is deduplicated: shown once per outage per conversation, via `OrchestratorState.notice_shown` (per-source flag) in the 21 `StateStore` versioned snapshot, cleared when that source is healthy again; written once at turn end with the reply, so a retried or crash-resumed turn cannot double-apply it.
 
 Pure helper `_degradations(evidence: DiagnosticEvidence | None, bundle: KnowledgeBundle | None) -> tuple[DegradationNotice, ...]`:
-- telemetry notice when `evidence.unavailable_tools` is non-empty.
+- telemetry notice when `evidence.unavailable_tools` has any entry with `status == UNAVAILABLE`.
 - retrieval notice when `bundle.confidence_status == KBSearchStatus.UNAVAILABLE`.
 - `NOT_FOUND` (no such file) and `INVALID_ARGUMENT` are **not** outages: no notice; the agent reports "no data for site X" itself.
 - `LOW_CONFIDENCE_REFUSAL` is not an outage either (no KB coverage, SC-09); it reuses the same refusal enforcement below but no outage notice.
@@ -141,7 +143,7 @@ Pure helper `_degradations(evidence: DiagnosticEvidence | None, bundle: Knowledg
 ### 5.2 Retrieval source down
 - Knowledge returns bundle with `confidence_status = UNAVAILABLE` (1.4 catches `psycopg.Error`; policy lookup still works from memory, so `referenced_policies` may be non-empty and POL citations stay valid).
 - Workflow prepends `DegradationNotice.from_retrieval()` (once per outage) and sets `escalation_offered=True` (offer only, no auto-ticket).
-- **Refuses ungrounded technical answers**: `GroundingContext.is_refusal=True` -> any `kb` marker or technical-claim sentence in the reply is `REFUSAL_BREACH` -> re-prompt once -> canned handoff. Resolution receives the notices so the happy path is a short, non-technical, empathetic reply.
+- **Refuses ungrounded technical answers**: `GroundingContext.is_refusal=True` -> any `kb` marker or technical-claim sentence in the reply is `REFUSAL_BREACH` -> re-prompt once -> canned handoff. Resolution sees the degraded bundle (refusal grounding), so the happy path is a short, non-technical, empathetic reply.
 - Telemetry evidence, if available, can still be quoted verbatim (verbatim evidence is grounded); no KB-derived interpretation is added.
 
 ### 5.3 Both down
@@ -178,7 +180,8 @@ Functional, multi-turn, deterministic: scripted stub agents (record calls, retur
   - SC-09 `LOW_CONFIDENCE_REFUSAL`: refusal enforced, **no** outage notice.
   - `NOT_FOUND` site: no outage notice.
   - Mid-conversation recovery: turn 1 retrieval down, turn 2 healthy -> turn 2 has no notice and cites KB; outage persisting over turns 1-2 -> notice only on turn 1.
-  - Duplicate `message_id` -> stored result returned, agents not re-run.
+  - Duplicate `message_id` -> stored result returned, agents not re-run, counter and flags unchanged.
+  - State snapshot (plan-01 Task 4 `test_state_snapshot.py`): clarification cap and restart continuity, retry not double-counted, Sev-1 `PAGE_ON_CALL` allowed once then denied via `already_paged`.
   - Agent raises -> pause message, state intact.
 
 ---

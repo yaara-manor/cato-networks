@@ -1,5 +1,3 @@
-from typing import Any, Literal
-
 from pydantic import AwareDatetime, BaseModel
 
 from core.models import AccountTier, CustomerAccount, Ticket, TicketPriority
@@ -39,9 +37,3 @@ class RepeatContactResult(BaseModel):
     prior_closed_tickets: list[Ticket]
     reason: str | None
 
-
-class ApprovalRecord(BaseModel):
-    action_type: Literal["credit", "mfa_reset", "security_override"]
-    payload: dict[str, Any]
-    status: Literal["pending", "approved", "edited", "rejected"]
-    reviewer_notes: str | None = None

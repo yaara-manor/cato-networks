@@ -16,7 +16,9 @@
 - Every function/method fully typed (params and return, `-> None` included), Pyright `standard` clean, ruff clean. No bare `list`/`dict`, no implicit `Any`.
 - Imports at module top only. f-strings. Enums are `StrEnum` (ADR-005, matches `tools/models.py`, `guardrails/models.py`); no `Literal` for enum-like fields.
 - Frozen Pydantic models (`ConfigDict(frozen=True)`); timestamps `AwareDatetime` passed in by callers from `SimulationClock`; no `datetime.now`, no SQL `now()` for business timestamps.
-- No new dependency; one dependency REMOVED (`braintrust`).
+- No new dependency; one dependency REMOVED (`braintrust`, confirmed, along with its `.env.example` key).
+- Merge order 21 -> 22 -> 23; 21 owns the `AgentTrace` fields.
+- Out of scope: cross-worker turn locking and `ConversationState` rebuild from snapshot (issue #34 / 2.4); customer reply after approval (issue #10 / 3.2).
 - NO Braintrust tracing anywhere. Tracing = PydanticAI message history (`result.all_messages()`, `ModelMessagesTypeAdapter`) + the Postgres trace tables of this plan. The design/architecture mentions of Braintrust are overridden (Task 1).
 - Tests are functional against the real seeded Postgres (compose `postgres` up). If it is not up, STOP and report.
 - Verify with `uv run pytest <path> -v`, `uvx ruff check <paths>`, `uvx pyright <paths>`.
@@ -31,8 +33,8 @@ Single branch `p-2-1_agent-state-machine` (from `p-2-agent`). Commit per task. N
 2. **Counters on `conversations`, not `max()+1`.** `last_turn` and `last_seq` columns are advanced by locked `UPDATE ... RETURNING`; `max()+1` is racy under READ COMMITTED even inside a transaction. Unique `(conversation_id, turn)` for customer messages is not needed; unique `(conversation_id, seq)` on traces is the backstop.
 3. **No CHECK constraints mirroring enums.** Pydantic enums validate every write and read; a second copy in SQL is the drift risk the design then needs a test for. Text columns, enum-typed in Python.
 4. **Dropped as YAGNI:** `simulated_actions` table (dispatcher issues #9/#10 own it), `ConversationStatus` / `status` column and `close_conversation` / `list_conversations` (nothing closes or lists in Phase 2), `MessageSender.REVIEWER`, `traces.retrieval_scores` column (full envelope with scores is already in `tool_calls.result`; DRY), `ReplayStep.children` tree (flat ordered steps with `parent_trace_id`).
-5. **`traces.model_messages jsonb`** added: PydanticAI's own serialized message history for the run (`ModelMessagesTypeAdapter`). This is the PydanticAI-native replacement for Braintrust spans, answers design question 1 (what to store in `input`), and gives full prompt/tool-call fidelity without custom serializers.
-6. **`cost_usd` source:** computed by agent layer (plan 22 trace builder) from `ModelResponse.cost()` (genai-prices, already installed with pydantic-ai); `None` when the model is unknown (e.g. `TestModel`). No pricing table in the repo. Answers design question 2.
+5. **`traces.model_messages jsonb`** added: PydanticAI's own serialized message history for the run (`ModelMessagesTypeAdapter`). This is the PydanticAI-native replacement for Braintrust spans, together with `traces.input` (redacted by the store via existing `guardrails/redactor.py`, truncated to 20 KB; see plan 02) settles what to store, and gives full prompt/tool-call fidelity without custom serializers.
+6. **`cost_usd` source:** computed at `AgentTrace.from_run` time (plan 22 owns `from_run`) with the installed `genai_prices` package (transitive dep of pydantic-ai) from PydanticAI `RunUsage` + model name; 21 only stores the number, nullable when the model is unknown (e.g. `TestModel`). No pricing table in `core/config.py` or the repo.
 7. **Turn/stage atomicity:** stage transitions that must be atomic with a message write are done by the same store method (plan 02: `append_customer_message` sets stage `INGESTION_GUARD`; `complete_turn` appends the reply and sets `IDLE` in one transaction). Design's separate `set_stage` stays for mid-turn node transitions only.
 
 ## Review Focus
@@ -157,7 +159,4 @@ Models (fields as in design §4 minus the deltas above):
 
 ## Unresolved questions
 
-1. Drop `braintrust` dep + `.env.example` key entirely (assumed yes)?
-2. Regenerate committed `db/seed.dump` now (not needed) or leave?
-3. Plan 22 `AgentTrace` builder: ok to own filling the new fields incl. `cost_usd` via `ModelResponse.cost()`?
-4. `ConversationStatus`/close dropped; ok?
+1. Regenerate committed `db/seed.dump` now (not needed) or leave?

@@ -2,7 +2,7 @@
 
 **Issue**: `#6` ([Phase 2] 2.1: Persistent State Machine & Trace Store (Postgres))
 **Date**: 2026-10-01
-**Status**: Draft for Review
+**Status**: Draft for Review (user decisions applied: no Braintrust; no `simulated_actions` / conversation `status` / `close_conversation` / `list_conversations` per plan 01 delta 4; merge order 21 -> 22 -> 23, 21 owns `AgentTrace` fields)
 **Target Files**: `db/migrations/20261001_0900_agent-runtime.sql`, `storage/__init__.py`, `storage/models.py`, `storage/state_store.py`, `db/init/build.py`, `agents/models.py`, `services/models.py`, `tests/storage/*`
 
 ---
@@ -31,7 +31,7 @@ flowchart LR
     Tr -. "replay_trace(conversation_id)" .-> Replay["TraceReplay"]
 ```
 
-**Out of scope**: orchestrator / PydanticAI graph wiring (2.2), `ApprovalService` lifecycle rules and reviewer actions (separate issue; `StateStore` only exposes primitive approval reads/writes), Braintrust export, UI, async API (wrap with `asyncio.to_thread` at the orchestrator boundary, per 1.4 §2.3), connection pooling (`db/connection.py` stays a later item; the store takes one connection).
+**Out of scope**: orchestrator / PydanticAI graph wiring (2.2), `ApprovalService` lifecycle rules and reviewer actions (separate issue; `StateStore` only exposes primitive approval reads/writes), Braintrust (dropped), cross-worker turn locking and `ConversationState` rebuild from snapshot (new issue #34 / 2.4), customer reply after approval resolution (issue #10 / 3.2), UI, async API (wrap with `asyncio.to_thread` at the orchestrator boundary, per 1.4 §2.3), connection pooling (`db/connection.py` stays a later item; the store takes one connection).
 
 ---
 
@@ -42,7 +42,7 @@ flowchart LR
 3. **State is rows, not blobs.** Conversation state machine position is a `status` + `stage` column on `conversations`; per-turn artifacts (`TriageDecision`, `DiagnosticEvidence`, `KnowledgeBundle`, `ResolutionPlan`) are stored as `jsonb` on the `traces` row of the agent that produced them (`output`). Rehydration rebuilds the in-flight turn by reading the latest trace row per agent role for the open turn. No pickled graph state, no second state table.
 4. **Append-only traces and messages.** `messages`, `traces`, `tool_calls`, `simulated_actions` have no UPDATE/DELETE methods. `conversations` and `approvals` are the only mutable tables (status transitions).
 5. **Idempotent writes via caller-supplied keys.** Orchestrator-generated `uuid` PKs (`uuid4` generated in the store when not passed) plus `ON CONFLICT (id) DO NOTHING` on `messages`/`traces`/`tool_calls`, so a retried turn after a crash does not duplicate rows. Approval creation is idempotent on `(conversation_id, idempotency_key)` (§3.1) so a replayed `propose_action` cannot queue two credits.
-6. **Redaction is the caller's job, enforced by a guard column test, not by the store.** Per guardrails design §4.1 the orchestrator calls `redact()` at the single ingestion chokepoint; `StateStore` stays pure persistence. A functional test (§6) asserts the SC-08 PSK never appears in any column after the orchestrator-shaped write sequence. Rationale: a second redaction layer inside the store would hide logic (SRP) and double-process agent output.
+6. **Redaction: customer text at the orchestrator chokepoint; `traces.input` at store write time.** Per guardrails design §4.1 the orchestrator calls `redact()` on customer text; `StateStore.record_trace` additionally passes `traces.input` through the existing `guardrails/redactor.py::redact` (reuse, no new redaction code) and truncates to 20 KB. A functional test (§6) asserts the SC-08 PSK never appears in any column after the orchestrator-shaped write sequence. Raw prompts are stored (replay fidelity) only after redaction.
 7. **Timestamps passed in, never `now()`.** Every write method takes `at: AwareDatetime` (from `SimulationClock.now()`) so the simulated `2026-08-28T17:00:00Z` anchor holds in rows and replays (ADR-001). DB column defaults are not used for business timestamps.
 8. **Runtime tables excluded from `db/seed.dump`.** `pg_dump` in `db/init/build.py` dumps the whole database; a dev DB with live conversations would leak them into the shipped seed and `pg_restore` would clobber runtime state on every container start. `build.py` passes `--exclude-table-data` for the five runtime tables (schema stays, data never ships). `startup.py` restore behaviour is checked in tests (§6).
 
@@ -59,7 +59,7 @@ Extends the ER sketch in architecture §6; deltas called out.
 - **`conversations`**: `id uuid PK`, `account_id text NULL`, `contact_email text NULL`, `customer_tier text`, `active_site_id text NULL`, `status text` (`active`, `closed`), `stage text` (current state-machine node, §4), `guard_history jsonb` (serialized `SessionGuardHistory`, default empty), `created_at`, `updated_at timestamptz`. **Delta**: `stage` + `guard_history` added — guardrails design §1 explicitly defers persisting `SessionGuardHistory` to "Phase 2 conversation state"; without it a restart forgets prior injection attempts / false claims / secret hashes (and `SECRET_ECHO` would stop working after reboot).
 - **`messages`**: `id uuid PK`, `conversation_id uuid FK`, `turn int`, `sender text` (`customer`, `agent`, `system`, `reviewer`), `content text` (already redacted), `citations jsonb`, `telemetry_evidence jsonb`, `created_at`. **Delta**: `turn` (monotonic per conversation, assigned in the insert statement via `coalesce(max(turn),0)+1` inside the transaction for customer messages; agent/system messages reuse the open turn). Unique `(conversation_id, turn, sender, created_at, id)` not needed; PK suffices.
 - **`approvals`**: `id uuid PK`, `conversation_id uuid FK`, `trace_id uuid NULL FK` (the Resolution trace that proposed it), `action_type text` (`ActionType` values from `guardrails/models.py`), `payload jsonb`, `status text` (`pending`, `approved`, `edited`, `rejected`), `idempotency_key text`, `reviewer_notes text NULL`, `edited_payload jsonb NULL`, `requested_at`, `resolved_at timestamptz NULL`. Unique `(conversation_id, idempotency_key)`. **Delta**: `idempotency_key`, `edited_payload` (approve/**edit**/reject needs the edited value kept next to the original), `trace_id`. Partial index on `(status) WHERE status = 'pending'` for the reviewer queue.
-- **`traces`**: `id uuid PK`, `conversation_id uuid FK`, `message_id uuid NULL FK` (customer message that started the turn), `turn int`, `seq int` (monotonic per conversation, total order for replay), `agent_role text` (`ingestion_guard`, `triage`, `diagnostics`, `knowledge`, `resolution`, `output_guard`, `orchestrator`), `parent_trace_id uuid NULL FK`, `input jsonb`, `output jsonb`, `status text` (`ok`, `error`, `retried`), `error text NULL`, `latency_ms int`, `prompt_tokens int`, `completion_tokens int`, `cost_usd numeric NULL`, `retrieval_scores jsonb NULL`, `started_at`, `created_at`. **Deltas** vs sketch: `turn`, `seq`, `parent_trace_id`, `input`/`output`, `status`/`error`, `cost_usd`, `started_at`. `parent_trace_id` + `seq` is what makes the conversation graph reconstructable from traces alone (retries, re-prompts after a failed citation check, and the guard branch all show as parent/child). `cost_usd` is computed by the caller from token counts; the store does not know pricing.
+- **`traces`**: `id uuid PK`, `conversation_id uuid FK`, `message_id uuid NULL FK` (customer message that started the turn), `turn int`, `seq int` (monotonic per conversation, total order for replay), `agent_role text` (`ingestion_guard`, `triage`, `diagnostics`, `knowledge`, `resolution`, `output_guard`, `orchestrator`), `parent_trace_id uuid NULL FK`, `input jsonb`, `output jsonb`, `status text` (`ok`, `error`, `retried`), `error text NULL`, `latency_ms int`, `prompt_tokens int`, `completion_tokens int`, `cost_usd numeric NULL`, `retrieval_scores jsonb NULL`, `started_at`, `created_at`. **Deltas** vs sketch: `turn`, `seq`, `parent_trace_id`, `input`/`output`, `status`/`error`, `cost_usd`, `started_at`. `parent_trace_id` + `seq` is what makes the conversation graph reconstructable from traces alone (retries, re-prompts after a failed citation check, and the guard branch all show as parent/child). `cost_usd` is computed by `AgentTrace.from_run` (plan 22) via installed `genai_prices` from PydanticAI `RunUsage` + model name; the store only persists the number (nullable when model unknown); no pricing table in `core/config.py`.
 - **`tool_calls`** (**new**; replaces the sketch's `traces.tool_calls jsonb`): `id uuid PK`, `trace_id uuid FK`, `conversation_id uuid FK` (denormalized for direct replay query), `seq int`, `tool_name text`, `arguments jsonb`, `status text` (the envelope status string: `TelemetryStatus` / `KBSearchStatus` / `GateOutcome` value), `result jsonb` (full typed envelope incl. `evidence`, `candidates`, scores), `latency_ms int`, `created_at`. Reason: the issue asks for a "tool log" separate from agent traces; a child table gives indexable per-tool queries (e.g. "all `UNAVAILABLE` telemetry calls") that a jsonb array cannot.
 - **`simulated_actions`**: unchanged from sketch (`id`, `conversation_id`, `approval_id uuid NULL` **delta**, `action_name`, `payload`, `executed_at`). Written by the future dispatcher; included here so the whole runtime schema lands in one migration.
 
@@ -169,10 +169,11 @@ Functional against the real seeded Postgres (like `tests/retrieval/`); each test
 ---
 
 ## 9. Unresolved Questions
-1. Store raw `input` prompts in `traces.input`? PII/size vs replay fidelity (default: store redacted input, truncate > 20 KB).
-2. Pricing table for `cost_usd` — where (`core/config.py`)? or tokens only?
-3. Approval `trace_id` FK ok, or key approvals by `message_id`?
-4. Keep `ApprovalService` (arch §12) separate, or fold into `StateStore`?
-5. One-turn-at-a-time lock per conversation (`SELECT ... FOR UPDATE` on `conversations`) now or in 2.2?
-6. Replay `seq` global per conversation vs per turn?
-7. Add `db/connection.py` pool now (arch lists it) or later?
+1. Approval `trace_id` FK ok, or key approvals by `message_id`?
+2. Keep `ApprovalService` (arch §12) separate, or fold into `StateStore`?
+3. Replay `seq` global per conversation vs per turn?
+4. Add `db/connection.py` pool now (arch lists it) or later?
+
+**Notes for other issues (not 21 questions)**
+- Issue #10 (3.2) resume path: re-invoke the Resolution step (22 `run_resolution`) with the approval outcome as input for consistent grounded tone; rejection uses a deterministic template. 21 only persists the approval outcome and exposes it.
+- Issue #34 (2.4): cross-worker turn locking and `ConversationState` rebuild from `ConversationSnapshot`.

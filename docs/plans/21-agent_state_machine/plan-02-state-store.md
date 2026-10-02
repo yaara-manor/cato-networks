@@ -16,7 +16,7 @@ Same as plan 01 (sync, fully typed, no inline imports, f-strings, StrEnum, froze
 
 - Reuse, do not rewrite: `psycopg.rows.class_row` (row mapping), `psycopg.types.json.Jsonb` via `storage/jsonb.py::to_jsonb`, `core.config.settings.database_url`, `core.clock.SimulationClock` (tests only; the store never reads it), `guardrails.models.SessionGuardHistory/ActionType/ProposedAction`, `guardrails.redactor.redact` (tests), `tools.TelemetryService` and `retrieval` result envelopes (replay test), `pydantic_ai.messages.ModelMessagesTypeAdapter` (message-history serialization, in the test only; production caller is plan 22).
 - File size rule: `storage/state_store.py` stays under ~300 lines. If it would exceed, move approval methods to `storage/approval_queries.py` as module functions taking the connection, and have `StateStore` delegate (one-line methods). Do not create the split up front.
-- No `ApprovalService`, no async wrapper, no pool, no dispatcher; all stay out of scope.
+- No `ApprovalService`, no async wrapper, no pool, no dispatcher; all stay out of scope. Also out of scope: cross-worker turn locking and `ConversationState` rebuild from snapshot (issue #34 / 2.4), customer reply after approval (issue #10 / 3.2).
 
 ## Concurrency & recovery contract (design issues resolved up front)
 
@@ -24,11 +24,12 @@ Same as plan 01 (sync, fully typed, no inline imports, f-strings, StrEnum, froze
 2. **Per-conversation serialization:** each write begins with `SELECT ... FROM conversations WHERE id = ... FOR UPDATE`. That row lock orders concurrent writers (customer turn, reviewer resolving an approval, background retry), makes `last_turn`/`last_seq` gapless and collision-free, and makes "exists? then insert" idempotency checks race-free. Cross-conversation writes never contend.
 3. **Idempotent retries:** `append_customer_message`, `complete_turn`, `record_trace` and `create_approval` take a caller-supplied id (or idempotency key); under the lock, an existing id/key returns the stored row with no counter or stage side effect. A turn retried after a crash therefore never duplicates rows.
 4. **Crash resume:** state is whatever committed last. Customer message commit sets stage `INGESTION_GUARD`; each node does `set_stage` + `record_trace` (separate transactions, in this order: trace first, then stage, so the stage never claims progress the trace log lacks); `complete_turn` commits the reply and `IDLE` together. `rehydrate` returns the open turn's traces; resume rule for the orchestrator: reuse `output` of `OK` traces per role, redo roles lacking an `OK` trace, reusing the same `message_id`.
-5. **Stuck-stage hazard:** a crash leaves stage non-`IDLE`; the store never rejects a new customer message because of it (that would brick the conversation). The new message opens the next turn; the orphaned older turn is ignored by `rehydrate` (only the highest customer turn without a reply is "open"). Serializing concurrent turns across workers is the orchestrator's job (single-process in this project); see questions.
+5. **Stuck-stage hazard:** a crash leaves stage non-`IDLE`; the store never rejects a new customer message because of it (that would brick the conversation). The new message opens the next turn; the orphaned older turn is ignored by `rehydrate` (only the highest customer turn without a reply is "open"). Serializing concurrent turns across workers is out of scope for 21: new issue #34 (2.4).
 6. **Approvals:** resolve is a compare-and-set (`UPDATE ... WHERE id AND status = 'PENDING' RETURNING`), so two reviewers racing yield exactly one winner and one `ApprovalStateError`. Resolution never changes conversation stage (non-blocking HITL).
 7. **Consistent reads:** `rehydrate` and `replay_trace` each run in one transaction whose first statement is `SET TRANSACTION ISOLATION LEVEL REPEATABLE READ`, so a concurrent writer cannot yield a snapshot with a reply but without its traces.
 8. **Hostile text:** all text/jsonb writes pass through `strip_nul` / `to_jsonb`.
-9. **Redaction** stays at the orchestrator chokepoint (guardrails design §4.1); a test pins the invariant.
+8a. **Trace input:** `record_trace` passes `traces.input` through the existing `guardrails/redactor.py::redact` (reuse, no new redaction code) and truncates to 20 KB before `to_jsonb`. `cost_usd` is stored as given (computed by plan 22 `AgentTrace.from_run` via `genai_prices`; nullable).
+9. **Customer-message redaction** stays at the orchestrator chokepoint (guardrails design §4.1); a test pins the invariant for all columns, incl. `traces.input` redacted by the store.
 
 ## Review Focus
 
@@ -82,7 +83,7 @@ Same as plan 01 (sync, fully typed, no inline imports, f-strings, StrEnum, froze
   - `list_tool_calls(conversation_id: UUID, trace_id: UUID | None = None) -> list[ToolCallRecord]` ordered by `(trace_id's seq, tool seq)` via a join, or simpler by `created_at, seq`; pick join on `traces.seq` for deterministic order.
 
 - [ ] **Step 1: Write failing tests:**
-  (a) trace with two tool calls round-trips; tool call order preserved; `result` contains the full `TelemetryToolResult` dump for `S-1007-01` from the real `TelemetryService` (reuse how `tests/tools/test_telemetry.py` constructs it) incl. `evidence`; (b) idempotent: `record_trace` twice with the same id -> one trace, `last_seq == 1`, tool calls not duplicated; (c) atomicity: a trace whose second tool call violates a constraint (e.g. `trace_id` forced duplicate seq via a malformed record, or a `conversation_id` unknown to FK) leaves zero trace rows and counter unchanged; (d) concurrency: two threads, each with its own `psycopg.connect(autocommit=True)` + `StateStore`, each recording 20 traces for one conversation with distinct ids; afterwards `[t.seq for t in list_traces]` equals `list(range(1, 41))`; (e) parent/child: a retry trace with `parent_trace_id` set persists and orders after its parent; (f) a KB search `KBSearchResult` envelope (build one directly from `retrieval.models` with two scored candidates; no DB model load) keeps `rerank_score` values in `result`.
+  (a) trace with two tool calls round-trips; tool call order preserved; `result` contains the full `TelemetryToolResult` dump for `S-1007-01` from the real `TelemetryService` (reuse how `tests/tools/test_telemetry.py` constructs it) incl. `evidence`; (b) idempotent: `record_trace` twice with the same id -> one trace, `last_seq == 1`, tool calls not duplicated; (c) atomicity: a trace whose second tool call violates a constraint (e.g. `trace_id` forced duplicate seq via a malformed record, or a `conversation_id` unknown to FK) leaves zero trace rows and counter unchanged; (d) concurrency: two threads, each with its own `psycopg.connect(autocommit=True)` + `StateStore`, each recording 20 traces for one conversation with distinct ids; afterwards `[t.seq for t in list_traces]` equals `list(range(1, 41))`; (e) parent/child: a retry trace with `parent_trace_id` set persists and orders after its parent; (g) `traces.input` containing the SC-08 PSK is stored redacted, input over 20 KB truncated to 20 KB; `cost_usd` None and a Decimal both round-trip; (f) a KB search `KBSearchResult` envelope (build one directly from `retrieval.models` with two scored candidates; no DB model load) keeps `rerank_score` values in `result`.
 - [ ] **Step 2:** Run, expect FAIL.
 - [ ] **Step 3:** Implement.
 - [ ] **Step 4:** Run, expect PASS; ruff/pyright on touched paths.
@@ -182,14 +183,17 @@ Same as plan 01 (sync, fully typed, no inline imports, f-strings, StrEnum, froze
 ## Self-review
 
 - Spec coverage: §5.1 Task 1 (minus dropped `list_conversations`/`close_conversation`); §5.2 Task 1 (turn assignment now atomic via counter); §5.3 Task 2; §5.4 Task 3; §5.5 Tasks 4-5 (`record_simulated_action` dropped, plan 01 delta 4); §6 tests 1-5 mapped to Tasks 1-6 plus plan 01 Tasks 2-3 (schema, dump); §7 cross-package in plan 01 Task 4 and Task 7 here; §8 cleanup Task 8.
-- Interface seams: **22** fills `AgentTrace` (incl. `ToolCall`, `model_messages`, `cost_usd`) and calls `TraceRecord.from_agent_trace`; **23** `run_turn` stays DB-free; its `TurnResult.pending_actions` become `create_approval` calls and its visited `path` becomes one `ORCHESTRATOR`/guard `TraceRecord` per state in Phase 2.4; `ConversationState` is rebuilt in 2.4 from `ConversationSnapshot` (identity from `update_identity` columns, triage/awaiting-scope from the latest `OK` Triage trace `output`, evidence from stored messages, `guard_history` as saved). Stage names map 1:1 to `WorkflowState` where both exist.
+- Interface seams: **22** fills `AgentTrace` (incl. `ToolCall`, `model_messages`, `cost_usd`) and calls `TraceRecord.from_agent_trace`; **23** `run_turn` stays DB-free; its `TurnResult.pending_actions` become `create_approval` calls and its visited `path` becomes one `ORCHESTRATOR`/guard `TraceRecord` per state in Phase 2.4; `ConversationState` is rebuilt in 2.4 (issue #34) from `ConversationSnapshot` (identity from `update_identity` columns, triage/awaiting-scope from the latest `OK` Triage trace `output`, evidence from stored messages, `guard_history` as saved). Stage names map 1:1 to `WorkflowState` where both exist.
 - Names consistent across plans: `append_customer_message`, `complete_turn`, `record_trace`, `ApprovalResolution`, `ConversationSnapshot`, `TraceReplay`, `to_jsonb`, `strip_nul`.
 
 ## Unresolved questions
 
-1. Cross-worker turn serialization (advisory lock / lease) now or 2.4? Assumed 2.4, single process.
-2. Persist `ConversationState` pieces (identity json, triage decision) as columns vs derive from traces? Assumed derive (design §2.3).
-3. Approval outcome reply to customer (no customer turn): who writes it, issues #9/#10?
-4. Keep `ApprovalService` split from `StateStore`? Assumed yes.
-5. Tool-call `latency_ms` precision (message timestamps, approximate) ok?
-6. Pool in `db/connection.py`: later, ok?
+1. Persist `ConversationState` pieces (identity json, triage decision) as columns vs derive from traces? Assumed derive (design §2.3).
+2. Keep `ApprovalService` split from `StateStore`? Assumed yes.
+3. Tool-call `latency_ms` precision (message timestamps, approximate) ok?
+4. Pool in `db/connection.py`: later, ok?
+
+**Notes for other issues (not 21 questions)**
+- Issue #10 (3.2) resume path: re-invoke the Resolution step (22 `run_resolution`) with the approval outcome as input for consistent grounded tone; rejection uses a deterministic template. 21 only persists the approval outcome + exposes it.
+- Issue #34 (2.4): cross-worker turn locking, `ConversationState` rebuild.
+- Merge order 21 -> 22 -> 23.

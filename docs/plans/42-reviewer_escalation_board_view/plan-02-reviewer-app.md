@@ -18,6 +18,7 @@
 - Do not define trace models or trace rendering; import 41's. Do not modify `ui/trace_panel.py` or `ui/customer_app.py`.
 - Connections: opened per script/fragment run with a context manager, autocommit; never cached. Only services/config are cached (`st.cache_resource`).
 - Polling: board fragment 3 s, live trace fragment 2 s while stage is not `IDLE`.
+- Approval rows seeded in tests use a customer message from the same conversation (composite FK). `AgentRole` is imported from `agents.models`.
 - Functional `AppTest` tests, real Postgres, scripted agents, zero LLM.
 
 ## Review Focus
@@ -54,9 +55,9 @@
 
 **Interfaces:**
 - Consumes: plan 01 `BoardRow`, `CaseView`; Task 1 runtime and `DecisionForm`; 32 `DecisionResult`, `ApprovalStateError`, `SettleOutcome`; 41 `render_trace_panel`.
-- Produces: Streamlit entry script runnable as `streamlit run ui/reviewer_app.py`. Functions (each one concern): `render_board`, `render_escalated_tab`, `render_context`, `render_evidence`, `render_approvals`, `render_live_trace`, `main`.
+- Produces: Streamlit entry script runnable as `streamlit run ui/reviewer_app.py`. Functions (each one concern): `render_board`, `render_escalated_tab`, `render_context`, `render_evidence`, `render_approvals`, `render_live_trace`, `render_model_messages` (Task 3), `main`.
 
-- [ ] **Step 1:** Failing `AppTest` tests: board lists pending-first with tier and age; selecting a row sets the `conversation_id` query param; context panel shows SLA countdown and repeat alert; evidence tab shows raw values, anomaly marks, unavailable tools, link chart per link, KB scores; escalated tab lists only paged conversations and has no buttons; approve, edit and reject paths through real `ApprovalService` (status, `reviewer_notes`, `edited_payload`, `customer_reason` persisted, customer notice present, `DONE` dispatch shown); Review Focus 1 and 2 (second decide shows already-resolved; forced `BUSY` shows "decision saved" message).
+- [ ] **Step 1:** Failing `AppTest` tests: board lists pending-first with tier and age; escalated tab lists conversations flagged by `oncall_paged` or `escalation_offered` with separate badges; selecting a row sets the `conversation_id` query param; context panel shows SLA countdown and repeat alert; evidence tab shows raw values, anomaly marks, unavailable tools, link chart per link, KB scores; escalated tab has no buttons; approve, edit and reject paths through real `ApprovalService` (status, `reviewer_notes`, `edited_payload`, `customer_reason` persisted, customer notice present, `DONE` dispatch shown); Review Focus 1 and 2 (second decide shows already-resolved; forced `BUSY` shows "decision saved" message).
 - [ ] **Step 2:** Run, expect failure.
 - [ ] **Step 3:** Implement the script. Board and live trace as `st.fragment` with the intervals above; query-param driven selection; after any decision, re-read `get_approval` and `list_simulated_actions`; errors rendered via `st.error` with the service message verbatim.
 - [ ] **Step 4:** Run tests, expect pass.
@@ -66,10 +67,10 @@
 ### Task 3: Live trace, resilience, packaging
 
 **Files:**
-- Modify: `ui/reviewer_app.py`, `pyproject.toml` (only if 41 has not added `streamlit`), `Dockerfile` (same), `docker-compose.yml` (service `reviewer`, own port, `streamlit run ui/reviewer_app.py`, same env as `app`), `README.md` (one line in Reviewer Quickstart), `docs/architecture/system-architecture-design.md` (layout: `ui/reviewer_view.py`, `ui/reviewer_session.py`, `StateStore.list_board_rows`)
+- Modify: `ui/reviewer_view.py` (add `ModelMessagesView.from_replay`), `ui/reviewer_app.py` (add `render_model_messages`), `pyproject.toml` (only if 41 has not added `streamlit`), `Dockerfile` (same), `docker-compose.yml` (service `reviewer`, own port, `streamlit run ui/reviewer_app.py`, same env as `app`), `README.md` (one line in Reviewer Quickstart), `docs/architecture/system-architecture-design.md` (layout: `ui/reviewer_view.py`, `ui/reviewer_session.py`, `StateStore.list_board_rows`)
 - Create: `tests/ui/test_reviewer_resilience.py`
 
-- [ ] **Step 1:** Failing `AppTest` tests: turn interrupted mid-run renders open steps via shared trace panel and totals equal summed trace rows; conversation with no triage/diagnostics output renders all panels with no-data states and `UNAVAILABLE` tool visible; unknown `conversation_id` shows "not found" (Review Focus 4); SC-08 PSK never in rendered text.
+- [ ] **Step 1:** Failing `AppTest` tests: model-messages expander per step shows redacted messages from `TraceRecord.model_messages` and "not recorded" for a null one, and the customer-visible page code path never imports it; turn interrupted mid-run renders open steps via shared trace panel and totals equal summed trace rows; conversation with no triage/diagnostics output renders all panels with no-data states and `UNAVAILABLE` tool visible; unknown `conversation_id` shows "not found" (Review Focus 4); SC-08 PSK never in rendered text.
 - [ ] **Step 2:** Run, expect failure where behavior is missing.
 - [ ] **Step 3:** Implement fixes; add packaging edits (merge with 41's edits, do not duplicate dependency lines or services).
 - [ ] **Step 4:** Run `tests/ui tests/storage tests/orchestration`; bring up compose reviewer service and load the page once (manual smoke, record result in commit message).

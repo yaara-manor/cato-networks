@@ -43,6 +43,7 @@ flowchart LR
 | `ui/reviewer_app.py` only | Arch §10 layout also lists `ui/customer_app.py`; no `ui/` exists, no UI dependency in `pyproject.toml` | Add Streamlit; split render (`reviewer_app.py`) from pure builders (`reviewer_view.py`) so logic is testable without a browser |
 | SLA countdowns, repeat-contact alerts | Not persisted as columns. `TriageResult.sla: SLADeadlines` and `.repeat_contact: RepeatContactResult` live in the triage trace `output` (22) | Read from latest `TRIAGE` trace of the conversation; countdown computed in view against `SimulationClock.now()` (ADR-001), never wall clock |
 | "Open tickets" | `TicketService.get_ticket_history(account_id)` returns all; `include_open=False` filters `status != 'open'` (no unresolved-only mode); "open" must also cover `pending_customer` / `pending_approval` | Fetch history, keep every status except `closed` (`open`, `pending_customer`, `pending_approval`; `TicketStatus` is a `Literal` of those four) in the builder; no service change |
+| "Escalation" flags | `OrchestratorState.oncall_paged`; since the CR fix the full `TurnResult` (incl. `escalation_offered`, `degradations`) is persisted in `messages.result` | Board reads both (§4) |
 | "Retrieval scores" | 21 design had `traces.retrieval_scores`; shipped schema dropped it. Scores (`rrf_score`, `rerank_score`, ranks) sit inside KB-search `tool_calls.result` (`KBSearchResult.passages/candidates`) and in `KnowledgeBundle` in the `KNOWLEDGE` trace output | Read from tool calls; no schema change |
 | "Link quality graphs" | `get_link_quality` returns `LinkMetricsSummary` aggregates per link (avg/max/latest loss, latency, jitter, throughput, `down_intervals`), not a time series | Chart = per-link bar charts of these aggregates over the returned window. True time-series needs a telemetry API change: open question |
 | "Quoted tool outputs, raw metric values" | `TelemetryEvidence(tool_name, metric_key, raw_value, timestamp, is_anomaly)` on `StoredMessage.telemetry_evidence` and in `DiagnosticEvidence.evidence_items`; raw envelope in `tool_calls.result` | Evidence table from `evidence_items` (open turn included, before any reply exists); raw JSON expander from `tool_calls.result` |
@@ -71,10 +72,10 @@ Decision: A. Panels render from one frozen `CaseView` so swapping the front end 
 All reads reuse existing store methods; one new read.
 
 - **Board list (new)**: `StateStore.list_board_rows(limit: int) -> list[BoardRow]`, SQL in new `storage/board_queries.py` (same split as `approval_queries.py`). One query over `conversations` left-joined to a count of `approvals` with `status = 'PENDING'` and the oldest pending `requested_at`. Ordered pending-first, oldest pending first, then `updated_at desc`. Uses the existing partial index on pending approvals; no new index.
-- **`BoardRow`** (frozen, in `storage/models.py`): `conversation_id`, `account_id`, `customer_tier`, `stage`, `pending_count`, `oldest_pending_at`, `updated_at`, `oncall_paged`.
+- **`BoardRow`** (frozen, in `storage/models.py`): `conversation_id`, `account_id`, `customer_tier`, `stage`, `pending_count`, `oldest_pending_at`, `updated_at`, `oncall_paged`, `escalation_offered`.
 - **Case detail**: `rehydrate(conversation_id)` for identity/messages/pending approvals, `replay_trace(conversation_id)` for turns/steps/tool calls/all approvals (single consistent-read snapshot each). Resolved approvals are included in replay, so the queue can show history.
 - **Account + tickets**: `CustomerService.lookup_account(account_id)` (company), `TicketService.get_ticket_history(account_id)`.
-- **Escalated/paged tab**: `list_board_rows` also carries `oncall_paged`, read from `conversations.state` (`StateSnapshot.data`, field `OrchestratorState.oncall_paged` in `orchestration/state.py`, confirmed in code and 31 §state update). `escalation_offered` is NOT persisted (only a `TurnResult` field, 31 sets it on failed actions), so it is not used; failed-action escalations are visible as `FAILED` rows via `list_simulated_actions` on the case detail. Tab = conversations with `oncall_paged` true.
+- **Escalated/paged tab**: `list_board_rows` also carries two flags. `oncall_paged` from `conversations.state` (`StateSnapshot.data`, `OrchestratorState.oncall_paged`; sticky). `escalation_offered` from the newest reply's `messages.result` jsonb (column added by migration `20261002_1000_message-result.sql`: the full `TurnResult` envelope, null on customer rows, on event messages written by 32 and on pre-migration rows). "Newest reply" = the `messages` row with the highest `turn` among rows whose `result` is not null, so a 32 notice message cannot hide the flag. `escalation_offered` is per latest turn (a later good turn clears it), `oncall_paged` never clears; the tab shows both as separate badges. Tab = conversations with either flag. Both flags are coalesced to false when jsonb is missing or malformed. (Supersedes the earlier "escalation_offered is not persisted" decision.) 42 adds no migration, so no filename collision with the 1000/1100 migrations.
 - **Dispatch result**: `StateStore.list_simulated_actions(conversation_id)` (31); matched to an approval by `approval_id`.
 - No writes besides `ApprovalService` calls.
 
@@ -91,7 +92,9 @@ Pure functions/classmethods, all frozen Pydantic, no Streamlit import, no I/O. C
 - **Trace panel**: imported from `ui/trace_panel.py` (owned by 41): `TracePanel`, `TraceTurn`, `TraceStep`, `TracePanel.from_replay(replay: TraceReplay)`, `render_trace_panel(panel, ...)`. 42 defines no trace models and no trace rendering; it passes the `replay_trace` result through `from_replay`. 41's shapes already include redacted input/output and the open-turn flag.
 - **Decision form**: no 42 decision model. `DecisionForm.to_decision() -> ReviewerDecision` (in `ui/reviewer_view.py`) builds 32's `ReviewerDecision(approval_id, resolution: ApprovalResolution, customer_reason: str | None)`: `ApprovalResolution(status=APPROVED)`, `(status=EDITED, edited_payload=...)` or `(status=REJECTED, reviewer_notes=...)`. UI-only checks before calling: note required on reject, edited keys equal original keys. Result type is 32's `DecisionResult(approval, settle: SettleOutcome)`.
 
-Rendering rules: `trace.input`/`model_messages` are already redacted at store write (21 §2.6); the view displays them as stored and never re-reads customer raw text. Reply/evidence text is shown through `st.code`/`st.text` (no HTML injection from customer-influenced strings; `unsafe_allow_html` never enabled).
+Rendering rules: `trace.input`, `output`, `model_messages` and tool-call arguments/results are redacted at store write (`_redacted_json`, timestamps exempt; structure survives, so evidence parsing still works); the view displays them as stored and never re-reads customer raw text. Reply/evidence text is shown through `st.code`/`st.text` (no HTML injection from customer-influenced strings; `unsafe_allow_html` never enabled).
+
+- **Model messages (reviewer-only)**: `TraceRecord.model_messages` (full redacted PydanticAI messages per agent run, from the CR fix) is shown in a collapsed "Model messages" expander per step under the Live trace tab, rendered by a small `render_model_messages(replay)` in `ui/reviewer_app.py` driven by `ModelMessagesView.from_replay` in `ui/reviewer_view.py`. It lives only in the reviewer app (41 forbids raw model I/O on the customer page); `ui/trace_panel.py` is neither modified nor extended. Shown via `st.code` only; `None` (older rows) renders "not recorded".
 
 ---
 
@@ -170,8 +173,9 @@ Real Postgres via existing `tests/storage/conftest.py` fixtures; no mocks of the
 8. Polling 2-5 s (board 3 s, live trace 2 s); no push.
 9. `StrEnum` per repo convention.
 10. Dispatch result shown from `simulated_actions` via `list_simulated_actions`.
-11. Trace panel is `ui/trace_panel.py` from 41; 42 imports it and defines none.
+11. Raw model messages: reviewer-only expander in 42 (not in the shared trace component).
+12. Trace panel is `ui/trace_panel.py` from 41; 42 imports it and defines none.
 
 ## Open questions
 
-1. Reviewer-only trace extras (raw input/output) needed beyond 41's `TracePanel` shape? Assumed no.
+1. Event messages (32 notices) have null `result`: confirmed skipped by "newest non-null result"; re-verify if 32 starts writing a result on them.

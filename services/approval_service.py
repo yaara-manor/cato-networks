@@ -117,8 +117,8 @@ class ApprovalService:
 
     @staticmethod
     def _check_edit(approval: Approval, identity: CallerIdentity, edited: dict[str, str]) -> None:
-        if edited.keys() != approval.payload.keys():
-            raise ApprovalStateError("an edit must keep the original payload keys, ticket_id included")
+        if edited.keys() != approval.payload.keys() or edited.get("ticket_id") != approval.payload.get("ticket_id"):
+            raise ApprovalStateError("an edit must keep the original payload keys and the bound ticket_id")
         account_id = identity.account.account_id if identity.account else ""
         proposed = ProposedAction(action_type=approval.action_type, target_account_id=account_id, payload=edited)
         if check_action(proposed, identity).outcome is not GateOutcome.REQUIRE_APPROVAL:

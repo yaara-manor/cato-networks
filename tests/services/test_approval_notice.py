@@ -18,7 +18,8 @@ EDITS = {
 }
 ORIGINAL = {ActionType.CREDIT: "500", ActionType.MFA_RESET: "bob@bluebirdretail.com"}
 SHOWN = {ActionType.CREDIT: "300", ActionType.MFA_RESET: "carol@bluebirdretail.com"}
-SUPPORTED = [(t, s) for t in PAYLOADS for s in (ApprovalStatus.APPROVED, ApprovalStatus.EDITED, ApprovalStatus.REJECTED)]
+STATUSES = (ApprovalStatus.APPROVED, ApprovalStatus.EDITED, ApprovalStatus.REJECTED)
+SUPPORTED = [(t, s) for t in PAYLOADS for s in STATUSES]
 
 
 def _approval(action_type: ActionType, status: ApprovalStatus, reason: str | None = None) -> Approval:

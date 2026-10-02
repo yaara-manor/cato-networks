@@ -70,7 +70,14 @@ class Workflow:
     base_deps: SupportDeps
 
     def run_turn(self, conversation_id: UUID, message: str, message_id: UUID) -> TurnResult:
-        """`message_id` is the idempotency key: an answered id returns the stored reply."""
+        """`message_id` is the idempotency key: an answered id returns the stored reply.
+
+        Turns of one conversation serialize across workers; may raise TurnLockTimeout.
+        """
+        with self.store.turn_lock(conversation_id):
+            return self._run_locked(conversation_id, message, message_id)
+
+    def _run_locked(self, conversation_id: UUID, message: str, message_id: UUID) -> TurnResult:
         redacted = redact(message)
         stored = self.store.append_customer_message(
             conversation_id, message_id, redacted.text, self.clock.now()

@@ -67,10 +67,13 @@ def test_killed_holder_releases_lock(pair: Pair) -> None:
     cid = uuid4()
     pid = a.execute("select pg_backend_pid()").fetchone()
     assert pid is not None
-    with psycopg.connect(settings.database_url, autocommit=True) as killer:
-        with pytest.raises(psycopg.OperationalError), turn_lock(a, cid, TIMEOUT):
-            killer.execute("select pg_terminate_backend(%s)", (pid[0],))
-            a.execute("select 1")
+    with (
+        psycopg.connect(settings.database_url, autocommit=True) as killer,
+        pytest.raises(psycopg.OperationalError),
+        turn_lock(a, cid, TIMEOUT),
+    ):
+        killer.execute("select pg_terminate_backend(%s)", (pid[0],))
+        a.execute("select 1")
     with turn_lock(b, cid, TIMEOUT):
         pass
 

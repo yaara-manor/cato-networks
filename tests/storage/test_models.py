@@ -36,7 +36,9 @@ def test_guard_history_json_roundtrip_restores_frozenset() -> None:
         .with_injection(verdict)
         .with_redaction(RedactionResult(text="x", findings=(finding,)))
     )
-    restored = SessionGuardHistory.model_validate(json.loads(json.dumps(history.model_dump(mode="json"))))
+    restored = SessionGuardHistory.model_validate(
+        json.loads(json.dumps(history.model_dump(mode="json")))
+    )
     assert restored == history
     assert isinstance(restored.secret_hashes, frozenset)
     assert restored.agent_context_note() == history.agent_context_note()

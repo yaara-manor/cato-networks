@@ -32,7 +32,9 @@ def _insert_trace(conn: psycopg.Connection[Any], conversation_id: object, seq: i
     )
 
 
-def test_unique_and_fk_constraints(conn: psycopg.Connection[Any], new_conversation: NewConversation) -> None:
+def test_unique_and_fk_constraints(
+    conn: psycopg.Connection[Any], new_conversation: NewConversation
+) -> None:
     conversation_id = new_conversation()
     _insert_trace(conn, conversation_id, 1)
     with pytest.raises(psycopg.errors.UniqueViolation):

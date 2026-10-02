@@ -119,3 +119,12 @@
 - **Hard gates in code**: approvals come from `check_action`, not a model field. `ActionType.PAGE_ON_CALL` is ALLOWed only for P1 + code-derived `sev1_corroborated` + not already paged (`POL-SEV1`).
 - **Tracing**: PydanticAI messages, usage and latency (`AgentTrace.from_run`); no brainstruct. Persistence stays in `StateStore` (ADR-008).
 - **Cost if wrong**: a single `settings.llm_model` serves all roles; the fallback escalation reason is one fixed string (cannot distinguish validator exhaustion from transport-level model failure).
+
+---
+
+## ADR-010: Per-Conversation Turn Lock as a Session Advisory Lock on the Store Connection
+
+- **Context / Problem**: Two workers must never run `Workflow.run_turn` for one conversation concurrently; a killed worker must not leave it locked.
+- **Chosen Approach**: `storage/turn_lock.py` takes `pg_advisory_lock(hashtextextended('turn:' || id, 0))` on the same connection `StateStore` writes through, wrapped around the whole of `run_turn`. `lock_timeout` (`settings.turn_lock_timeout_s`, 30 s) applies to the acquire only; timeout raises `TurnLockTimeout` with nothing written. Release is a `finally` unlock or Postgres dropping the lock when the backend dies.
+- **Rejected**: lease/heartbeat table and fencing tokens (a dead connection already loses both lock and write ability); transaction-level lock (would hold a transaction open for the whole LLM turn).
+- **Cost if wrong**: one connection per in-flight turn (pool later); waiters are not FIFO; half-open TCP connections hold the lock until keepalives fire.

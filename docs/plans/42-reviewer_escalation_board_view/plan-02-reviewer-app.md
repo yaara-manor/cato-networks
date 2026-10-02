@@ -4,11 +4,11 @@
 
 **Goal:** The working reviewer page: Escalation Board, four panels, approve / edit / reject through `ApprovalService.decide`, live trace, runnable via compose.
 
-**Architecture:** Thin Streamlit script `ui/reviewer_app.py` over plan 01's `CaseView` and 41's shared `ui/trace_panel.py`; all writes go through 32's `ApprovalService`. A thin `ui/reviewer_session.py` reuses 41's `orchestration/runtime.py` service assembly (no model warm-up, no Workflow) and adds `ApprovalService`; connections are opened per run.
+**Architecture:** Thin Streamlit script `ui/reviewer_app.py` over plan 01's `CaseView` and 41's shared `ui/trace_panel.py`; all writes go through 32's `ApprovalService`. A thin `ui/reviewer_session.py` reuses 41's `orchestration/runtime.py::build_services` (no model warm-up, no Workflow) and adds `ApprovalService`; connections are opened per run.
 
 **Tech Stack:** Streamlit (`streamlit.testing.v1.AppTest`), psycopg 3, Pydantic v2, pytest. No Braintrust.
 
-**Spec:** [design.md](design.md) §6, §7, §9, §10; prerequisites: plan-01 merged; designs 31 (`StateStore.list_simulated_actions`, `SimulatedAction`), 32 (`ApprovalService.decide / list_pending / get_approval / settle_unsettled`, `ReviewerDecision`, `DecisionResult`, `SettleOutcome`, `ApprovalStateError`), 41 (`ui/trace_panel.py`: `TracePanel.from_replay`, `render_trace_panel`; `ui/session.py` connection helper, `streamlit` dependency and Dockerfile line); `orchestration/runtime.py` (service-assembly factory usable without `RetrievalService`/LLM and without `warm_models()`; if 41 lacks that split, add it there first). Do not start until those are merged into the base.
+**Spec:** [design.md](design.md) §6, §7, §9, §10; prerequisites: plan-01 merged; designs 31 (`StateStore.list_simulated_actions`, `SimulatedAction`), 32 (`ApprovalService.decide / list_pending / get_approval / settle_unsettled`, `ReviewerDecision`, `DecisionResult`, `SettleOutcome`, `ApprovalStateError`), 41 (`ui/trace_panel.py`: `TracePanel.from_replay`, `render_trace_panel`; `ui/session.py` connection helper, `streamlit` dependency and Dockerfile line); `orchestration/runtime.py` (`build_services(connection, clock) -> Services`). Do not start until those are merged into the base.
 
 ## Global Constraints
 
@@ -38,7 +38,7 @@
 
 **Interfaces:**
 - Consumes: 32 `ApprovalService` (from `services.approval_service`), `ReviewerDecision`, `ApprovalResolution`; 31 `SimulatedAction`; `core.config.settings`; `SimulationClock`.
-- Produces: `ReviewerRuntime` (frozen: clock plus a callable taking a connection and returning `ApprovalService`, built from `orchestration/runtime.py` services; no duplicated assembly); `build_reviewer_runtime() -> ReviewerRuntime` (cached; never calls `warm_models`; runs `settle_unsettled` once on first build); `DecisionForm` (frozen: `approval_id`, `kind` StrEnum APPROVE/EDIT/REJECT, `note`, `customer_reason`, `edited_payload`, original payload) with `to_decision() -> ReviewerDecision` raising a typed `DecisionFormError` for: reject without note, edit with different key set; `ApprovalCard.dispatch: SimulatedAction | None` matched by `approval_id`.
+- Produces: `ReviewerRuntime` (frozen: clock plus a callable taking a connection and returning `ApprovalService`, built from `build_services` output; no duplicated assembly); `build_reviewer_runtime() -> ReviewerRuntime` (cached; never calls `build_workflow` / `warm_models`; runs `settle_unsettled` once on first build); `DecisionForm` (frozen: `approval_id`, `kind` StrEnum APPROVE/EDIT/REJECT, `note`, `customer_reason`, `edited_payload`, original payload) with `to_decision() -> ReviewerDecision` raising a typed `DecisionFormError` for: reject without note, edit with different key set; `ApprovalCard.dispatch: SimulatedAction | None` matched by `approval_id`.
 
 - [ ] **Step 1:** Failing tests: building the runtime does not load the embedder/reranker; `DecisionForm` mapping for each kind into the correct `ApprovalResolution` and `customer_reason`; error cases (Review Focus 3); card shows the `DONE` dispatch row after an approved decision seeded via the real `ApprovalService`; runtime start with an approved-but-unsettled row (resolve without settle, then build runtime on a fresh connection) leaves the row settled with one notice and one `simulated_actions` row (Review Focus 5).
 - [ ] **Step 2:** Run, expect failure.

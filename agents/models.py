@@ -150,9 +150,9 @@ class UnavailableTool(_AgentModel):
     error: str | None = None
 
 
-def _sev1_corroborated(results: Sequence[TelemetryToolResult[Any]]) -> bool:
+def _sev1_corroborated(ok_results: Sequence[TelemetryToolResult[Any]]) -> bool:
     """Two+ sites disconnected in one country, or a whole listed account disconnected."""
-    payloads = [r.data for r in results if r.status == TelemetryStatus.OK]
+    payloads = [r.data for r in ok_results]
     sites = {s.site_id: s for p in payloads for s in _sites_of(p)}
     countries = Counter(s.country for s in sites.values() if s.status == "disconnected")
     listed = [p.sites for p in payloads if isinstance(p, SiteListPayload)]

@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
 from functools import cache
+from typing import TYPE_CHECKING
 
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models import Model
@@ -9,10 +10,13 @@ from agents.models import ConversationTurn
 from core.clock import SimulationClock
 from core.config import settings
 from guardrails import ActionType, GroundingContext, SessionGuardHistory
-from retrieval.service import RetrievalService
 from services import CustomerService, TicketService
 from services.models import CallerIdentity
 from tools.telemetry import TelemetryService
+
+if TYPE_CHECKING:
+    # Type-only: importing retrieval.service loads the embedding stack (~3s); production warms it at boot.
+    from retrieval.service import RetrievalService
 
 
 @dataclass(frozen=True)
@@ -21,7 +25,7 @@ class SupportDeps:
     customers: CustomerService
     tickets: TicketService
     telemetry: TelemetryService
-    retrieval: RetrievalService
+    retrieval: "RetrievalService"
     identity: CallerIdentity
     guard_history: SessionGuardHistory
     approved_actions: frozenset[ActionType]

@@ -3,7 +3,7 @@
 **Issue**: `#11` ([Phase 4] 4.1: Customer Support Chat View)
 **Date**: 2026-10-02
 **Status**: Draft for Review
-**Target Files**: `ui/__init__.py`, `ui/customer_app.py`, `ui/chat_view.py`, `ui/trace_panel.py` (shared with 42), `ui/session.py`, `ui/scenarios.py`, `guardrails/citations.py` (+ export), `orchestration/recorder.py`, `orchestration/workflow.py`, `storage/state_store.py` (one read), `pyproject.toml`, `Dockerfile`, `docker-compose.yml`, `tests/ui/*`, `tests/orchestration/*`
+**Target Files**: `ui/__init__.py`, `ui/customer_app.py`, `ui/chat_view.py`, `ui/trace_panel.py` (shared with 42), `ui/session.py`, `orchestration/runtime.py`, `ui/scenarios.py`, `guardrails/citations.py` (+ export), `orchestration/recorder.py`, `orchestration/workflow.py`, `storage/state_store.py` (one read), `pyproject.toml`, `Dockerfile`, `docker-compose.yml`, `tests/ui/*`, `tests/orchestration/*`
 **Depends on**: 21 (`StateStore`, `replay_trace`), 23/24 (`Workflow.run_turn`, `TurnLockTimeout`), 31 (issue #9: ticket `pending_approval`), 32 (issue #10: `ApprovalService.settle`, AGENT notice, `settled_at`, `customer_reason`). 31 and 32 read in final form. **Sibling**: 42 (reviewer board, issue #12) imports the shared trace component.
 
 ---
@@ -65,7 +65,8 @@ Chosen A (confirmed: the brief allows any stack, no FastAPI requirement, Streaml
 ### 3.3 Where logic lives (SRP)
 - `ui/customer_app.py`: rendering and event wiring only (chat input, sidebar, dialogs). No SQL, no parsing.
 - `ui/chat_view.py`: pure, frozen pydantic view models plus `@classmethod` converters (per user rule, no `format_x` functions): `ChatView.from_snapshot(snapshot, approvals)` builds the ordered list of `MessageView` (sender role, display text, `CitationBadge` tuple, `EvidenceChip` tuple) and `ApprovalBanner` tuple. Zero Streamlit imports, so it is unit-testable and reused unchanged by 42 if wanted.
-- `ui/session.py`: composition root. `build_runtime() -> UiRuntime` (cached with `st.cache_resource`) constructs `SimulationClock`, `CustomerService`, `RetrievalService` (embedder/reranker pre-load at boot per project memory, so the first turn is not cold), `AgentPorts`, `SupportDeps`, and a `Workflow` factory. Per submit: open a fresh connection and `StateStore`, build `Workflow`, call `run_turn`, close. Rule from 24: one connection per concurrent turn; never share one across Streamlit sessions/threads.
+- `orchestration/runtime.py` (new, shared; NOT under `ui/`): `build_workflow(connection, clock) -> Workflow` assembles `CustomerService`, `TicketService`, `TelemetryService`, `RetrievalService`, `SupportDeps` (neutral identity) and `AgentPorts` with the PydanticAI model from `settings.llm_model` bound to each `run_<role>` (the `run_*` functions take `model: Model | None`), plus `warm_models() -> None` calling `encoders.embed.load_embedder()` and `encoders.rerank.load_reranker()` (project memory: preload at app boot). Reason: today only `tests/orchestration/conftest.py` builds a `Workflow`; the eval harness (answers.md, "same code path the chat uses"), 42 and 32's sweep need the same assembly, so it must not live in the UI. Interface to 31/32: when 31 adds `dispatcher` to `Workflow` and 32 changes `approved_actions` to grants, this one function is the only place to adapt.
+- `ui/session.py`: Streamlit glue only. `@st.cache_resource` calls `warm_models()` once. Per submit and per render it opens a fresh autocommit `psycopg` connection (settings.database_url), builds `StateStore` and `build_workflow(...)` on it, and closes it. Nothing holding a connection is cached or shared across sessions/threads (`RetrievalService`, `CustomerService`, `StateStore` all bind one connection; 24 forbids sharing).
 - `ui/scenarios.py`: `Scenario` frozen model plus `load_scenarios(path) -> tuple[Scenario, ...]` from `data/eval/scenarios.jsonl` (only `scenario_id`, `customer_id`, `requester_email`, `persona`, `opening_message`).
 
 ### 3.4 Identity and conversation lifecycle
@@ -96,7 +97,7 @@ Chosen A (confirmed: the brief allows any stack, no FastAPI requirement, Streaml
 - `orchestration/workflow.py` `_finish` gets the final reply plus `KnowledgeBundle | None`; a new pure `Citation.from_marker(marker, bundle)` classmethod (in `orchestration/models.py`) maps KB markers to `{kind: "KB", slug, anchor, title: heading, url: public_url}` and policy markers to `{kind: "POLICY", policy_id, title}` using `retrieved_passages` and `referenced_policies`. Markers not in the bundle cannot occur (output guard already rejects them); they are dropped, never guessed.
 - `TurnRecorder.complete_turn(text, evidence, citations)` forwards a tuple of `dict[str, str]` to the existing `StateStore.complete_turn(... citations ...)` argument (already in the signature; column exists). Replay path (`_replay`) is unchanged: citations come from the stored message.
 - Telemetry markers need no citation rows: chips come from `telemetry_evidence`.
-- Policy dialog body: `RetrievalService.get_policy(policy_id)` (decided), reached through the `UiRuntime` from `ui/session.py`, which already holds the service. No new store read or SQL.
+- Policy dialog body: `RetrievalService(connection).get_policy(policy_id)` (decided) on the per-render connection from `ui/session.py` (policies are loaded in its constructor; no embedder needed). No new store read or SQL.
 
 ### 4.3 Telemetry chips
 One chip per `StoredMessage.telemetry_evidence` item, deduped by `(tool_name, metric_key, raw_value)`; text is the verbatim `metric_key raw_value`, `is_anomaly` styles it as warning, tooltip shows tool name and simulation timestamp. Chip click does nothing (no deep link target exists).
@@ -137,7 +138,15 @@ Functional, `streamlit.testing.v1.AppTest`, real Postgres via existing `tests/co
 3. Pyright `standard` and ruff clean; all functions typed incl. `-> None`; f-strings only.
 4. Confirm Dockerfile/compose/README run instruction (`streamlit run ui/customer_app.py`) and `streamlit` appear exactly once per file; architecture doc UI section updated; ADR (next free number) in `docs/overview/decisions.md`: Streamlit, citations persisted at write time, banners derived from approvals.
 
-## 8. Decisions (final)
+## 8. Design review fixes (found while planning)
+1. Composition root moved from `ui/` to `orchestration/runtime.py` (shared by eval, 42, 32 sweep); `ui/session.py` shrinks to connection-per-call glue.
+2. Previous draft cached `RetrievalService` via `st.cache_resource`; it binds one connection, so sharing it across Streamlit sessions breaks 24's one-connection-per-turn rule. Only model warm-up is cached.
+3. The trace panel must never read `TraceReplay.approvals` (carries `reviewer_notes`, `edited_payload`): `TracePanel.from_replay` uses turns/steps only; tested by asserting a seeded reviewer note is absent from the page.
+4. `conversation_id` in the query string lets anyone who has an id open that conversation (and its trace). Demo scope (no auth, matches Out of scope); recorded in the ADR, not fixed.
+5. Citation mapping edge: same `(slug, anchor)` can appear on several passages; first by `rerank_score` wins. Early-return paths (injection refusal, pause, canned text) carry no citations by construction.
+6. LLM credentials are env-only (`settings.llm_model`); UI shows a fixed error if a turn fails at the provider (23's pause message); no key ever read or displayed.
+
+## 9. Decisions (final)
 1. Streamlit (shared with 42; brief: any stack).
 2. `escalation_offered` not persisted, no banner for it.
 3. Spinner only, no live stage label.
@@ -149,5 +158,6 @@ Functional, `streamlit.testing.v1.AppTest`, real Postgres via existing `tests/co
 9. Doc fixed to `[telemetry:<tool>]`.
 10. Pending banner shows action title only, never amount.
 
-## 9. Open Questions
+## 10. Open Questions
 None.
+

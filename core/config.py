@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     passage_token_cap: int = 400
     slice_new_tokens: int = 350
     slice_overlap_tokens: int = 50
+    turn_lock_timeout_s: float = 30.0
     llm_model: str = "openai:gpt-5-nano"
 
 

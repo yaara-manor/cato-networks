@@ -16,6 +16,7 @@ from storage.models import (
 )
 from storage.replay import ReplayStep, ReplayTurn, TraceReplay
 from storage.state_store import StateStore
+from storage.turn_lock import TurnLockTimeout
 
 __all__ = [
     "AgentRole",
@@ -35,6 +36,7 @@ __all__ = [
     "ToolCallRecord",
     "TraceRecord",
     "TraceReplay",
+    "TurnLockTimeout",
     "strip_nul",
     "to_jsonb",
 ]

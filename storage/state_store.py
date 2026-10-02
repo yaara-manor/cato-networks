@@ -1,6 +1,6 @@
 import json
 from collections.abc import Iterator, Mapping, Sequence
-from contextlib import contextmanager
+from contextlib import AbstractContextManager, contextmanager
 from datetime import datetime
 from typing import Any
 from uuid import UUID, uuid4
@@ -8,6 +8,7 @@ from uuid import UUID, uuid4
 import psycopg
 from psycopg import sql
 
+from core.config import settings
 from core.models import AccountTier
 from guardrails.models import ActionType, SessionGuardHistory
 from guardrails.redactor import redact
@@ -26,6 +27,7 @@ from storage.models import (
 )
 from storage.replay import TraceReplay
 from storage.sql import fetch_all, fetch_one, insert_row, jsonable
+from storage.turn_lock import turn_lock
 from tools.models import TelemetryEvidence
 
 _TRACE_INPUT_MAX_CHARS = 20_000
@@ -61,6 +63,9 @@ class StateStore:
         if not connection.autocommit:
             raise ValueError("StateStore requires an autocommit connection")
         self._conn = connection
+
+    def turn_lock(self, conversation_id: UUID) -> AbstractContextManager[None]:
+        return turn_lock(self._conn, conversation_id, settings.turn_lock_timeout_s)
 
     # -- helpers ---------------------------------------------------------
 

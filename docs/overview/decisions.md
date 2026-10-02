@@ -108,7 +108,7 @@
 - **Chosen Approach**: Every runtime fact is a row: `conversations` (stage, guard history, versioned `state`, `last_turn`/`last_seq` counters), `messages`, append-only `traces` plus a `tool_calls` child table, and `approvals`. One sync `StateStore` over an autocommit connection; each write is one transaction that first locks the conversation row (`SELECT ... FOR UPDATE`), which makes turn/seq counters gapless and "exists? then insert" idempotency race-free. Approval resolution is a compare-and-set from `PENDING`. `rehydrate`/`replay_trace` read under `REPEATABLE READ`.
 - **Tracing**: PydanticAI message history is stored in `traces.model_messages`, next to redacted inputs, tool envelopes and cost; this replaces Braintrust (dropped).
 - **Seed dump**: runtime tables are excluded from `db/seed.dump` via `--exclude-table`, because `pg_restore --clean` on every boot would wipe live conversations.
-- **Cost if wrong**: cross-worker turn locking and `ConversationState` rebuild are not solved here (issue #34).
+- **Cost if wrong**: cross-worker turn locking (ADR-011) and `OrchestratorState` rebuild (ADR-012) are layered on top by issue #34.
 
 ---
 
@@ -117,7 +117,7 @@
 - **Context / Problem**: Phase 2.2 needs four PydanticAI role agents (Triage, Diagnostics, Knowledge, Resolution) whose outputs feed the 2.3 orchestrator without trusting the model for facts code can derive.
 - **Chosen Approach**: Each role's LLM output is a small `*Decision`/`*Findings` model; code assembles the final result (`TriageResult`, `DiagnosticEvidence`, `KnowledgeBundle`) from tool returns, identity and services. Resolution has no tools; its `ResolutionPlan` passes two PydanticAI output validators wrapping `guardrails.check_citations` / `check_outgoing_message` (native `ModelRetry`, budget 1), else a canned holding plan with `escalate_to_human=True`.
 - **Hard gates in code**: approvals come from `check_action`, not a model field. `ActionType.PAGE_ON_CALL` is ALLOWed only for P1 + code-derived `sev1_corroborated` + not already paged (`POL-SEV1`).
-- **Tracing**: PydanticAI messages, usage and latency (`AgentTrace.from_run`); no brainstruct. Persistence stays in `StateStore` (ADR-008).
+- **Tracing**: PydanticAI messages, usage and latency (`AgentTrace.from_run`); no Braintrust. Persistence stays in `StateStore` (ADR-008).
 - **Cost if wrong**: a single `settings.llm_model` serves all roles; the fallback escalation reason is one fixed string (cannot distinguish validator exhaustion from transport-level model failure).
 
 ---

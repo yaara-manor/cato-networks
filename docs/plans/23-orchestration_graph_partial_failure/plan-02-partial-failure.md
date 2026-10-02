@@ -8,7 +8,7 @@
 
 **Tech Stack:** Same as Plan 1. No new dependencies.
 
-**Spec:** `docs/plans/23-orchestration_graph_partial_failure/design.md` sections 5 and 7, with Plan 1 "Design Decisions" overrides. No brainstruct / Braintrust tracing; failures are recorded as `ERROR` rows in issue 6's `traces` table.
+**Spec:** `docs/plans/23-orchestration_graph_partial_failure/design.md` sections 5 and 7, with Plan 1 "Design Decisions" overrides. No Braintrust / Braintrust tracing; failures are recorded as `ERROR` rows in issue 6's `traces` table.
 
 **Depends on:** Plan 1 complete.
 

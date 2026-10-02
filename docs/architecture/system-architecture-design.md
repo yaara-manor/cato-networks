@@ -125,7 +125,7 @@ Every agent receives a typed context container via PydanticAI dependency injecti
 
 ### 4.2 Agent Specifications
 
-> **Implemented contracts (plan 22, supersede the field lists below where they differ).** Each role splits LLM output from assembled result: Triage `TriageDecision` -> `TriageResult` (identity, SLA, repeat contact filled in code), Diagnostics `DiagnosticsFindings` -> `DiagnosticEvidence` (evidence, unavailable tools and `sev1_corroborated` derived from tool results), Knowledge `KnowledgeFindings` -> `KnowledgeBundle`, Resolution `ResolutionPlan` (LLM output and final). The orchestrator resolves identity (`authenticate_caller`) and passes it in `TriageInput`; Triage does not call lookup/auth tools. Tracing is PydanticAI-native (`AgentTrace.from_run`: messages, usage, latency); no brainstruct.
+> **Implemented contracts (plan 22, supersede the field lists below where they differ).** Each role splits LLM output from assembled result: Triage `TriageDecision` -> `TriageResult` (identity, SLA, repeat contact filled in code), Diagnostics `DiagnosticsFindings` -> `DiagnosticEvidence` (evidence, unavailable tools and `sev1_corroborated` derived from tool results), Knowledge `KnowledgeFindings` -> `KnowledgeBundle`, Resolution `ResolutionPlan` (LLM output and final). The orchestrator resolves identity (`authenticate_caller`) and passes it in `TriageInput`; Triage does not call lookup/auth tools. Tracing is PydanticAI-native (`AgentTrace.from_run`: messages, usage, latency); no Braintrust.
 
 #### 1. Triage Agent
 - **Purpose**: Authenticates caller, establishes account tier and SLA target clock, checks for repeat contact churn, detects prompt injection/social engineering, and extracts technical scope.

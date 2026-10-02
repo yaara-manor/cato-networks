@@ -149,3 +149,82 @@ def test_has_anomaly_reflects_evidence_items() -> None:
     clean = DiagnosticEvidence(findings=DiagnosticsFindings())
     flagged = clean.model_copy(update={"evidence_items": (item,)})
     assert (clean.has_anomaly, flagged.has_anomaly) == (False, True)
+
+
+C, L, U = KBSearchStatus.CONFIDENT, KBSearchStatus.LOW_CONFIDENCE_REFUSAL, KBSearchStatus.UNAVAILABLE
+
+
+def _search(status: KBSearchStatus) -> KBSearchResult:
+    return KBSearchResult(status=status, query="q", snapshot_date=None)
+
+
+@pytest.mark.parametrize(
+    ("statuses", "expected"),
+    [
+        ((), L),
+        ((L,), L),
+        ((U,), U),
+        ((C,), C),
+        ((L, L), L),
+        ((L, U), U),
+        ((U, L), U),
+        ((U, U), U),
+        ((L, C), C),
+        ((U, C), C),
+        ((C, U), C),
+        ((C, C), C),
+    ],
+)
+def test_knowledge_status_rule(statuses: tuple[KBSearchStatus, ...], expected: KBSearchStatus) -> None:
+    bundle = KnowledgeBundle.from_tool_results(KnowledgeFindings(), [_search(s) for s in statuses], [])
+    assert bundle.confidence_status == expected
+
+
+def test_knowledge_bundle_dedupes_passages_policies_and_keeps_query_order(
+    q10_result: KBSearchResult, retrieval: RetrievalService
+) -> None:
+    first = q10_result.passages[0]
+    weaker = first.model_copy(update={"rerank_score": first.rerank_score - 1})
+    searches = [
+        q10_result.model_copy(update={"query": "a", "passages": [weaker], "candidates": [weaker]}),
+        q10_result.model_copy(update={"query": "b"}),
+    ]
+    policy = retrieval.get_policy("POL-SLA")
+    assert policy is not None
+
+    bundle = KnowledgeBundle.from_tool_results(
+        KnowledgeFindings(needs_more_telemetry=True), searches, [policy, policy]
+    )
+
+    ids = [p.passage_id for p in bundle.retrieved_passages]
+    assert len(ids) == len(set(ids)) == len(q10_result.passages)
+    assert bundle.retrieved_passages[0].rerank_score == first.rerank_score
+    scores = [p.rerank_score for p in bundle.retrieved_passages]
+    assert scores == sorted(scores, reverse=True)
+    assert len({p.passage_id for p in bundle.candidates}) == len(bundle.candidates)
+    assert bundle.referenced_policies == (policy,)
+    assert bundle.queries == ("a", "b")
+    assert bundle.needs_more_telemetry and bundle.snapshot_date == q10_result.snapshot_date
+
+
+def test_diagnostic_evidence_from_real_envelopes(make_deps: MakeDeps) -> None:
+    telemetry = make_deps().telemetry
+    results = [
+        telemetry.get_bgp_status("S-1007-01"),
+        telemetry.get_bgp_status("S-1007-01"),
+        telemetry.get_ipsec_status("S-9999-99"),
+    ]
+    evidence = DiagnosticEvidence.from_tool_results(DiagnosticsFindings(), results)
+    assert evidence.inspected_tools == ("get_bgp_status", "get_ipsec_status")
+    assert any(i.metric_key.endswith("routes_count") and i.is_anomaly for i in evidence.evidence_items)
+    assert [t.tool_name for t in evidence.unavailable_tools] == ["get_ipsec_status"]
+    assert evidence.unavailable_tools[0].status != TelemetryStatus.OK
+    assert evidence.has_anomaly and not evidence.sev1_corroborated
+
+
+def test_sev1_corroborated_needs_two_disconnected_sites_in_one_country(make_deps: MakeDeps) -> None:
+    telemetry = make_deps().telemetry
+    germany = [telemetry.get_site_status(s) for s in ("S-1002-03", "S-1008-02")]
+    us_only = [telemetry.get_site_status("S-1009-01")]
+    assert DiagnosticEvidence.from_tool_results(DiagnosticsFindings(), germany).sev1_corroborated
+    assert not DiagnosticEvidence.from_tool_results(DiagnosticsFindings(), us_only).sev1_corroborated

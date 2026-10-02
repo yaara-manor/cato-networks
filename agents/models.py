@@ -1,3 +1,5 @@
+from collections import Counter
+from collections.abc import Iterable, Sequence
 from decimal import Decimal
 from enum import StrEnum
 from typing import Any, Self
@@ -9,9 +11,15 @@ from pydantic_ai.usage import RunUsage
 from agents.messages import tool_call_dicts
 from core.models import TicketPriority
 from guardrails import ActionType, GroundingContext, ProposedAction
-from retrieval.models import KBSearchStatus, PolicyDocument, RetrievedPassage
+from retrieval.models import KBSearchResult, KBSearchStatus, PolicyDocument, RetrievedPassage
 from services.models import CallerIdentity, RepeatContactResult, SLADeadlines
-from tools.models import TelemetryEvidence, TelemetryStatus
+from tools.models import (
+    SiteListPayload,
+    SiteRecord,
+    TelemetryEvidence,
+    TelemetryStatus,
+    TelemetryToolResult,
+)
 
 
 class TraceStatus(StrEnum):
@@ -142,12 +150,46 @@ class UnavailableTool(_AgentModel):
     error: str | None = None
 
 
+def _sev1_corroborated(ok_results: Sequence[TelemetryToolResult[Any]]) -> bool:
+    """Two+ sites disconnected in one country, or a whole listed account disconnected."""
+    payloads = [r.data for r in ok_results]
+    sites = {s.site_id: s for p in payloads for s in _sites_of(p)}
+    countries = Counter(s.country for s in sites.values() if s.status == "disconnected")
+    listed = [p.sites for p in payloads if isinstance(p, SiteListPayload)]
+    return any(n >= 2 for n in countries.values()) or any(
+        all(s.status == "disconnected" for s in group) for group in listed if group
+    )
+
+
+def _sites_of(payload: object) -> list[SiteRecord]:
+    if isinstance(payload, SiteListPayload):
+        return payload.sites
+    return [payload] if isinstance(payload, SiteRecord) else []
+
+
 class DiagnosticEvidence(_AgentModel):
     findings: DiagnosticsFindings
     inspected_tools: tuple[str, ...] = ()
     evidence_items: tuple[TelemetryEvidence, ...] = ()
     unavailable_tools: tuple[UnavailableTool, ...] = ()
     sev1_corroborated: bool = False
+
+    @classmethod
+    def from_tool_results(
+        cls, findings: DiagnosticsFindings, results: Sequence[TelemetryToolResult[Any]]
+    ) -> Self:
+        ok = [r for r in results if r.status == TelemetryStatus.OK]
+        return cls(
+            findings=findings,
+            inspected_tools=tuple(dict.fromkeys(r.tool_name for r in results)),
+            evidence_items=tuple(item for r in ok for item in r.evidence),
+            unavailable_tools=tuple(
+                UnavailableTool(tool_name=r.tool_name, status=r.status, error=r.error)
+                for r in results
+                if r.status != TelemetryStatus.OK
+            ),
+            sev1_corroborated=_sev1_corroborated(ok),
+        )
 
     @property
     def has_anomaly(self) -> bool:
@@ -173,6 +215,15 @@ class KnowledgeFindings(_AgentModel):
     needs_more_telemetry: bool = False
 
 
+def _dedupe_passages(passages: Iterable[RetrievedPassage]) -> tuple[RetrievedPassage, ...]:
+    """One copy per passage_id (highest rerank_score), best first."""
+    best: dict[str, RetrievedPassage] = {}
+    for p in passages:
+        if p.passage_id not in best or p.rerank_score > best[p.passage_id].rerank_score:
+            best[p.passage_id] = p
+    return tuple(sorted(best.values(), key=lambda p: p.rerank_score, reverse=True))
+
+
 class KnowledgeBundle(_AgentModel):
     findings: KnowledgeFindings
     retrieved_passages: tuple[RetrievedPassage, ...] = ()
@@ -182,6 +233,31 @@ class KnowledgeBundle(_AgentModel):
     snapshot_date: AwareDatetime | None = None
     queries: tuple[str, ...] = ()
     needs_more_telemetry: bool = False
+
+    @classmethod
+    def from_tool_results(
+        cls,
+        findings: KnowledgeFindings,
+        searches: Sequence[KBSearchResult],
+        policies: Sequence[PolicyDocument],
+    ) -> Self:
+        statuses = {r.status for r in searches}
+        if KBSearchStatus.CONFIDENT in statuses:
+            status = KBSearchStatus.CONFIDENT
+        elif KBSearchStatus.UNAVAILABLE in statuses:
+            status = KBSearchStatus.UNAVAILABLE
+        else:
+            status = KBSearchStatus.LOW_CONFIDENCE_REFUSAL
+        return cls(
+            findings=findings,
+            retrieved_passages=_dedupe_passages(p for r in searches for p in r.passages),
+            candidates=_dedupe_passages(p for r in searches for p in r.candidates),
+            referenced_policies=tuple({p.policy_id: p for p in policies}.values()),
+            confidence_status=status,
+            snapshot_date=next((r.snapshot_date for r in searches if r.snapshot_date), None),
+            queries=tuple(r.query for r in searches),
+            needs_more_telemetry=findings.needs_more_telemetry,
+        )
 
     @property
     def is_refusal(self) -> bool:

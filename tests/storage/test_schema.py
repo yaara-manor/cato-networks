@@ -61,3 +61,17 @@ def test_conversation_row_reads_into_contract(
     assert conversation.stage is ConversationStage.IDLE
     assert conversation.state == StateSnapshot()
     assert conversation.guard_history == SessionGuardHistory()
+
+
+def test_approval_settle_columns_and_partial_index_exist(conn: psycopg.Connection[Any]) -> None:
+    apply_schema(conn)
+    apply_schema(conn)
+    columns = {
+        row[0]
+        for row in conn.execute(
+            "select column_name from information_schema.columns where table_name = 'approvals'"
+        )
+    }
+    assert {"settled_at", "customer_reason"} <= columns
+    index = conn.execute("select indexdef from pg_indexes where indexname = 'approvals_unsettled_idx'").fetchone()
+    assert index is not None and "settled_at IS NULL" in index[0]

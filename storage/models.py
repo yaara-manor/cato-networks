@@ -171,6 +171,12 @@ class Approval(_StorageModel):
     edited_payload: dict[str, str] | None
     requested_at: AwareDatetime
     resolved_at: AwareDatetime | None
+    customer_reason: str | None = None  # reviewer-supplied, customer-safe
+    settled_at: AwareDatetime | None = None  # executed and customer notified
+
+    @property
+    def effective_payload(self) -> dict[str, str]:
+        return self.edited_payload if self.edited_payload is not None else self.payload
 
 
 class SimulatedActionStatus(StrEnum):

@@ -2,7 +2,7 @@ from collections.abc import Iterator, Mapping, Sequence
 from contextlib import AbstractContextManager, contextmanager
 from datetime import datetime
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import UUID, uuid4, uuid5
 
 import psycopg
 from psycopg import sql
@@ -10,11 +10,14 @@ from psycopg import sql
 from core.config import settings
 from core.models import AccountTier
 from guardrails.models import ActionType, SessionGuardHistory
+from guardrails.redactor import redact
 from storage import action_queries, approval_queries
 from storage.jsonb import redacted_json
 from storage.models import (
     Approval,
     ApprovalResolution,
+    ApprovalStateError,
+    ApprovalStatus,
     ClaimedAction,
     Conversation,
     ConversationSnapshot,
@@ -344,7 +347,7 @@ class StateStore:
                 conversation_id,
                 message_id,
                 action_type,
-                payload,
+                redacted_json(payload),
                 idempotency_key,
                 at,
                 approval_id,
@@ -359,8 +362,49 @@ class StateStore:
     def list_pending_approvals(self, conversation_id: UUID | None = None) -> list[Approval]:
         return approval_queries.list_pending_approvals(self._conn, conversation_id)
 
-    def resolve_approval(self, approval_id: UUID, resolution: ApprovalResolution, at: datetime) -> Approval:
-        return approval_queries.resolve_approval(self._conn, approval_id, resolution, at)
+    def resolve_approval(
+        self,
+        approval_id: UUID,
+        resolution: ApprovalResolution,
+        at: datetime,
+        customer_reason: str | None = None,
+    ) -> Approval:
+        """Reviewer text is untrusted: secrets are redacted here, the persistence chokepoint."""
+        safe = resolution.model_copy(
+            update={
+                "reviewer_notes": None if resolution.reviewer_notes is None else redact(resolution.reviewer_notes).text,
+                "edited_payload": None
+                if resolution.edited_payload is None
+                else redacted_json(resolution.edited_payload),
+            }
+        )
+        reason = None if customer_reason is None else redact(customer_reason).text
+        return approval_queries.resolve_approval(self._conn, approval_id, safe, at, reason)
+
+    def list_unsettled_approvals(self, limit: int) -> list[Approval]:
+        return approval_queries.list_unsettled_approvals(self._conn, limit)
+
+    def settle_approval(self, approval_id: UUID, content: str, at: datetime) -> StoredMessage:
+        """Event message in its own turn plus `settled_at`, one transaction; a replay returns the stored message.
+
+        The message never carries a `result` and `conversations.state` is untouched, so it cannot be mistaken
+        for a customer turn's reply. Callers hold `turn_lock` so it cannot bump `last_turn` under an open turn.
+        """
+        with self._conn.transaction():
+            approval = self.get_approval(approval_id)
+            if approval is None or approval.status is ApprovalStatus.PENDING:
+                raise ApprovalStateError(f"approval {approval_id} is unknown or still pending")
+            conversation = self._lock_conversation(approval.conversation_id)
+            message_id = uuid5(approval_id, "outcome")
+            if (existing := self._get_message(message_id)) is not None:
+                return existing
+            turn = conversation.last_turn + 1
+            self._update_conversation(approval.conversation_id, at, {"last_turn": turn})
+            stored = self._insert_message(
+                approval.conversation_id, message_id, turn, MessageSender.AGENT, redact(content).text, (), (), at
+            )
+            approval_queries.mark_settled(self._conn, approval_id, at)
+            return stored
 
     # -- simulated actions (SQL in action_queries) -----------------------
 

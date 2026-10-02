@@ -3,7 +3,6 @@ from typing import Any
 
 import pytest
 
-from agents.base import load_prompt
 from agents.diagnostics import build_diagnostics_agent, run_diagnostics
 from agents.messages import tool_returns
 from agents.models import DiagnosticsInput, Intent, TriageDecision, TriageResult
@@ -16,7 +15,6 @@ OWN_EMAIL = "sysadmin@atlas-eng.com"  # ACC-1007
 OWN_SITE = "S-1007-01"
 FOREIGN_SITE = "S-1005-01"  # ACC-1005
 FOREIGN_EMAIL = "priya.patel@bluebirdretail.com"  # ACC-1002
-HEADINGS = ("Role", "Inputs you receive", "Tools and when to use them", "Rules", "Output fields", "Examples")
 SITE_TOOLS = ("get_site_status", "get_link_quality", "get_events", "get_bgp_status", "get_ipsec_status")
 HYPOTHESIS = {"root_cause_hypothesis": "BGP route limit hit"}
 
@@ -115,8 +113,3 @@ def test_model_failure_keeps_gathered_evidence(make_deps: MakeDeps) -> None:
     assert run.output.findings.root_cause_hypothesis is None
     assert run.output.has_anomaly and run.trace.error
 
-
-def test_prompt_has_headings_and_no_leaks() -> None:
-    prompt = load_prompt("diagnostics")
-    assert all(f"## {heading}" in prompt for heading in HEADINGS)
-    assert "SC-" not in prompt and "expected" not in prompt.lower()

@@ -116,14 +116,16 @@ The agent layer uses **PydanticAI** to provide compile-time type validation, dep
 ### 4.1 Dependency Container (`SupportDeps`)
 Every agent receives a typed context container via PydanticAI dependency injection:
 - `clock: SimulationClock` — Provides frozen time `2026-08-28T17:00:00Z` and elapsed time calculations.
-- `db_pool: AsyncConnectionPool` — Connection pool to Postgres.
+- `customers: CustomerService`, `tickets: TicketService` — Account tier / SLA and ticket history services over the shared Postgres connection (no pool object in deps).
 - `telemetry: TelemetryService` — Interface to read synthetic CMA telemetry files directly from `data/telemetry/` with `(resolved_path, mtime_ns)` caching, returning typed `TelemetryToolResult[T]` envelopes with pre-extracted `TelemetryEvidence`.
 - `retrieval: RetrievalService` — Unified interface in `retrieval/service.py` for hybrid KB search (`search_kb` returning `KBSearchResult`) and authoritative internal policy lookup (`get_policy(policy_id) -> PolicyDocument | None`, `list_policies() -> list[PolicyDocument]`). Policies are loaded once at construction and served from memory, so lookup cannot fail at runtime (it keeps working during a DB outage); an unknown id returns `None`.
-- `customer_store: CustomerService` — Account tier and ticket history query engine.
+- `identity: CallerIdentity`, `guard_history: SessionGuardHistory`, `approved_actions: frozenset[ActionType]` — resolved by the orchestrator and injected; `grounding: GroundingContext | None` is set by `run_resolution` for the output validators.
 
 ---
 
 ### 4.2 Agent Specifications
+
+> **Implemented contracts (plan 22, supersede the field lists below where they differ).** Each role splits LLM output from assembled result: Triage `TriageDecision` -> `TriageResult` (identity, SLA, repeat contact filled in code), Diagnostics `DiagnosticsFindings` -> `DiagnosticEvidence` (evidence, unavailable tools and `sev1_corroborated` derived from tool results), Knowledge `KnowledgeFindings` -> `KnowledgeBundle`, Resolution `ResolutionPlan` (LLM output and final). The orchestrator resolves identity (`authenticate_caller`) and passes it in `TriageInput`; Triage does not call lookup/auth tools. Tracing is PydanticAI-native (`AgentTrace.from_run`: messages, usage, latency); no brainstruct.
 
 #### 1. Triage Agent
 - **Purpose**: Authenticates caller, establishes account tier and SLA target clock, checks for repeat contact churn, detects prompt injection/social engineering, and extracts technical scope.
@@ -166,14 +168,16 @@ Every agent receives a typed context container via PydanticAI dependency injecti
 - **Failure Mode**: If top rerank score < `RERANK_MIN_SCORE`, `KBSearchResult` returns `status=KBSearchStatus.LOW_CONFIDENCE_REFUSAL` with `passages=[]` and unfiltered `candidates` preserved for eval/trace logging. If the database is down, `search_kb` catches `psycopg.Error` and returns a `KBSearchResult` with `status=KBSearchStatus.UNAVAILABLE`; policy lookup is unaffected (served from memory).
 
 #### 4. Resolution & Action Agent
-- **Purpose**: Synthesizes customer context, telemetry evidence, and KB passages into a conversational, empathetic, and grounded response. Proposes support actions and marks high-impact operations for approval.
-- **Allowed Tools**: `propose_action(name, payload)`.
-- **Typed Input**: Aggregated state (`TriageDecision`, `DiagnosticEvidence`, `KnowledgeBundle`, conversation history).
+- **Purpose**: Synthesizes customer context, telemetry evidence, and KB passages into a conversational, empathetic, and grounded response. Proposes support actions.
+- **Allowed Tools**: none. There is no `propose_action` tool; proposals are `ResolutionPlan.actions`.
+- **Typed Input (`ResolutionInput`)**: `TriageResult`, optional `DiagnosticEvidence` / `KnowledgeBundle`, conversation history, message.
 - **Typed Output (`ResolutionPlan`)**:
-  - `customer_message: str` (contains inline citations `[kb:<slug>#<anchor>]` and quoted evidence `[telemetry]`)
-  - `actions_to_execute: list[SupportAction]` (`create_ticket`, `update_ticket`, `page_on_call`)
-  - `pending_approval: ApprovalRequest | None` (for credits, MFA resets, security overrides)
-- **Failure Mode**: If output validator detects missing citations on technical statements, triggers prompt refinement or routes to human TAC engineer.
+  - `customer_message: str` (inline `[kb:<slug>#<anchor>]`, `[policy:POL-X]`, `[telemetry:<tool>]` markers)
+  - `actions: tuple[SupportAction, ...]` (`CREATE_TICKET`, `UPDATE_TICKET`, `PAGE_ON_CALL`, `CLOSE_TICKET`, `CREDIT`, `MFA_RESET`, `VERDICT_OVERRIDE`)
+  - `escalate_to_human: bool`, `escalation_reason: str | None`
+  - No `pending_approval` field: the orchestrator derives approvals from `guardrails.check_action` (`REQUIRE_APPROVAL`), so a model-set flag never decides a hard gate.
+- **Sev-1 gate**: `PAGE_ON_CALL` is allowed only in `check_action` when triage priority is `P1`, `sev1_corroborated` (code-derived from telemetry) holds, and the account was not already paged; otherwise DENY `POL-SEV1`.
+- **Failure Mode**: Two PydanticAI output validators run `check_citations` and `check_outgoing_message`; a violation raises `ModelRetry` (budget 1). Exhausted retries or model failure return a constant holding message with `escalate_to_human=True`. With an unrecognized caller all actions are dropped in code.
 
 ---
 

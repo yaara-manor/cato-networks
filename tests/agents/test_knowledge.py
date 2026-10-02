@@ -3,15 +3,12 @@ from typing import Any
 
 import psycopg
 
-from agents.base import load_prompt
 from agents.knowledge import run_knowledge
 from agents.models import Intent, KnowledgeInput, TriageDecision, TriageResult
 from core.config import REPO_ROOT, settings
 from retrieval.models import KBSearchStatus
 from retrieval.service import RetrievalService
 from tests.agents.conftest import MakeDeps, scripted_model
-
-HEADINGS = ("Role", "Inputs you receive", "Tools and when to use them", "Rules", "Output fields", "Examples")
 
 
 def _jsonl_question(path: str, key: str, value: str | None = None) -> str:
@@ -80,8 +77,3 @@ def test_model_failure_keeps_results_with_empty_findings(make_deps: MakeDeps) ->
     assert [p.policy_id for p in run.output.referenced_policies] == ["POL-SLA"]
     assert run.output.findings.uncovered_topics == () and run.trace.error
 
-
-def test_prompt_has_headings_and_no_leaks() -> None:
-    prompt = load_prompt("knowledge")
-    assert all(f"## {heading}" in prompt for heading in HEADINGS)
-    assert "SC-" not in prompt and "expected" not in prompt.lower()

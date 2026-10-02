@@ -17,7 +17,7 @@ from tests.orchestration.conftest import PRIYA, Harness, Scripted
 
 @dataclass
 class Slow(Scripted):
-    """Scripted agents that sleep; `triage_span` / `diagnostics_hook` expose timing and a crash point."""
+    """Scripted agents that sleep; `spans` records triage timing, `in_diagnostics` marks the crash point."""
 
     triage_delay: float = 0.0
     diagnostics_delay: float = 0.0

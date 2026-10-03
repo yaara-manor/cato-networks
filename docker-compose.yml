@@ -44,5 +44,23 @@ services:
       - .:/app
       - /app/.venv
 
+  reviewer:
+    build: .
+    depends_on:
+      - postgres
+    command: streamlit run ui/reviewer_app.py --server.address=0.0.0.0 --server.port=8502
+    ports:
+      - "8502:8502"
+    environment:
+      DATABASE_URL: postgresql://kb:kb@postgres:5432/kb
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGUSER: kb
+      PGPASSWORD: kb
+      PGDATABASE: kb
+    volumes:
+      - .:/app
+      - /app/.venv
+
 volumes:
   pgdata:

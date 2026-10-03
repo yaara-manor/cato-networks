@@ -11,13 +11,14 @@ from core.config import settings
 from core.models import AccountTier
 from guardrails.models import ActionType, SessionGuardHistory
 from guardrails.redactor import redact
-from storage import action_queries, approval_queries
+from storage import action_queries, approval_queries, board_queries
 from storage.jsonb import redacted_json
 from storage.models import (
     Approval,
     ApprovalResolution,
     ApprovalStateError,
     ApprovalStatus,
+    BoardRow,
     ClaimedAction,
     Conversation,
     ConversationSnapshot,
@@ -431,6 +432,9 @@ class StateStore:
 
     def list_simulated_actions(self, conversation_id: UUID) -> list[SimulatedAction]:
         return action_queries.list_simulated_actions(self._conn, conversation_id)
+
+    def list_board_rows(self, limit: int) -> list[BoardRow]:
+        return board_queries.list_board_rows(self._conn, limit)
 
     # -- consistent reads ------------------------------------------------
 

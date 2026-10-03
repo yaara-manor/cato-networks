@@ -613,7 +613,11 @@ The codebase is organized into clean, single-responsibility packages separating 
 │   ├── session.py                     # Connection-per-call glue over orchestration.runtime
 │   ├── scenarios.py                   # Scenario switcher data (data/eval/scenarios.jsonl)
 │   ├── trace_panel.py                 # Shared trace component (customer and reviewer apps)
-│   └── reviewer_app.py                # Reviewer workspace: context, evidence, traces, approvals
+│   ├── reviewer_app.py                # Reviewer board: context, evidence, live trace, approve/edit/reject
+│   ├── reviewer_widgets.py            # Rendering helpers for the reviewer page
+│   ├── reviewer_view.py               # CaseView, ApprovalCard, DecisionForm (frozen view models)
+│   ├── reviewer_panels.py             # Context and evidence panel models, SlaState
+│   └── reviewer_session.py            # ReviewerRuntime (ApprovalService, settle sweep at start), StateStore.list_board_rows
 │
 └── eval/                              # Evaluation harness & benchmarks (Deliverables C, F, G)
     ├── run_questions.py               # Replays 35 questions to generate answers.md

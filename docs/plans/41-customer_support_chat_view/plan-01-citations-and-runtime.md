@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.12, pydantic v2 frozen models, PydanticAI (existing agents, no tracing vendor; Braintrust is NOT used), psycopg 3, pytest. No new dependency.
 
-**Spec:** [design.md](design.md) sections 3.3, 4.2, 8.1, 8.2, 8.5. Depends on 21-24 merged. 31/32 later modify `Workflow`/`SupportDeps`; `build_workflow` is the single adaptation point.
+**Spec:** [design.md](design.md) sections 3.3, 4.2, and 8 (items 1, 5, 7). Depends on 21-24 merged. 31/32 later modify `Workflow`/`SupportDeps`; `build_workflow` is the single adaptation point.
 
 ## Global Constraints
 

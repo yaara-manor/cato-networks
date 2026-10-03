@@ -134,6 +134,7 @@ def page_on_call(payload: PageOnCallPayload, call: HandlerCall) -> ActionOutcome
 
 
 def request_credit(payload: CreditPayload, call: HandlerCall) -> ActionOutcome:
+    _owned_ticket(call, payload.ticket_id)
     request_id = _event_id("CRD", call)
     return ActionOutcome(
         reference=request_id,
@@ -149,6 +150,7 @@ def request_credit(payload: CreditPayload, call: HandlerCall) -> ActionOutcome:
 
 
 def reset_mfa(payload: MfaResetPayload, call: HandlerCall) -> ActionOutcome:
+    _owned_ticket(call, payload.ticket_id)
     request_id = _event_id("MFA", call)
     identity = call.context.identity
     return ActionOutcome(

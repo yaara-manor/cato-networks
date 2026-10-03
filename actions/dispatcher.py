@@ -51,6 +51,8 @@ class ActionDispatcher:
 
     def dispatch_approved(self, approval: Approval, context: DispatchContext) -> ActionResult:
         kind = support_kind_for(approval.action_type)
+        if approval.conversation_id != context.conversation_id:
+            return ActionResult.refused(kind, "approval belongs to another conversation")
         if approval.status not in (ApprovalStatus.APPROVED, ApprovalStatus.EDITED):
             return ActionResult.refused(kind, "approval is not approved")
         payload = approval.edited_payload if approval.status is ApprovalStatus.EDITED else approval.payload
@@ -67,6 +69,8 @@ class ActionDispatcher:
         )
 
     def mark_pending(self, approval: Approval, context: DispatchContext) -> ActionResult:
+        if approval.status is not ApprovalStatus.PENDING:
+            return ActionResult.refused(SupportActionKind.UPDATE_TICKET, "approval is not pending")
         payload = {"status": "pending_approval"} | {k: v for k, v in approval.payload.items() if k == "ticket_id"}
         return self._run(
             DispatchRequest(

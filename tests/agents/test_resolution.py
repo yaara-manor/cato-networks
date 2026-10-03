@@ -1,7 +1,8 @@
+from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
-from pydantic_ai.messages import ModelMessage, ModelResponse, ToolCallPart
+from pydantic_ai.messages import ModelMessage, ModelRequest, ModelResponse, ToolCallPart, UserPromptPart
 from pydantic_ai.models.function import AgentInfo, FunctionModel
 
 from agents.models import (
@@ -15,10 +16,12 @@ from agents.models import (
     TriageDecision,
     TriageResult,
     UnavailableTool,
+    UnsettledApprovalView,
 )
 from agents.resolution import HOLDING_MESSAGE, run_resolution
 from guardrails import (
     ActionType,
+    ApprovalStatus,
     ApprovedGrant,
     SessionGuardHistory,
     check_citations,
@@ -151,3 +154,39 @@ def test_holding_message_passes_both_guards(make_deps: MakeDeps) -> None:
     context = _input(make_deps, _refusal(KBSearchStatus.UNAVAILABLE)).grounding_context()
     assert check_citations(HOLDING_MESSAGE, context).is_grounded
     assert not check_outgoing_message(HOLDING_MESSAGE, SessionGuardHistory(), ())
+
+
+def test_prompt_renders_known_ticket(make_deps: MakeDeps) -> None:
+    prompts: list[str] = []
+
+    def respond(messages: list[ModelMessage], info: AgentInfo) -> ModelResponse:
+        request = messages[0]
+        assert isinstance(request, ModelRequest)
+        prompts.extend(str(p.content) for p in request.parts if isinstance(p, UserPromptPart))
+        return ModelResponse(parts=[ToolCallPart(info.output_tools[0].name, {"customer_message": "ok"})])
+
+    model = FunctionModel(respond, model_name="scripted")
+    data = _input(make_deps)
+    run_resolution(data.model_copy(update={"known_ticket_id": "TCK-42"}), make_deps(), model)
+    run_resolution(data, make_deps(), model)
+    assert "Known ticket: TCK-42" in prompts[0]
+    assert "Known ticket: none" in prompts[1]
+
+
+def test_prompt_renders_unsettled_approvals_without_amounts(make_deps: MakeDeps) -> None:
+    prompts: list[str] = []
+
+    def respond(messages: list[ModelMessage], info: AgentInfo) -> ModelResponse:
+        request = messages[0]
+        assert isinstance(request, ModelRequest)
+        prompts.extend(str(p.content) for p in request.parts if isinstance(p, UserPromptPart))
+        return ModelResponse(parts=[ToolCallPart(info.output_tools[0].name, {"customer_message": "ok"})])
+
+    unsettled = (
+        UnsettledApprovalView(
+            action_type=ActionType.CREDIT, status=ApprovalStatus.PENDING, requested_at=datetime.now(UTC)
+        ),
+    )
+    data = _input(make_deps).model_copy(update={"unsettled_approvals": unsettled})
+    run_resolution(data, make_deps(), FunctionModel(respond, model_name="scripted"))
+    assert "Unsettled approvals: CREDIT status=PENDING" in prompts[0]

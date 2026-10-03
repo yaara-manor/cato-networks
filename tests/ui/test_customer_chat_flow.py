@@ -17,7 +17,6 @@ from tests.orchestration.conftest import Scripted
 from tests.ui.conftest import MakeApp
 from tools.models import TelemetryEvidence
 from ui import session
-from ui.customer_app import LOCK_NOTICE
 
 AMOUNT = "7777"
 CREDIT = SupportAction(
@@ -200,12 +199,12 @@ def test_lock_timeout_notice_then_retry_reuses_message_id(
     monkeypatch.setattr(session, "run_customer_turn", flaky)
     at = make_app().run()
     _send(at, "hello")
-    assert any(LOCK_NOTICE in str(w.value) for w in at.warning)
+    assert any(session.LOCK_NOTICE in str(w.value) for w in at.warning)
 
     _button(at, "Retry").click().run()
 
     assert len(seen) == 2 and seen[0] == seen[1]
-    assert not any(LOCK_NOTICE in str(w.value) for w in at.warning)
+    assert not any(session.LOCK_NOTICE in str(w.value) for w in at.warning)
     messages = StateStore(conn).list_messages(_conversation_id(at))
     customer_rows = [m for m in messages if m.sender is MessageSender.CUSTOMER]
     assert len(customer_rows) == 1

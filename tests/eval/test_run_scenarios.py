@@ -29,6 +29,10 @@ def test_scenario_sends_opening_then_followups_in_order() -> None:
     assert scenario.customer_messages == ("first", "second", "third")
 
 
+def test_client_diagnostics_marker_counts_as_the_clients_source() -> None:
+    assert cited_refs(["Error 408 [telemetry:get_client_diagnostics]"]) == ("telemetry:clients",)
+
+
 def test_score_flags_missing_cites_and_tools() -> None:
     scenario = Scenario(
         scenario_id="SC-X",

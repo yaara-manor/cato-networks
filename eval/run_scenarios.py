@@ -17,6 +17,8 @@ from retrieval.models import KBSearchStatus
 
 _SCENARIOS_PATH: Path = REPO_ROOT / "data/eval/scenarios.jsonl"
 _REPORT_PATH: Path = REPO_ROOT / "docs/eval/scenario_report.md"
+# `must_cite` names telemetry by data source; these tools are named differently from their source.
+_TELEMETRY_SOURCES: dict[str, str] = {"get_client_diagnostics": "clients"}
 _TELEMETRY_TOOL_PREFIXES: tuple[str, ...] = ("get_", "list_")  # other expected tools are actions, not scored here
 
 
@@ -81,7 +83,7 @@ def cited_refs(replies: Sequence[str]) -> tuple[str, ...]:
             case MarkerKind.POLICY:
                 refs.append(marker.ref)
             case MarkerKind.TELEMETRY:
-                refs.append(f"telemetry:{marker.ref.removeprefix('get_')}")
+                refs.append(f"telemetry:{_TELEMETRY_SOURCES.get(marker.ref, marker.ref.removeprefix('get_'))}")
             case _:
                 raise AssertionError(marker.kind)
     return tuple(dict.fromkeys(refs))

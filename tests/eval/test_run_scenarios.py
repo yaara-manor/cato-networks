@@ -9,11 +9,24 @@ _REPLY = (
 
 
 def test_cited_refs_use_must_cite_vocabulary() -> None:
-    assert cited_refs(_REPLY) == (
+    assert cited_refs([_REPLY]) == (
         "telemetry:bgp_status",
         "xops-network-playbook-bgp-prefix-exhaustion",
         "POL-SLA",
     )
+
+
+def test_scenario_sends_opening_then_followups_in_order() -> None:
+    scenario = Scenario.model_validate(
+        {
+            "scenario_id": "SC-X",
+            "requester_email": "a@b.c",
+            "opening_message": "first",
+            "simulated_customer_followups": [{"if_agent": "x", "customer": "second"}, {"customer": "third"}],
+            "expected": {},
+        }
+    )
+    assert scenario.customer_messages == ("first", "second", "third")
 
 
 def test_score_flags_missing_cites_and_tools() -> None:
@@ -27,7 +40,7 @@ def test_score_flags_missing_cites_and_tools() -> None:
         ),
     )
     calls = [("get_bgp_status", "OK"), ("search_knowledge_base", "LOW_CONFIDENCE_REFUSAL")]
-    score = score_scenario(scenario, uuid.uuid4(), _REPLY, calls)
+    score = score_scenario(scenario, uuid.uuid4(), ["hello", _REPLY], calls)
     assert score.missing_cites == ("configuring-bgp-neighbors-for-a-cato-socket",)
     assert score.missing_tools == ("get_events",)  # request_human_approval is an action, not scored
     assert (score.kb_searches, score.kb_refusals, score.passed) == (1, 1, False)

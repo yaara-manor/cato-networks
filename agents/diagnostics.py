@@ -115,7 +115,8 @@ def _prompt(data: DiagnosticsInput) -> str:
     decision = data.triage.decision
     return (
         f"Triage: intent {decision.intent}, priority {decision.priority}, site {decision.site_id}, "
-        f"product area {decision.product_area}, symptom: {decision.symptom_summary}\n\n"
+        f"product area {decision.product_area}, symptom: {decision.symptom_summary}\n"
+        f"Caller email: {data.triage.identity.caller_email or 'unknown'}\n\n"
         f"{conversation_prompt(data.message, data.history)}"
     )
 

@@ -32,6 +32,7 @@ class RetrievedPassage(BaseModel):
     heading: str
     heading_anchor: str
     body: str
+    position: int | None = None  # order of the passage within its article
     lex_rank: int | None
     vec_rank: int | None
     rrf_score: float

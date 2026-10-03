@@ -249,7 +249,9 @@ class KnowledgeBundle(_AgentModel):
         cls,
         findings: KnowledgeFindings,
         searches: Sequence[KBSearchResult],
+        expansion: KBSearchResult | None = None,
     ) -> Self:
+        """`expansion` adds context passages only: it is no query and never decides the status."""
         statuses = {r.status for r in searches}
         if KBSearchStatus.CONFIDENT in statuses:
             status = KBSearchStatus.CONFIDENT
@@ -257,10 +259,11 @@ class KnowledgeBundle(_AgentModel):
             status = KBSearchStatus.UNAVAILABLE
         else:
             status = KBSearchStatus.LOW_CONFIDENCE_REFUSAL
+        everything = (*searches, *((expansion,) if expansion else ()))
         return cls(
             findings=findings,
-            retrieved_passages=_dedupe_passages(p for r in searches for p in r.passages),
-            candidates=_dedupe_passages(p for r in searches for p in r.candidates),
+            retrieved_passages=_dedupe_passages(p for r in everything for p in r.passages),
+            candidates=_dedupe_passages(p for r in everything for p in r.candidates),
             confidence_status=status,
             snapshot_date=next((r.snapshot_date for r in searches if r.snapshot_date), None),
             queries=tuple(r.query for r in searches),

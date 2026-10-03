@@ -19,11 +19,13 @@ from agents.models import (
     ToolCall,
 )
 from agents.runner import run_role
-from retrieval.models import KBSearchResult
+from retrieval.models import KBSearchResult, KBSearchStatus, RetrievedPassage
 from retrieval.service import RetrievalService
 
 SEARCH_TOOL = "search_knowledge_base"
 PLAYBOOK_SUFFIX = "playbook"
+EXPAND_TOOL = "expand_article_sections"
+EXPANDED_ARTICLES = 2  # the best-scoring articles get their surrounding sections added
 
 # One short topic phrase per telemetry tool: whatever tool ran, its knowledge-base domain is searched too.
 # Each phrase is searched twice, plain and with "playbook": the XOps playbooks are titled that way.
@@ -72,9 +74,38 @@ def search_topics(retrieval: RetrievalService, queries: Sequence[str]) -> tuple[
         return tuple(pool.map(lambda query: _timed_search(retrieval, query), queries))
 
 
-def _as_trace_call(query: str, result: KBSearchResult, latency_ms: int) -> ToolCall:
+def expand_top_articles(retrieval: RetrievalService, searches: Sequence[KBSearchResult]) -> KBSearchResult | None:
+    """Sections around the best passage of each of the top articles, so steps that follow a hit are not lost.
+
+    A passage that matched on an overview would otherwise leave out the steps below it.
+    """
+    passages = [p for search in searches for p in search.passages]
+    best: dict[str, RetrievedPassage] = {}
+    for passage in sorted(passages, key=lambda p: p.rerank_score, reverse=True):
+        best.setdefault(passage.slug, passage)
+    have = {p.passage_id for p in passages}
+    added: dict[str, RetrievedPassage] = {}
+    for passage in list(best.values())[:EXPANDED_ARTICLES]:
+        for section in retrieval.adjacent_sections(passage):
+            if section.passage_id not in have:
+                added.setdefault(section.passage_id, section)
+    if not added:
+        return None
+    sections = list(added.values())
+    slugs = ", ".join(dict.fromkeys(p.slug for p in sections))
+    snapshot = next((s.snapshot_date for s in searches if s.snapshot_date), None)
+    return KBSearchResult(
+        status=KBSearchStatus.CONFIDENT,
+        query=f"sections around hits: {slugs}",
+        passages=sections,
+        candidates=sections,
+        snapshot_date=snapshot,
+    )
+
+
+def _as_trace_call(tool_name: str, query: str, result: KBSearchResult, latency_ms: int) -> ToolCall:
     return ToolCall(
-        tool_name=SEARCH_TOOL,
+        tool_name=tool_name,
         arguments={"query": query},
         status=str(result.status),
         result=to_jsonable_python(result),
@@ -100,10 +131,15 @@ def run_knowledge(
     messages = list(outcome.messages)
     queries = topic_queries(data.diagnostics)
     topic_results = search_topics(deps.retrieval, queries)
-    bundle = KnowledgeBundle.from_tool_results(
-        outcome.output or KnowledgeFindings(),
-        (*tool_returns(messages, SEARCH_TOOL), *(result for result, _ in topic_results)),
-    )
-    topic_calls = [_as_trace_call(q, result, ms) for q, (result, ms) in zip(queries, topic_results, strict=True)]
-    trace = outcome.trace.model_copy(update={"tool_calls": [*outcome.trace.tool_calls, *topic_calls]})
+    searches = (*tool_returns(messages, SEARCH_TOOL), *(result for result, _ in topic_results))
+    started = time.perf_counter()
+    expansion = expand_top_articles(deps.retrieval, searches)
+    expand_ms = int((time.perf_counter() - started) * 1000)
+    bundle = KnowledgeBundle.from_tool_results(outcome.output or KnowledgeFindings(), searches, expansion)
+    calls = [
+        _as_trace_call(SEARCH_TOOL, q, result, ms) for q, (result, ms) in zip(queries, topic_results, strict=True)
+    ]
+    if expansion:
+        calls.append(_as_trace_call(EXPAND_TOOL, expansion.query, expansion, expand_ms))
+    trace = outcome.trace.model_copy(update={"tool_calls": [*outcome.trace.tool_calls, *calls]})
     return AgentRun(output=bundle, trace=trace)

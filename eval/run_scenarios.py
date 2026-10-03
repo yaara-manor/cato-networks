@@ -1,6 +1,7 @@
 import argparse
 import uuid
 from collections import Counter
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -26,13 +27,24 @@ class Expected(BaseModel):
     must_use_tools: tuple[str, ...] = ()
 
 
+class Followup(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="ignore")
+
+    customer: str  # the `if_agent` condition is not evaluated: follow-ups are sent in order
+
+
 class Scenario(BaseModel):
     model_config = ConfigDict(frozen=True, extra="ignore")
 
     scenario_id: str
     requester_email: str
     opening_message: str
+    simulated_customer_followups: tuple[Followup, ...] = ()
     expected: Expected
+
+    @property
+    def customer_messages(self) -> tuple[str, ...]:
+        return (self.opening_message, *(f.customer for f in self.simulated_customer_followups))
 
 
 class ScenarioScore(BaseModel):
@@ -40,7 +52,7 @@ class ScenarioScore(BaseModel):
 
     scenario_id: str
     conversation_id: uuid.UUID
-    reply: str
+    replies: tuple[str, ...]
     cited: tuple[str, ...]
     expected_cites: int
     missing_cites: tuple[str, ...]
@@ -59,10 +71,10 @@ def load_scenarios(path: Path = _SCENARIOS_PATH) -> tuple[Scenario, ...]:
     return tuple(Scenario.model_validate_json(line) for line in lines if line.strip())
 
 
-def cited_refs(reply: str) -> tuple[str, ...]:
+def cited_refs(replies: Sequence[str]) -> tuple[str, ...]:
     """Reply markers in the vocabulary of `must_cite`: KB slug, policy id, `telemetry:<tool without get_>`."""
     refs: list[str] = []
-    for marker in extract_markers(reply):
+    for marker in extract_markers("\n".join(replies)):
         match marker.kind:
             case MarkerKind.KB:
                 refs.append(marker.ref.split("#", 1)[0])
@@ -80,17 +92,17 @@ def missing_expected(expected: tuple[str, ...], actual: tuple[str, ...]) -> tupl
 
 
 def score_scenario(
-    scenario: Scenario, conversation_id: uuid.UUID, reply: str, tool_calls: list[tuple[str, str]]
+    scenario: Scenario, conversation_id: uuid.UUID, replies: Sequence[str], tool_calls: list[tuple[str, str]]
 ) -> ScenarioScore:
-    """`tool_calls` are (tool_name, status) rows of the conversation."""
-    cited = cited_refs(reply)
+    """`replies` are every agent reply of the conversation; `tool_calls` its (tool_name, status) rows."""
+    cited = cited_refs(replies)
     tools_used = tuple(dict.fromkeys(name for name, _ in tool_calls))
     expected_tools = tuple(t for t in scenario.expected.must_use_tools if t.startswith(_TELEMETRY_TOOL_PREFIXES))
     searches = [status for name, status in tool_calls if name == "search_knowledge_base"]
     return ScenarioScore(
         scenario_id=scenario.scenario_id,
         conversation_id=conversation_id,
-        reply=reply,
+        replies=tuple(replies),
         cited=cited,
         expected_cites=len(scenario.expected.must_cite),
         missing_cites=missing_expected(scenario.expected.must_cite, cited),
@@ -102,17 +114,18 @@ def score_scenario(
 
 
 def run_scenario(conn: psycopg.Connection[Any], clock: SimulationClock, scenario: Scenario) -> ScenarioScore:
-    """Opening turn only, through the same workflow the chat uses."""
+    """The opening message and the scripted follow-ups, through the same workflow the chat uses."""
     services = build_services(conn, clock)
     identity = services.customers.authenticate_caller(scenario.requester_email)
     account_id = identity.account.account_id if identity.account else None
     conversation = services.store.create_conversation(account_id, identity.caller_email, identity.effective_tier, clock.now())
-    result = build_workflow(conn, clock).run_turn(conversation.id, scenario.opening_message, uuid.uuid4())
+    workflow = build_workflow(conn, clock)
+    replies = [workflow.run_turn(conversation.id, message, uuid.uuid4()).reply for message in scenario.customer_messages]
     rows = conn.execute(
         "select tool_name, status from tool_calls where conversation_id = %s order by created_at, seq",
         (conversation.id,),
     ).fetchall()
-    return score_scenario(scenario, conversation.id, result.reply, [(name, status) for name, status in rows])
+    return score_scenario(scenario, conversation.id, replies, [(name, status) for name, status in rows])
 
 
 def _hit_rate(scores: list[ScenarioScore]) -> float:
@@ -131,11 +144,12 @@ def to_markdown(runs: list[list[ScenarioScore]]) -> str:
         for score in run:
             by_scenario.setdefault(score.scenario_id, []).append(score)
     lines = [
-        "# Scenario replay (opening turn)",
+        "# Scenario replay (opening message and scripted follow-ups)",
         "",
         f"- Date: {datetime.now(tz=UTC).date()}",
         f"- Runs per scenario: {len(runs)} (the model ignores temperature, so runs vary)",
-        "- Pass: all `must_cite` markers present and all telemetry tools called",
+        "- Pass: all `must_cite` markers present in any reply and all telemetry tools called in the conversation",
+        "- Follow-ups are sent in order; their `if_agent` conditions are not evaluated",
         "",
         "| Scenario | Pass rate | Cite hit rate | Missing cites (runs) | Missing tools (runs) | KB searches / refused (avg) |",
         "|---|---|---|---|---|---|",

@@ -89,7 +89,14 @@ def test_topic_searches_join_the_bundle_and_the_trace(make_deps: MakeDeps) -> No
     run = run_knowledge(data, make_deps(), scripted_model([], {}))
     topic = TOOL_TOPICS["get_bgp_status"]
     assert run.output.queries == (topic, f"{topic} playbook")
-    assert [(c.tool_name, c.arguments) for c in run.trace.tool_calls] == [
-        ("search_knowledge_base", {"query": query}) for query in run.output.queries
-    ]
+    searches = [c for c in run.trace.tool_calls if c.tool_name == "search_knowledge_base"]
+    assert [c.arguments for c in searches] == [{"query": query} for query in run.output.queries]
     assert run.output.confidence_status == KBSearchStatus.CONFIDENT
+
+
+def test_best_articles_get_their_surrounding_sections(make_deps: MakeDeps) -> None:
+    question = "Socket does not come back after scheduled upgrade what to do"
+    run = run_knowledge(_input(make_deps, question), make_deps(), scripted_model([_search(question)], {}))
+    anchors = {(p.slug, p.heading_anchor) for p in run.output.retrieved_passages}
+    assert any(slug == "xops-network-playbook-socket-offline-after-upgrade" and a.startswith("step-3") for slug, a in anchors)
+    assert run.trace.tool_calls[-1].tool_name == "expand_article_sections"

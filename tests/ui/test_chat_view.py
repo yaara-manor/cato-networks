@@ -95,3 +95,13 @@ def test_messages_strip_markers_dedupe_chips_and_map_badges() -> None:
     assert support.text == "Raise MTU and see"
     assert [(b.kind, b.url) for b in support.citations] == [(MarkerKind.KB, "https://x/mtu"), (MarkerKind.POLICY, None)]
     assert [c.text for c in support.evidence] == ["flaps 3", "flaps 9"]
+
+
+def test_escalation_banner_survives_settle_notice() -> None:
+    reply = TurnResult(reply="r", path=(), escalation_offered=True).model_dump(mode="json")
+    messages = (
+        _message(MessageSender.CUSTOMER, "hi"),
+        _message(MessageSender.AGENT, "r", result=reply),
+        _message(MessageSender.AGENT, "Your request was reviewed.", result=None),
+    )
+    assert ChatView.from_snapshot(_snapshot(*messages), []).escalation_offered is True

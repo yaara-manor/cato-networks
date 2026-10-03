@@ -23,20 +23,26 @@ from retrieval.models import KBSearchResult, KBSearchStatus, RetrievedPassage
 from retrieval.service import RetrievalService
 
 SEARCH_TOOL = "search_knowledge_base"
-PLAYBOOK_SUFFIX = "playbook"
 EXPAND_TOOL = "expand_article_sections"
 EXPANDED_ARTICLES = 2  # the best-scoring articles get their surrounding sections added
 
-# One short topic phrase per telemetry tool: whatever tool ran, its knowledge-base domain is searched too.
-# Each phrase is searched twice, plain and with "playbook": the XOps playbooks are titled that way.
-TOOL_TOPICS: Mapping[str, str] = MappingProxyType(
+# Short topic queries per telemetry tool: whatever tool ran, its knowledge-base domain is searched too.
+# "playbook" reaches the XOps playbooks, which are titled that way. BGP and IPsec also keep a plain query,
+# because their reference articles (neighbor settings, recommendations) are not playbooks.
+TOOL_QUERIES: Mapping[str, tuple[str, ...]] = MappingProxyType(
     {
-        "get_site_status": "site connectivity status troubleshooting",
-        "get_link_quality": "link quality packet loss and SLA",
-        "get_events": "connectivity events and what they mean",
-        "get_bgp_status": "BGP neighbor settings and route limits",
-        "get_ipsec_status": "IPsec connection recommendations and troubleshooting",
-        "get_client_diagnostics": "Cato Client connection troubleshooting",
+        "get_site_status": ("site connectivity status troubleshooting playbook",),
+        "get_link_quality": ("link quality packet loss and SLA playbook",),
+        "get_events": ("connectivity events and what they mean",),
+        "get_bgp_status": (
+            "BGP neighbor settings and route limits",
+            "BGP neighbor settings and route limits playbook",
+        ),
+        "get_ipsec_status": (
+            "IPsec connection recommendations and troubleshooting",
+            "IPsec connection recommendations and troubleshooting playbook",
+        ),
+        "get_client_diagnostics": ("Cato Client connection troubleshooting",),
     }
 )
 
@@ -56,8 +62,9 @@ def topic_queries(diagnostics: DiagnosticEvidence | None) -> tuple[str, ...]:
     """Queries for the telemetry tools that returned usable data, in a stable order."""
     if diagnostics is None:
         return ()
-    phrases = [TOOL_TOPICS[tool] for tool in sorted(diagnostics.usable_tools) if tool in TOOL_TOPICS]
-    return tuple(query for phrase in phrases for query in (phrase, f"{phrase} {PLAYBOOK_SUFFIX}"))
+    return tuple(
+        query for tool in sorted(diagnostics.usable_tools) for query in TOOL_QUERIES.get(tool, ())
+    )
 
 
 def _timed_search(retrieval: RetrievalService, query: str) -> tuple[KBSearchResult, int]:

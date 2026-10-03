@@ -18,6 +18,7 @@ from guardrails import (
     check_citations,
     check_claims,
     check_outgoing_message,
+    uncited_playbooks,
     redact,
 )
 from services.models import CallerIdentity
@@ -329,6 +330,13 @@ def test_blockquote_without_a_kb_marker_is_ungrounded() -> None:
 
 def test_multi_line_blockquote_is_one_block() -> None:
     assert _quote_kinds("> The smallest value\n> is used for the pair. [kb:bgp#hold]") == []
+
+
+def test_uncited_playbooks_lists_only_strong_playbooks_the_reply_skips() -> None:
+    context = _context(strong_playbooks=frozenset({"xops-network-playbook-a", "xops-network-playbook-b"}))
+    message = "Do the steps [kb:xops-network-playbook-a#step-2]."
+    assert uncited_playbooks(message, context) == ("xops-network-playbook-b",)
+    assert uncited_playbooks(message, _context()) == ()
 
 
 def test_plain_refusal_is_grounded() -> None:

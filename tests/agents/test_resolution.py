@@ -28,7 +28,7 @@ from guardrails import (
     check_outgoing_message,
     secret_hash,
 )
-from retrieval.models import KBSearchResult, KBSearchStatus
+from retrieval.models import KBSearchResult, KBSearchStatus, RetrievedPassage
 from tests.agents.conftest import MakeDeps, scripted_model
 from tools.models import TelemetryStatus
 
@@ -62,6 +62,18 @@ def _knowledge(q10_result: KBSearchResult) -> KnowledgeBundle:
     return KnowledgeBundle.from_tool_results(KnowledgeFindings(), [q10_result])
 
 
+def _playbook_knowledge(score: float) -> KnowledgeBundle:
+    passage = RetrievedPassage(
+        passage_id="p1", slug="xops-network-playbook-demo", title="Demo playbook", public_url="https://kb/x",
+        site_updated_at=None, heading="Step 2", heading_anchor="step-2", body="Summarize your routes.",
+        lex_rank=1, vec_rank=1, rrf_score=0.1, rerank_score=score,
+    )  # fmt: skip
+    search = KBSearchResult(
+        status=KBSearchStatus.CONFIDENT, query="q", passages=[passage], candidates=[passage], snapshot_date=None
+    )
+    return KnowledgeBundle.from_tool_results(KnowledgeFindings(), [search])
+
+
 def _refusal(status: KBSearchStatus) -> KnowledgeBundle:
     return KnowledgeBundle.from_tool_results(
         KnowledgeFindings(), [KBSearchResult(status=status, query="q", snapshot_date=None)]
@@ -92,10 +104,10 @@ def test_fabricated_kb_citation_is_retried(make_deps: MakeDeps, q10_result: KBSe
     assert len(attempts) == 2 and not run.output.escalate_to_human
 
 
-def test_credit_amount_twice_falls_back_to_holding_plan(make_deps: MakeDeps) -> None:
+def test_credit_amount_every_time_falls_back_to_holding_plan(make_deps: MakeDeps) -> None:
     model, attempts = _plans(CREDIT_SENTENCE)
     run = run_resolution(_input(make_deps), make_deps(), model)
-    assert len(attempts) == 2
+    assert len(attempts) == 3  # first try plus two output retries
     assert run.output.customer_message == HOLDING_MESSAGE
     assert run.output.escalate_to_human and run.output.actions == ()
     assert run.output.escalation_reason
@@ -190,3 +202,23 @@ def test_prompt_renders_unsettled_approvals_without_amounts(make_deps: MakeDeps)
     data = _input(make_deps).model_copy(update={"unsettled_approvals": unsettled})
     run_resolution(data, make_deps(), FunctionModel(respond, model_name="scripted"))
     assert "Unsettled approvals: CREDIT status=PENDING" in prompts[0]
+
+
+def test_strongly_retrieved_playbook_left_uncited_is_nudged_once(make_deps: MakeDeps) -> None:
+    cited = "Summarize the routes you advertise. [kb:xops-network-playbook-demo#step-2]"
+    model, attempts = _plans("Please look at your routes.", cited)
+    run = run_resolution(_input(make_deps, _playbook_knowledge(7.0)), make_deps(), model)
+    assert len(attempts) == 2 and run.output.customer_message == cited
+
+
+def test_nudge_gives_way_when_the_reply_stays_as_is(make_deps: MakeDeps) -> None:
+    model, attempts = _plans("Please look at your routes.")
+    run = run_resolution(_input(make_deps, _playbook_knowledge(7.0)), make_deps(), model)
+    assert len(attempts) == 2 and run.output.customer_message == "Please look at your routes."
+    assert not run.output.escalate_to_human
+
+
+def test_weak_playbook_hit_is_not_nudged(make_deps: MakeDeps) -> None:
+    model, attempts = _plans("Please look at your routes.")
+    run_resolution(_input(make_deps, _playbook_knowledge(3.0)), make_deps(), model)
+    assert len(attempts) == 1

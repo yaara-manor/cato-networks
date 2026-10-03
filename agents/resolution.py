@@ -7,7 +7,7 @@ from pydantic_ai.models import Model
 from agents.base import SupportDeps, build_agent, conversation_prompt, load_prompt
 from agents.models import AgentRole, AgentRun, ResolutionInput, ResolutionPlan
 from agents.runner import run_role
-from guardrails import check_citations, check_outgoing_message
+from guardrails import check_citations, check_outgoing_message, uncited_playbooks
 
 HOLDING_MESSAGE = (
     "Thanks for your patience. I am passing your request to a support engineer "
@@ -39,10 +39,25 @@ def _validate_outgoing(ctx: RunContext[SupportDeps], plan: ResolutionPlan) -> Re
     return plan
 
 
+def _nudge_uncited_playbooks(ctx: RunContext[SupportDeps], plan: ResolutionPlan) -> ResolutionPlan:
+    """One reminder, only once the reply is otherwise clean; the second attempt is accepted as written."""
+    if ctx.retry > 0 or ctx.deps.grounding is None:
+        return plan
+    if missing := uncited_playbooks(plan.customer_message, ctx.deps.grounding):
+        raise ModelRetry(
+            f"Retrieved playbook(s) not cited: {', '.join(missing)}. If one applies, cite it with a "
+            "[kb:<slug>#<anchor>] marker from the knowledge passages at the point it applies; otherwise "
+            "resend the message unchanged."
+        )
+    return plan
+
+
 def build_resolution_agent(model: Model | None = None) -> Agent[SupportDeps, ResolutionPlan]:
-    agent = build_agent(load_prompt("resolution"), ResolutionPlan, model)
+    # two output retries: one for a guard violation and one for the playbook reminder
+    agent = build_agent(load_prompt("resolution"), ResolutionPlan, model, output_retries=2)
     agent.output_validator(_validate_citations)
     agent.output_validator(_validate_outgoing)
+    agent.output_validator(_nudge_uncited_playbooks)
     return agent
 
 

@@ -29,9 +29,11 @@ from guardrails.validator import (
     check_citations,
     check_claims,
     check_outgoing_message,
+    uncited_playbooks,
 )
 
 __all__ = [
+    "uncited_playbooks",
     "ActionType",
     "ApprovalStatus",
     "ApprovedGrant",

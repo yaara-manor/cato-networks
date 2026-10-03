@@ -130,6 +130,12 @@ def _kb_key(ref: str) -> tuple[str, str] | None:
     return (parsed["slug"], parsed["anchor"]) if parsed else None
 
 
+def uncited_playbooks(message: str, context: GroundingContext) -> tuple[str, ...]:
+    """Strongly retrieved playbooks the reply cites nowhere. A nudge, not a violation: the reply may not need them."""
+    cited = {key[0] for m in KB_MARKER.finditer(message) if (key := _kb_key(m["ref"]))}
+    return tuple(sorted(context.strong_playbooks - cited))
+
+
 def check_citations(message: str, context: GroundingContext) -> CitationReport:
     violations: list[CitationViolation] = []
     for kind, pattern, known, key in (

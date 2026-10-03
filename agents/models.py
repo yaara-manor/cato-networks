@@ -215,6 +215,10 @@ class DiagnosticEvidence(_AgentModel):
 # Knowledge
 
 
+PLAYBOOK_SLUG_PREFIX = "xops-network-playbook"
+PLAYBOOK_NUDGE_MIN_SCORE = 5.0  # a playbook passage this relevant should show in the reply
+
+
 class KnowledgeInput(_AgentModel):
     triage: TriageResult
     diagnostics: DiagnosticEvidence | None = None
@@ -352,6 +356,11 @@ class ResolutionInput(_AgentModel):
         return GroundingContext(
             kb_refs=frozenset(kb_texts),
             kb_texts=kb_texts,
+            strong_playbooks=frozenset(
+                p.slug
+                for p in passages
+                if p.slug.startswith(PLAYBOOK_SLUG_PREFIX) and p.rerank_score >= PLAYBOOK_NUDGE_MIN_SCORE
+            ),
             policy_ids=frozenset(p.policy_id for p in self.policies),
             telemetry_tools=diagnostics.usable_tools if diagnostics else frozenset(),
             is_refusal=knowledge.is_refusal if knowledge else False,

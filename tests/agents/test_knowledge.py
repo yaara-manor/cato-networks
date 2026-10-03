@@ -3,7 +3,7 @@ from typing import Any
 
 import psycopg
 
-from agents.knowledge import TOOL_TOPICS, run_knowledge, topic_queries
+from agents.knowledge import TOOL_QUERIES, run_knowledge, topic_queries
 from agents.models import DiagnosticEvidence, DiagnosticsFindings, Intent, KnowledgeInput, TriageDecision, TriageResult
 from core.config import REPO_ROOT, settings
 from retrieval.models import KBSearchStatus
@@ -78,8 +78,7 @@ def test_topic_queries_cover_usable_telemetry_tools_only() -> None:
         inspected_tools=("get_bgp_status", "list_sites", "get_events"),
         unavailable_tools=(),
     )
-    bgp, events = TOOL_TOPICS["get_bgp_status"], TOOL_TOPICS["get_events"]
-    assert topic_queries(evidence) == (bgp, f"{bgp} playbook", events, f"{events} playbook")
+    assert topic_queries(evidence) == (*TOOL_QUERIES["get_bgp_status"], *TOOL_QUERIES["get_events"])
     assert topic_queries(None) == ()
 
 
@@ -87,8 +86,7 @@ def test_topic_searches_join_the_bundle_and_the_trace(make_deps: MakeDeps) -> No
     evidence = DiagnosticEvidence(findings=DiagnosticsFindings(), inspected_tools=("get_bgp_status",))
     data = _input(make_deps, "BGP session flaps").model_copy(update={"diagnostics": evidence})
     run = run_knowledge(data, make_deps(), scripted_model([], {}))
-    topic = TOOL_TOPICS["get_bgp_status"]
-    assert run.output.queries == (topic, f"{topic} playbook")
+    assert run.output.queries == TOOL_QUERIES["get_bgp_status"]
     searches = [c for c in run.trace.tool_calls if c.tool_name == "search_knowledge_base"]
     assert [c.arguments for c in searches] == [{"query": query} for query in run.output.queries]
     assert run.output.confidence_status == KBSearchStatus.CONFIDENT

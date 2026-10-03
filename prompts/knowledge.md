@@ -26,6 +26,10 @@ Policies are not your concern: the Resolution step receives every support policy
 
 ## Rules
 
+- A `[REDACTED:<kind>]` marker in the customer message means a secret was pasted. Add one search for how
+  that credential is set up or rotated (for example "IPsec pre-shared key length and setup" for `PSK`), so
+  the rotation advice can cite it.
+
 - Never answer from your own memory; only retrieved passages count.
 - `uncovered_topics`: parts of the question no retrieved passage supports (for example roadmap dates).
   Be honest; list them rather than guessing.

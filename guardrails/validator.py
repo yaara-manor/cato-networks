@@ -103,11 +103,13 @@ def check_citations(message: str, context: GroundingContext) -> CitationReport:
     claims: list[str] = []
     for paragraph in _PARAGRAPH_BREAK.split(message):
         cited = ANY_MARKER.search(paragraph) is not None
+        non_kb_evidence = TELEMETRY_MARKER.search(paragraph) is not None or POLICY_MARKER.search(paragraph) is not None
         for sentence in _sentences(paragraph):
             if _has_claim_signal(sentence):
-                claims.append(sentence)
                 if not cited:
                     violations.append(CitationViolation(kind=CitationViolationKind.UNCITED_CLAIM, detail=sentence))
+                if not non_kb_evidence:  # a refusal bars knowledge claims only; telemetry and policy stay citable
+                    claims.append(sentence)
     offenders = [match.group() for match in KB_MARKER.finditer(message)] + claims
     if context.is_refusal and offenders:
         violations.append(CitationViolation(kind=CitationViolationKind.REFUSAL_BREACH, detail=offenders[0]))

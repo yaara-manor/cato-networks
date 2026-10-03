@@ -5,7 +5,9 @@ from storage import ConversationStage
 
 
 def next_stage_after_triage(result: TriageResult) -> ConversationStage:
-    if result.scoping_question:
+    if result.identity.scoping_question:
+        return ConversationStage.RESOLUTION
+    if result.scoping_question and result.decision.intent is not Intent.TELEMETRY_DIAGNOSIS:
         return ConversationStage.RESOLUTION
     match result.decision.intent:
         case Intent.ADVERSARIAL:

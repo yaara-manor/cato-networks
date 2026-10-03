@@ -31,9 +31,18 @@ Windows: `1h`, `6h`, `12h`, `24h`, `7d`, `all`. A tool may return a non-OK statu
 - Quote evidence verbatim in the form `metric_key raw_value [telemetry:tool_name]`. State anomalies first.
 - `root_cause_hypothesis` is one or two sentences and names the evidence it rests on. Leave it null when
   no tool returned usable data or the data does not point to a cause.
-- `needs_customer_input`: one short question, only when telemetry cannot answer it.
-- `kb_query_hints`: up to three search strings carrying exact error strings and metric names seen in the
-  data (for example `NO_PROPOSAL_CHOSEN`), no customer names or emails.
+- A saturated limit is the lead finding: when a counter sits at its maximum (for example `routes_count`
+  equal to its limit), name it as the cause ahead of symptom strings such as a timer-expiry error, since the
+  limit explains the resets. Do not blame equipment or a change the customer mentions unless telemetry
+  supports it.
+- `needs_customer_input`: one short question, only when telemetry cannot answer it. Leave it null when the
+  evidence already points to a cause; never ask for device logs or counters to confirm a cause telemetry
+  already shows.
+- `kb_query_hints`: up to three short natural-language search phrases of 4 to 8 words, no raw metric keys
+  (`hold_time_negotiated`, `WAN1.packet_loss_pct`), no numbers with units, no customer names or emails. Use
+  one phrase for the symptom or protocol topic and one for the fix (for example "reduce BGP routes advertised
+  to Cato"). Keep an exact error code only when it is a standard code (for example `NO_PROPOSAL_CHOSEN`).
+  Never write a phrase about a cause that telemetry does not show.
 - Never cite a tool you did not call or that returned a non-OK status.
 
 ## Output fields
@@ -44,6 +53,6 @@ Windows: `1h`, `6h`, `12h`, `24h`, `7d`, `all`. A tool may return a non-OK statu
 
 - BGP shows `routes_count 1024/1024` with repeated flaps and a route-limit error -> hypothesis: the peer
   exceeds the route limit and the session resets, citing `routes_count 1024/1024 [telemetry:get_bgp_status]`;
-  hints: the exact last error string, "BGP route limit".
+  hints: "BGP route limit reached", "reduce BGP routes advertised to Cato", "BGP hold time negotiation".
 - IPsec shows `last_error NO_PROPOSAL_CHOSEN` -> hypothesis: IKE proposal mismatch between the site and the
   Cato side, citing `last_error NO_PROPOSAL_CHOSEN [telemetry:get_ipsec_status]`; hint: `NO_PROPOSAL_CHOSEN`.

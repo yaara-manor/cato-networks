@@ -30,7 +30,8 @@ RUN pip install --no-cache-dir \
     "httpx>=0.28.1" \
     "pgvector>=0.5.0" \
     "psycopg[binary]>=3.3.6" \
-    "sentence-transformers>=6.1.0"
+    "sentence-transformers>=6.1.0" \
+    "streamlit>=1.64.0"
 
 # Default environment variables for database connection
 ENV DATABASE_URL=postgresql://kb:kb@postgres:5432/kb

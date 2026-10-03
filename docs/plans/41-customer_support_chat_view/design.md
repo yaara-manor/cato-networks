@@ -148,6 +148,7 @@ Functional, `streamlit.testing.v1.AppTest`, real Postgres via existing `tests/co
 6. LLM credentials are env-only (`settings.llm_model`); UI shows a fixed error if a turn fails at the provider (23's pause message); no key ever read or displayed.
 
 7. Service assembly split out as `build_services` (found via 42: the reviewer needs services without embedder/reranker/LLM); `build_workflow` composes it, so assembly lives in one place.
+8. Implementation deviations: `CitationBadge.kind` reuses `guardrails.MarkerKind` (no `BadgeKind`); `ActionType` also has `VERDICT_OVERRIDE`, so the title match covers five types; `st.chat_input` cannot be prefilled, so the sidebar button "Send opening message" sends directly; the trace panel sits in a "Trace" tab (Streamlit forbids the per-turn expanders nested inside an expander); `TraceStep` carries redacted `input_json`/`output_json` for 42 and `render_trace_panel(panel, show_io=False)` shows them only for the reviewer app; the identity shown nowhere (no claim fields).
 
 ## 9. Decisions (final)
 1. Streamlit (shared with 42; brief: any stack).

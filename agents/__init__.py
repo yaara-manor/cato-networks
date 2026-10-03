@@ -23,6 +23,7 @@ from agents.models import (
     TriageResult,
     TurnSender,
     UnavailableTool,
+    UnsettledApprovalView,
 )
 from agents.resolution import build_resolution_agent, run_resolution
 from agents.triage import build_triage_agent, run_triage
@@ -39,6 +40,7 @@ __all__ = [
     "KnowledgeFindings",
     "KnowledgeInput",
     "ResolutionInput",
+    "UnsettledApprovalView",
     "ResolutionPlan",
     "SupportAction",
     "SupportActionKind",

@@ -9,7 +9,7 @@ from pydantic_ai.models import Model
 from agents.models import ConversationTurn
 from core.clock import SimulationClock
 from core.config import settings
-from guardrails import ActionType, GroundingContext, SessionGuardHistory
+from guardrails import ApprovedGrant, GroundingContext, SessionGuardHistory
 from services import CustomerService, TicketService
 from services.models import CallerIdentity
 from tools.telemetry import TelemetryService
@@ -28,7 +28,7 @@ class SupportDeps:
     retrieval: "RetrievalService"
     identity: CallerIdentity
     guard_history: SessionGuardHistory
-    approved_actions: frozenset[ActionType]
+    approved_grants: tuple[ApprovedGrant, ...] = ()
     grounding: GroundingContext | None = None
 
 

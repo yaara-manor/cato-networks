@@ -9,6 +9,7 @@ from orchestration.models import TurnResult
 from services.models import CallerIdentity
 from storage import (
     AgentRole,
+    Approval,
     ConversationStage,
     MessageSender,
     StateSnapshot,
@@ -102,8 +103,8 @@ class TurnRecorder:
         self._traces += 1
         self._last_trace_id = trace_id
 
-    def create_approval(self, action_index: int, action: ProposedAction) -> None:
-        self._store.create_approval(
+    def create_approval(self, action_index: int, action: ProposedAction) -> Approval:
+        return self._store.create_approval(
             self._conversation_id,
             self._message_id,
             action.action_type,
@@ -130,7 +131,7 @@ class TurnRecorder:
             self._turn,
             sender,
             result.reply,
-            (),
+            tuple(c.to_row() for c in result.citations),
             evidence,
             uuid5(self._message_id, "reply"),
             self._clock.now(),

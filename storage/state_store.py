@@ -1,9 +1,8 @@
-import json
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import AbstractContextManager, contextmanager
 from datetime import datetime
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import UUID, uuid4, uuid5
 
 import psycopg
 from psycopg import sql
@@ -12,15 +11,21 @@ from core.config import settings
 from core.models import AccountTier
 from guardrails.models import ActionType, SessionGuardHistory
 from guardrails.redactor import redact
-from storage import approval_queries, board_queries
+from storage import action_queries, approval_queries, board_queries
+from storage.jsonb import redacted_json
 from storage.models import (
     Approval,
     ApprovalResolution,
+    ApprovalStateError,
+    ApprovalStatus,
     BoardRow,
+    ClaimedAction,
     Conversation,
     ConversationSnapshot,
     ConversationStage,
     MessageSender,
+    SimulatedAction,
+    SimulatedActionStatus,
     StateSnapshot,
     StoredMessage,
     ToolCallRecord,
@@ -34,44 +39,18 @@ from tools.models import TelemetryEvidence
 _TRACE_INPUT_MAX_CHARS = 20_000
 
 
-def _redact_leaves(value: Any) -> Any:
-    """Redact string leaves only, so JSON structure survives; ISO timestamps are not secrets."""
-    match value:
-        case str():
-            return value if _is_timestamp(value) else redact(value).text
-        case dict():
-            return {key: _redact_leaves(item) for key, item in value.items()}
-        case list():
-            return [_redact_leaves(item) for item in value]
-        case _:
-            return value
-
-
-def _is_timestamp(text: str) -> bool:
-    try:
-        datetime.fromisoformat(text)
-    except ValueError:
-        return False
-    return True
-
-
-def _redacted_json(payload: dict[str, Any], max_chars: int | None = None) -> dict[str, Any]:
-    """Redact secrets in any untrusted JSON payload; `max_chars` truncates (None keeps it whole)."""
-    redacted: dict[str, Any] = _redact_leaves(payload)
-    if max_chars is None:
-        return redacted
-    text = json.dumps(redacted, ensure_ascii=False)
-    return {"truncated": text[:max_chars]} if len(text) > max_chars else redacted
-
-
 def _redacted_trace_row(trace: TraceRecord) -> dict[str, Any]:
     row = trace.model_dump(mode="json")
-    row["input"] = _redacted_json(trace.input, _TRACE_INPUT_MAX_CHARS)
+    row["input"] = redacted_json(trace.input, _TRACE_INPUT_MAX_CHARS)
     if trace.output is not None:
-        row["output"] = _redacted_json(trace.output)
+        row["output"] = redacted_json(trace.output)
     if trace.model_messages is not None:
-        row["model_messages"] = [_redacted_json(message) for message in trace.model_messages]
+        row["model_messages"] = [redacted_json(message) for message in trace.model_messages]
     return row
+
+
+def _redacted_text(text: str | None) -> str | None:
+    return None if text is None else redact(text).text
 
 
 def _open_turn(messages: Sequence[StoredMessage]) -> int | None:
@@ -332,7 +311,7 @@ class StateStore:
                     self._conn,
                     "tool_calls",
                     row.model_dump(mode="json")
-                    | {"arguments": _redacted_json(row.arguments), "result": _redacted_json(row.result)},
+                    | {"arguments": redacted_json(row.arguments), "result": redacted_json(row.result)},
                 )
 
     def list_traces(self, conversation_id: UUID, turn: int | None = None) -> list[TraceRecord]:
@@ -373,7 +352,7 @@ class StateStore:
                 conversation_id,
                 message_id,
                 action_type,
-                payload,
+                redacted_json(payload),
                 idempotency_key,
                 at,
                 approval_id,
@@ -388,8 +367,71 @@ class StateStore:
     def list_pending_approvals(self, conversation_id: UUID | None = None) -> list[Approval]:
         return approval_queries.list_pending_approvals(self._conn, conversation_id)
 
-    def resolve_approval(self, approval_id: UUID, resolution: ApprovalResolution, at: datetime) -> Approval:
-        return approval_queries.resolve_approval(self._conn, approval_id, resolution, at)
+    def resolve_approval(
+        self,
+        approval_id: UUID,
+        resolution: ApprovalResolution,
+        at: datetime,
+        customer_reason: str | None = None,
+    ) -> Approval:
+        """Reviewer text is untrusted: secrets are redacted here, the persistence chokepoint."""
+        edited = resolution.edited_payload
+        safe = resolution.model_copy(
+            update={
+                "reviewer_notes": _redacted_text(resolution.reviewer_notes),
+                "edited_payload": None if edited is None else redacted_json(edited),
+            }
+        )
+        return approval_queries.resolve_approval(self._conn, approval_id, safe, at, _redacted_text(customer_reason))
+
+    def list_unsettled_approvals(self, limit: int) -> list[Approval]:
+        return approval_queries.list_unsettled_approvals(self._conn, limit)
+
+    def settle_approval(self, approval_id: UUID, content: str, at: datetime) -> StoredMessage:
+        """Event message in its own turn plus `settled_at`, one transaction; a replay returns the stored message.
+
+        The message never carries a `result` and `conversations.state` is untouched, so it cannot be mistaken
+        for a customer turn's reply. Callers hold `turn_lock` so it cannot bump `last_turn` under an open turn.
+        """
+        with self._conn.transaction():
+            approval = self.get_approval(approval_id)
+            if approval is None or approval.status is ApprovalStatus.PENDING:
+                raise ApprovalStateError(f"approval {approval_id} is unknown or still pending")
+            conversation = self._lock_conversation(approval.conversation_id)
+            message_id = uuid5(approval_id, "outcome")
+            if (existing := self._get_message(message_id)) is not None:
+                return existing
+            turn = conversation.last_turn + 1
+            self._update_conversation(approval.conversation_id, at, {"last_turn": turn})
+            stored = self._insert_message(
+                approval.conversation_id, message_id, turn, MessageSender.AGENT, redact(content).text, (), (), at
+            )
+            approval_queries.mark_settled(self._conn, approval_id, at)
+            return stored
+
+    # -- simulated actions (SQL in action_queries) -----------------------
+
+    def claim_action(
+        self,
+        conversation_id: UUID,
+        message_id: UUID | None,
+        approval_id: UUID | None,
+        kind: str,
+        idempotency_key: str,
+        payload: dict[str, Any],
+        at: datetime,
+    ) -> ClaimedAction:
+        return action_queries.claim_action(
+            self._conn, conversation_id, message_id, approval_id, kind, idempotency_key, payload, at
+        )
+
+    def finish_action(
+        self, action_id: UUID, status: SimulatedActionStatus, result: dict[str, Any], at: datetime
+    ) -> SimulatedAction:
+        return action_queries.finish_action(self._conn, action_id, status, result, at)
+
+    def list_simulated_actions(self, conversation_id: UUID) -> list[SimulatedAction]:
+        return action_queries.list_simulated_actions(self._conn, conversation_id)
 
     def list_board_rows(self, limit: int) -> list[BoardRow]:
         return board_queries.list_board_rows(self._conn, limit)

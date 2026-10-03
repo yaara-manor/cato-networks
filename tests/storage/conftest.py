@@ -16,6 +16,7 @@ NewConversation = Callable[[], UUID]
 
 # FK order: children first.
 _CLEANUP_SQL = (
+    "delete from simulated_actions where conversation_id = any(%(ids)s)",
     "delete from tool_calls where conversation_id = any(%(ids)s)",
     "delete from approvals where conversation_id = any(%(ids)s)",
     "delete from traces where conversation_id = any(%(ids)s)",

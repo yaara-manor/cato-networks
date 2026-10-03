@@ -27,18 +27,16 @@ from agents import (
 )
 from core.clock import SimulationClock
 from core.config import settings
-from guardrails import ActionType, SessionGuardHistory
-from orchestration import AgentPorts, Workflow
-from retrieval.models import KBSearchStatus
-from retrieval.service import RetrievalService
-from services import CustomerService, TicketService
+from orchestration import AgentPorts, Workflow, build_workflow
+from retrieval.models import KBSearchStatus, PolicyDocument, RetrievedPassage
 from storage import AgentRole, StateStore
-from tools.telemetry import TelemetryService
+from tools.models import TelemetryEvidence
 
 PRIYA = "priya@bluebirdretail.com"  # verified member of ACC-1002, not admin
 STRANGER = "mark@example.com"  # unknown caller
 
 _CLEANUP_SQL = (
+    "delete from simulated_actions where conversation_id = any(%(ids)s)",
     "delete from tool_calls where conversation_id = any(%(ids)s)",
     "delete from approvals where conversation_id = any(%(ids)s)",
     "delete from traces where conversation_id = any(%(ids)s)",
@@ -66,7 +64,11 @@ class Scripted:
     actions: tuple[SupportAction, ...] = ()
     escalate: bool = False
     unavailable: tuple[UnavailableTool, ...] = ()
+    evidence: tuple[TelemetryEvidence, ...] = ()
     kb_status: KBSearchStatus = KBSearchStatus.CONFIDENT
+    reply: str = "Here is your answer."
+    passages: tuple[RetrievedPassage, ...] = ()
+    policies: tuple[PolicyDocument, ...] = ()
     fail_in: str | None = None  # role whose callable raises
     calls: list[str] = field(default_factory=list)
     inputs: dict[str, list[Any]] = field(default_factory=dict)
@@ -86,7 +88,9 @@ class Scripted:
     def diagnostics(self, data: DiagnosticsInput, deps: SupportDeps) -> AgentRun[DiagnosticEvidence]:
         self._seen("diagnostics", data)
         evidence = DiagnosticEvidence(
-            findings=DiagnosticsFindings(), unavailable_tools=self.unavailable, sev1_corroborated=self.sev1
+            findings=DiagnosticsFindings(),
+            evidence_items=self.evidence,
+            unavailable_tools=self.unavailable, sev1_corroborated=self.sev1
         )
         return AgentRun(output=evidence, trace=_trace(AgentRole.DIAGNOSTICS))
 
@@ -94,6 +98,8 @@ class Scripted:
         self._seen("knowledge", data)
         bundle = KnowledgeBundle(
             findings=KnowledgeFindings(needs_more_telemetry=self.needs_more_telemetry),
+            retrieved_passages=self.passages,
+            referenced_policies=self.policies,
             confidence_status=self.kb_status,
             needs_more_telemetry=self.needs_more_telemetry,
         )
@@ -102,7 +108,7 @@ class Scripted:
     def resolution(self, data: ResolutionInput, deps: SupportDeps) -> AgentRun[ResolutionPlan]:
         self._seen("resolution", (data, deps))
         plan = ResolutionPlan(
-            customer_message=self.scoping_question or "Here is your answer.",
+            customer_message=self.scoping_question or self.reply,
             actions=self.actions,
             escalate_to_human=self.escalate,
         )
@@ -135,6 +141,7 @@ def conn() -> Iterator[psycopg.Connection[Any]]:
 def harness(conn: psycopg.Connection[Any]) -> Iterator[Harness]:
     created: list[UUID] = []
     clock = SimulationClock()
+    baseline = conn.execute("select coalesce(max(substring(ticket_id from 5)::int), 0) from tickets").fetchone()
 
     def new_conversation(email: str) -> UUID:
         conversation = StateStore(conn).create_conversation(None, email, "Unknown", clock.now())
@@ -142,20 +149,9 @@ def harness(conn: psycopg.Connection[Any]) -> Iterator[Harness]:
         return conversation.id
 
     def workflow(script: Scripted, connection: psycopg.Connection[Any] | None = None) -> Workflow:
-        connection = connection or conn
-        customers = CustomerService(connection, clock)
-        deps = SupportDeps(
-            clock=clock,
-            customers=customers,
-            tickets=TicketService(connection, clock),
-            telemetry=TelemetryService(clock=clock),
-            retrieval=RetrievalService(connection),
-            identity=customers.authenticate_caller(STRANGER),
-            guard_history=SessionGuardHistory(),
-            approved_actions=frozenset[ActionType](),
-        )
-        return Workflow(script.ports, StateStore(connection), clock, deps)
+        return build_workflow(connection or conn, clock, script.ports)
 
     yield Harness(lambda: psycopg.connect(settings.database_url, autocommit=True), new_conversation, workflow)
     for statement in _CLEANUP_SQL:
         conn.execute(statement, {"ids": created})
+    conn.execute("delete from tickets where substring(ticket_id from 5)::int > %s", (baseline[0] if baseline else 0,))

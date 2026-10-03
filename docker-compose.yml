@@ -25,5 +25,24 @@ services:
       - .:/app
       - /app/.venv
 
+  ui:
+    build: .
+    depends_on:
+      - postgres
+    command: streamlit run ui/customer_app.py --server.address=0.0.0.0
+    ports:
+      - "8501:8501"
+    environment:
+      DATABASE_URL: postgresql://kb:kb@postgres:5432/kb
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGUSER: kb
+      PGPASSWORD: kb
+      PGDATABASE: kb
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    volumes:
+      - .:/app
+      - /app/.venv
+
 volumes:
   pgdata:

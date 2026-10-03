@@ -141,3 +141,25 @@
 - **Chosen Approach**: `orchestration/state.py` holds `STATE_VERSION` and a `MIGRATIONS` chain (pure `v -> v+1` steps). `from_snapshot`: empty data -> defaults; older -> migrate; newer -> `StateVersionError` (raised outside the agent-failure boundary, blob untouched); migration/validation failure -> defaults plus a warning (no blob content logged).
 - **Rejected**: new column/table (21 owns storage); treating newer as empty (next save would overwrite newer data).
 - **Cost if wrong**: a rebuild resets `oncall_paged`, so a corroborated P1 may be paged once more (a duplicate page beats a missed one); notices may repeat once.
+
+## ADR-013: Action Dispatcher After the Gate, Postgres Audit with Unique Keys
+
+- **Context / Problem**: gate-cleared actions had no executor; effects must be exactly-once-ish under retries, crashes and corrupt state rebuilds, and never bypass `check_action`.
+- **Chosen Approach**: `actions.ActionDispatcher(store, tickets, clock)` runs after `gate_actions` inside the turn lock. `simulated_actions` is both audit log and idempotency store: the unique `idempotency_key` is claimed before the effect (`{message_id}:{kind}:{index}`, `approval:{id}`, and conversation-scoped `{conversation_id}:PAGE_ON_CALL` as the DB backstop behind `oncall_paged`). Dispatch happens before the single end-of-turn `complete_turn(state=...)` write, so a crash leaves state unsaved and the retry replays stored results. Ticket effects are at-most-once on a crash between write and finalize (reported as "outcome unknown"). Pre-claim refusals and invalid payloads write no row, so they cannot poison a key.
+- **Ticket binding**: credit/MFA approvals carry the conversation's `OrchestratorState.active_ticket_id`, stamped in code over any model-written value. The workflow sets the ticket `pending_approval` (`mark_pending`); issue #10's settle step clears it; `dispatch_approved` never changes ticket status.
+- **Rejected**: execution inside agents (breaks pure agents); JSON files / webhook (no atomic idempotency); event bus (YAGNI).
+- **Cost if wrong**: a failed page row is terminal for the conversation (no retry); a crash mid ticket write needs human follow-up.
+
+## ADR-014: Deterministic Approval Settle + Sweep, Notice as Own-Turn Event, Per-Payload Grants
+
+- **Context / Problem**: approved/edited/rejected approvals had to execute, reach the customer, and survive crashes at any step, without blocking customer turns or letting an approval license more than it covers.
+- **Chosen Approach**: `ApprovalService.decide` = CAS `resolve` then idempotent `settle` (dispatch via `ActionDispatcher`, clear ticket `pending_approval` to `open`, then one `StateStore.settle_approval` transaction writing an `AGENT` event message in its own turn and `approvals.settled_at`, under `turn_lock`). `settle_unsettled` sweeps `settled_at is null` rows from the app lifespan. Notices are fixed templates over an allowlist of payload keys. `check_outgoing_message` takes `ApprovedGrant`s built from settled approvals' effective payloads, so a credit sentence passes only for the approved amount and currency.
+- **Rejected**: synchronous LLM resume turn (slow reviewer request, guard re-entry); outbox table plus worker (new process, YAGNI).
+- **Cost if wrong**: a permanently failing dispatch is retried on every sweep and never notified; MFA grants are not payload-bound; a notice waits at most one turn's latency for the lock.
+
+## ADR-015: Streamlit Customer Chat, Citations Persisted at Write Time, Banners Derived from Approvals
+
+- **Context / Problem**: Deliverable B needs a chat page showing sources, telemetry evidence and human-approval state without a second source of truth.
+- **Chosen Approach**: Streamlit (one script per app, `AppTest` for functional tests, no API layer). Citations ride on `TurnResult.citations` and are written to `messages.citations` in the turn's single `complete_turn`. Banners are derived on every render from `approvals` (status + `settled_at`) and the latest reply's `escalation_offered`; they show the action title only, never payloads. `ui/session.py` opens a connection per call; only model warm-up is cached. The trace panel is a shared module (`ui/trace_panel.py`) showing metrics and tool names, never `model_messages` or tool arguments. Prefill of the chat input is impossible in Streamlit, so "Send opening message" sends directly.
+- **Rejected**: Chainlit (own session model); FastAPI plus JS (API layer nobody asked for); caching services across sessions (one connection per turn rule).
+- **Cost if wrong**: `conversation_id` in the query string lets anyone holding an id open that conversation and its trace (demo scope, no auth); the 5 s banner poll lags a reviewer decision by up to 5 s.

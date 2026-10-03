@@ -8,7 +8,14 @@ from uuid import UUID, uuid4
 import psycopg
 import pytest
 
-from agents import AgentRun, DiagnosticEvidence, DiagnosticsInput, SupportDeps, TriageInput, TriageResult
+from agents import (
+    AgentRun,
+    DiagnosticEvidence,
+    DiagnosticsInput,
+    SupportDeps,
+    TriageInput,
+    TriageResult,
+)
 from core.config import settings
 from orchestration import TurnResult
 from storage import ConversationStage, MessageSender, StateStore, TurnLockTimeout

@@ -34,12 +34,12 @@ The architecture strictly adheres to the following system-wide invariants:
    - **Zero Unapproved Credits/Refunds**: Any financial adjustment requires Human-in-the-Loop (HITL) approval (`POL-CREDIT`).
    - **Zero Unverified MFA Resets**: Identity verification protocol (`POL-IDV`) must be fully satisfied before an MFA reset can be queued for approval.
    - **Zero Malware/C2 Verdict Overrides**: Support engineers are strictly forbidden from overriding or whitelisting security verdicts (`POL-SEC`); requests must be rejected or escalated to Security Ops.
-   - **Sev-1 Incident Criteria**: Escalation to Sev-1 with on-call paging is restricted to production-down scenarios without redundancy (`POL-SEV1`).
+   - **Sev-1 Incident Criteria**: Escalation to Sev-1 with on-call paging is restricted to the `POL-SEV1` criteria (P1, telemetry-corroborated outage); redundancy / HA-pair health is not modelled.
    - **Pre-Storage Credential Redaction**: All API keys, passwords, bearer tokens, and private keys must be scrubbed (`POL-CRED`) before messages or traces are stored in Postgres.
 4. **Non-Blocking HITL Approval**:
    When an action requires human approval, the approval request is persisted in Postgres, but the customer conversation remains active. The customer can continue asking unrelated questions while awaiting escalation board action.
 5. **Grounded Evidence & Refusal Contract**:
-   - Telemetry findings must be quoted verbatim with the tool named (e.g. `routes_count 1024/1024 [telemetry]`).
+   - Telemetry findings must be quoted verbatim with the tool named (e.g. `routes_count 1024/1024 [telemetry:<tool>]`).
    - Technical answers must cite specific article slugs and section heading anchors (`[kb:<slug>#<anchor>]`).
    - If retrieval confidence falls below `RERANK_MIN_SCORE` or the topic has no KB coverage (e.g., unreleased roadmap features like IPv6-only sites), the system must refuse to speculate and offer human routing.
 
@@ -119,7 +119,7 @@ Every agent receives a typed context container via PydanticAI dependency injecti
 - `customers: CustomerService`, `tickets: TicketService` — Account tier / SLA and ticket history services over the shared Postgres connection (no pool object in deps).
 - `telemetry: TelemetryService` — Interface to read synthetic CMA telemetry files directly from `data/telemetry/` with `(resolved_path, mtime_ns)` caching, returning typed `TelemetryToolResult[T]` envelopes with pre-extracted `TelemetryEvidence`.
 - `retrieval: RetrievalService` — Unified interface in `retrieval/service.py` for hybrid KB search (`search_kb` returning `KBSearchResult`) and authoritative internal policy lookup (`get_policy(policy_id) -> PolicyDocument | None`, `list_policies() -> list[PolicyDocument]`). Policies are loaded once at construction and served from memory, so lookup cannot fail at runtime (it keeps working during a DB outage); an unknown id returns `None`.
-- `identity: CallerIdentity`, `guard_history: SessionGuardHistory`, `approved_actions: frozenset[ActionType]` — resolved by the orchestrator and injected; `grounding: GroundingContext | None` is set by `run_resolution` for the output validators.
+- `identity: CallerIdentity`, `guard_history: SessionGuardHistory`, `approved_grants: tuple[ApprovedGrant, ...]` — resolved by the orchestrator and injected; `grounding: GroundingContext | None` is set by `run_resolution` for the output validators.
 
 ---
 
@@ -237,6 +237,7 @@ erDiagram
     accounts ||--o{ tickets : owns
     conversations ||--o{ messages : contains
     conversations ||--o{ approvals : tracks
+    conversations ||--o{ simulated_actions : audits
     conversations ||--o{ traces : records
     traces ||--o{ tool_calls : invokes
 
@@ -330,6 +331,20 @@ erDiagram
         timestamptz created_at
     }
 
+    simulated_actions {
+        uuid id PK
+        uuid conversation_id FK
+        uuid message_id FK "nullable; composite FK with conversation_id"
+        text idempotency_key UK
+        text kind
+        uuid approval_id FK "nullable"
+        jsonb payload
+        text status
+        jsonb result
+        timestamptz claimed_at
+        timestamptz completed_at
+    }
+
     approvals {
         uuid id PK
         uuid conversation_id FK
@@ -342,6 +357,8 @@ erDiagram
         jsonb edited_payload
         timestamptz requested_at
         timestamptz resolved_at
+        text customer_reason
+        timestamptz settled_at
     }
 
     traces {
@@ -383,6 +400,7 @@ erDiagram
 - **`tickets`**: Historical and live support tickets (`TCK-*`), indexed on `(customer_id, created_at)` and `(customer_id, site_id)` for repeat-contact detection and live status updates.
 - **`conversations`**: Persistent session state across restarts: workflow `stage`, `guard_history`, versioned orchestrator `state`, and `last_turn`/`last_seq` counters assigned under a per-conversation row lock (`SELECT ... FOR UPDATE`).
 - **`approvals`**: Decoupled HITL table. Enables non-blocking workflow: status values are `PENDING`, `APPROVED`, `EDITED`, `REJECTED`; creation is idempotent per `(conversation_id, idempotency_key)` and resolution is a compare-and-set from `PENDING`.
+- **`simulated_actions`**: Audit log and idempotency store of the action dispatcher (`actions/`). A row is claimed (unique `idempotency_key`) before the simulated effect and finalized once; page/credit/MFA effects are the row's `result` JSON, ticket effects write `tickets` via `TicketService`. Excluded from `db/seed.dump`.
 - **`traces`** / **`tool_calls`**: Append-only per-agent execution log (PydanticAI message history in `model_messages`, redacted `input`, cost) with each tool envelope in `tool_calls`; `StateStore.replay_trace` rebuilds the whole conversation graph from these rows alone.
 
 ---
@@ -445,10 +463,14 @@ sequenceDiagram
     Note over Customer,Agent: Conversation remains ACTIVE and unblocked
     Customer->>Agent: "Can you confirm the default DTLS MTU?"
     Agent-->>Customer: "The effective DTLS MTU is 1350 bytes [kb:socket-mtu#dtls]."
-    Reviewer->>DB: Open Reviewer Dashboard, inspect CR-804 & click APPROVE
-    DB-->>Agent: Approval state updated to APPROVED
-    Agent-->>Customer: "[Notification] Escalation Board has approved credit request CR-804 ($500)."
+    Reviewer->>DB: Open Reviewer Dashboard, inspect CR-804 & click APPROVE (ApprovalService.decide)
+    DB->>DB: resolve (compare-and-set PENDING -> APPROVED)
+    DB->>DB: settle: ActionDispatcher.dispatch_approved, ticket pending_approval -> open
+    DB->>DB: settle_approval: AGENT event message (own turn) + settled_at, one transaction
+    Agent-->>Customer: "Your service credit request has been approved by our Escalation Board. Credit: 500 USD."
 ```
+
+`decide` is `resolve` then `settle`; both are idempotent and `ApprovalService.settle_unsettled` (run from the app lifespan) finishes anything a crash interrupted, using only `approvals.settled_at is null`. The notice is a deterministic template (no LLM, reviewer notes never shown) stored as an `AGENT` message in its own turn under the turn lock. Output guards authorize amounts per approved payload (`ApprovedGrant`, only for settled approvals), so an approved $500 does not license $5,000; customer status questions see the unsettled approvals as `UnsettledApprovalView` (no amounts).
 
 ---
 
@@ -499,7 +521,9 @@ The codebase is organized into clean, single-responsibility packages separating 
 │   │   └── build.py                   # Offline operator build entrypoint (loads KB + seed tables, writes db/seed.dump)
 │   └── migrations/
 │       ├── 20260929_1500_kb-schema.sql        # Vector extension + snapshots, kb_articles, passages, policies, accounts, tickets
-│       └── 20261001_0900_agent-runtime.sql    # conversations, messages, approvals, traces, tool_calls
+│       ├── 20261001_0900_agent-runtime.sql    # conversations, messages, approvals, traces, tool_calls
+│       ├── 20261002_1200_simulated-actions.sql # simulated_actions audit/idempotency table
+│       └── 20261002_1300_approval-settled.sql # approvals.settled_at, customer_reason, unsettled partial index
 │
 ├── docs/                              # Project documentation, plans & evaluation reports
 │   ├── overview/                      # Deliverable D diagrams (logical & deployment views)
@@ -536,12 +560,18 @@ The codebase is organized into clean, single-responsibility packages separating 
 │
 ├── tools/                             # Typed CMA Telemetry inspection tools
 │   ├── models.py                      # TelemetryStatus, TelemetryEvidence, TelemetryToolResult[T], payload schemas
-│   └── telemetry.py                   # TelemetryService and verbatim [telemetry] evidence extraction
+│   └── telemetry.py                   # TelemetryService and verbatim [telemetry:<tool>] evidence extraction
+│
+├── actions/                           # Action dispatcher: gate-cleared actions -> simulated effects + audit rows
+│   ├── dispatcher.py                  # ActionDispatcher (dispatch_turn, dispatch_approved, mark_pending)
+│   ├── simulated.py                   # One handler per SupportActionKind
+│   ├── payloads.py / models.py        # Typed payloads; ActionResult, DispatchContext
 │
 ├── storage/                           # Postgres runtime state (sync)
 │   ├── models.py                      # Frozen row models (Conversation, StoredMessage, TraceRecord, Approval, ConversationSnapshot)
 │   ├── state_store.py                 # StateStore: conversations, messages, traces, rehydrate, replay
 │   ├── approval_queries.py            # Approval row SQL (idempotent create, CAS resolve)
+│   ├── action_queries.py              # simulated_actions SQL (claim by unique key, CAS finish)
 │   ├── replay.py                      # TraceReplay: pure replay assembly from rows
 │   └── sql.py / jsonb.py              # Row-mapping helpers; NUL-safe jsonb
 │
@@ -549,7 +579,9 @@ The codebase is organized into clean, single-responsibility packages separating 
 │   ├── models.py                      # Service-domain Pydantic schemas (CallerIdentity, SLADeadlines, RepeatContactResult, CountryCodeOutput)
 │   ├── customer_service.py            # Account identification & SLA calculations
 │   ├── ticket_service.py              # Historical tickets & repeat contact analysis
-│   ├── approval_service.py            # Non-blocking HITL approvals lifecycle
+│   ├── approval_service.py            # Non-blocking HITL approvals lifecycle (decide / settle / settle_unsettled)
+│   ├── approval_models.py             # ReviewerDecision, SettleOutcome, DecisionResult
+│   ├── approval_notice.py             # Deterministic customer notice templates
 │   └── reporting_service.py           # Daily operations report generator
 │
 ├── guardrails/                        # Pre-persistence and post-generation safety
@@ -575,7 +607,12 @@ The codebase is organized into clean, single-responsibility packages separating 
 │   └── workflow.py                    # Multi-turn coordinator with partial-failure fallbacks
 │
 ├── ui/                                # Presentation layer (Deliverable B)
-│   ├── customer_app.py                # Customer support chat with citation badges
+│   ├── customer_app.py                # Customer support chat (Streamlit): scenario switcher, badges, banners, trace tab
+│   ├── customer_widgets.py            # Rendering helpers for the customer page
+│   ├── chat_view.py                   # Frozen view models over ConversationSnapshot + approvals
+│   ├── session.py                     # Connection-per-call glue over orchestration.runtime
+│   ├── scenarios.py                   # Scenario switcher data (data/eval/scenarios.jsonl)
+│   ├── trace_panel.py                 # Shared trace component (customer and reviewer apps)
 │   └── reviewer_app.py                # Reviewer workspace: context, evidence, traces, approvals
 │
 └── eval/                              # Evaluation harness & benchmarks (Deliverables C, F, G)

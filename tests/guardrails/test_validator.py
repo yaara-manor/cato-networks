@@ -1,9 +1,11 @@
 from typing import Any
+from uuid import uuid4
 
 import pytest
 
 from guardrails import (
     ActionType,
+    ApprovedGrant,
     CitationViolationKind,
     ClaimKind,
     GateDecision,
@@ -364,8 +366,12 @@ def test_every_action_type_has_a_decision(identity_admin: CallerIdentity) -> Non
         assert isinstance(check_action(_action(action_type), identity_admin), GateDecision)
 
 
-def _flags(message: str, approved: frozenset[ActionType] = frozenset()) -> list[OutputViolationKind]:
-    return [v.kind for v in check_outgoing_message(message, SessionGuardHistory(), approved)]
+def _grant(action_type: ActionType, **payload: str) -> ApprovedGrant:
+    return ApprovedGrant(action_type=action_type, approval_id=uuid4(), payload=payload)
+
+
+def _flags(message: str, *grants: ApprovedGrant) -> list[OutputViolationKind]:
+    return [v.kind for v in check_outgoing_message(message, SessionGuardHistory(), grants)]
 
 
 _CREDIT, _MFA, _VERDICT = (
@@ -376,13 +382,30 @@ _CREDIT, _MFA, _VERDICT = (
 
 
 @pytest.mark.parametrize(
-    "message",
-    ["We will issue a $3,600 service credit.", "A credit of USD 3,600 was requested.", "We refund 3600 EUR"],
+    ("message", "grant", "violations"),
+    [
+        ("We will issue a $500 service credit.", None, [_CREDIT]),
+        ("We will issue a $500 service credit.", _grant(ActionType.CREDIT, amount="500"), []),
+        ("We will issue a $500 service credit.", _grant(ActionType.CREDIT, amount="500.00"), []),
+        ("A credit of USD 500 was requested.", _grant(ActionType.CREDIT, amount="500"), []),
+        ("A credit of USD 500.99 was requested.", _grant(ActionType.CREDIT, amount="500"), [_CREDIT]),
+        ("A credit of USD 500.99 was requested.", _grant(ActionType.CREDIT, amount="500.99"), []),
+        ("A credit of 500.99 USD was requested.", _grant(ActionType.CREDIT, amount="500"), [_CREDIT]),
+        ("A credit of $500.99 was requested.", _grant(ActionType.CREDIT, amount="500"), [_CREDIT]),
+        ("We refund 500 EUR", _grant(ActionType.CREDIT, amount="500", currency="EUR"), []),
+        ("We will issue a $5,000 service credit.", _grant(ActionType.CREDIT, amount="500"), [_CREDIT]),
+        ("We will issue a $500 credit, plus $50 compensation.", _grant(ActionType.CREDIT, amount="500"), [_CREDIT]),
+        ("We will issue a $500 service credit.", _grant(ActionType.CREDIT, amount="300"), [_CREDIT]),
+        ("We will issue a €500 service credit.", _grant(ActionType.CREDIT, amount="500"), [_CREDIT]),
+        ("We will issue a $500 service credit.", _grant(ActionType.CREDIT, amount="500", currency="EUR"), [_CREDIT]),
+        ("We will issue a $500 service credit.", _grant(ActionType.CREDIT), [_CREDIT]),
+        ("We will issue a $500 service credit.", _grant(ActionType.MFA_RESET), [_CREDIT]),
+    ],
 )
-def test_credit_amount_promise_is_flagged_until_approved(message: str) -> None:
-    assert _flags(message) == [_CREDIT]
-    assert _flags(message, frozenset({ActionType.CREDIT})) == []
-    assert _flags(message, frozenset({ActionType.MFA_RESET})) == [_CREDIT]
+def test_credit_amount_promise_needs_a_grant_for_that_exact_amount(
+    message: str, grant: ApprovedGrant | None, violations: list[OutputViolationKind]
+) -> None:
+    assert _flags(message, *([grant] if grant else [])) == violations
 
 
 @pytest.mark.parametrize(
@@ -394,7 +417,7 @@ def test_credit_rule_ignores_unrelated_sentences(message: str) -> None:
 
 def test_credit_violation_detail_is_the_offending_sentence_only() -> None:
     violations = check_outgoing_message(
-        "Hello. We will issue a $3,600 service credit. Bye.", SessionGuardHistory(), frozenset()
+        "Hello. We will issue a $3,600 service credit. Bye.", SessionGuardHistory(), ()
     )
     assert [v.detail for v in violations] == ["We will issue a $3,600 service credit."]
 
@@ -402,8 +425,8 @@ def test_credit_violation_detail_is_the_offending_sentence_only() -> None:
 @pytest.mark.parametrize("message", ["I have reset your MFA.", "I've reset his MFA now"])
 def test_mfa_reset_claim_is_flagged_until_approved(message: str) -> None:
     assert _flags(message) == [_MFA]
-    assert _flags(message, frozenset({ActionType.MFA_RESET})) == []
-    assert _flags(message, frozenset({ActionType.CREDIT})) == [_MFA]
+    assert _flags(message, _grant(ActionType.MFA_RESET)) == []
+    assert _flags(message, _grant(ActionType.CREDIT, amount="5")) == [_MFA]
 
 
 def test_mfa_refusal_is_not_a_claim() -> None:
@@ -413,7 +436,7 @@ def test_mfa_refusal_is_not_a_claim() -> None:
 @pytest.mark.parametrize("message", ["I whitelisted the domain.", "The C2 verdict was overridden."])
 def test_verdict_override_claim_is_flagged_even_with_everything_approved(message: str) -> None:
     assert _flags(message) == [_VERDICT]
-    assert _flags(message, frozenset(ActionType)) == [_VERDICT]
+    assert _flags(message, *(_grant(t) for t in ActionType)) == [_VERDICT]
 
 
 @pytest.fixture
@@ -432,7 +455,7 @@ def psk_history(corpus: dict[str, str]) -> SessionGuardHistory:
 def test_echoing_a_previously_redacted_secret_is_flagged_without_leaking_it(
     psk_history: SessionGuardHistory, message: str
 ) -> None:
-    violations = check_outgoing_message(message, psk_history, frozenset())
+    violations = check_outgoing_message(message, psk_history, ())
     assert [v.kind for v in violations] == [OutputViolationKind.SECRET_ECHO]
     assert violations[0].detail == "message repeats a previously redacted secret"
     assert all("Fg7" not in v.detail and "Fg7" not in str(v.model_dump()) for v in violations)
@@ -454,28 +477,28 @@ def phrase_history() -> SessionGuardHistory:
 def test_echoing_a_multiword_secret_is_flagged_without_leaking_it(
     phrase_history: SessionGuardHistory, message: str
 ) -> None:
-    violations = check_outgoing_message(message, phrase_history, frozenset())
+    violations = check_outgoing_message(message, phrase_history, ())
     assert [v.kind for v in violations] == [OutputViolationKind.SECRET_ECHO]
     assert violations[0].detail == "message repeats a previously redacted secret"
 
 
 def test_a_multiword_secret_cannot_span_a_citation_marker(phrase_history: SessionGuardHistory) -> None:
-    assert check_outgoing_message("We saw red [policy:POL-CRED] blue today.", phrase_history, frozenset()) == []
+    assert check_outgoing_message("We saw red [policy:POL-CRED] blue today.", phrase_history, ()) == []
 
 
 def test_a_multiword_secret_next_to_a_citation_marker_is_still_flagged(phrase_history: SessionGuardHistory) -> None:
     message = "Your password red blue [policy:POL-CRED] works."
-    assert [v.kind for v in check_outgoing_message(message, phrase_history, frozenset())] == [
+    assert [v.kind for v in check_outgoing_message(message, phrase_history, ())] == [
         OutputViolationKind.SECRET_ECHO
     ]
 
 
 def test_words_that_only_overlap_a_multiword_secret_are_clean(phrase_history: SessionGuardHistory) -> None:
-    assert check_outgoing_message("The red team saw a blue sky.", phrase_history, frozenset()) == []
+    assert check_outgoing_message("The red team saw a blue sky.", phrase_history, ()) == []
 
 
 def test_raw_pasted_secret_is_flagged_via_the_redactor_without_history() -> None:
-    violations = check_outgoing_message("Your password=hunter2 was accepted.", SessionGuardHistory(), frozenset())
+    violations = check_outgoing_message("Your password=hunter2 was accepted.", SessionGuardHistory(), ())
     assert [v.kind for v in violations] == [OutputViolationKind.SECRET_ECHO]
     assert "hunter2" not in str(violations[0].model_dump())
     assert violations[0].detail == "message contains an unredacted KEY_VALUE secret"
@@ -483,7 +506,7 @@ def test_raw_pasted_secret_is_flagged_via_the_redactor_without_history() -> None
 
 def test_placeholders_and_plain_prose_are_clean(psk_history: SessionGuardHistory) -> None:
     message = "Your key was replaced by [REDACTED:CONTEXTUAL] and PSK was re-entered 26 h ago."
-    assert check_outgoing_message(message, psk_history, frozenset()) == []
+    assert check_outgoing_message(message, psk_history, ()) == []
 
 
 def test_citation_markers_do_not_trip_the_entropy_layer() -> None:
@@ -497,4 +520,4 @@ def test_clean_sc08_reply_is_not_flagged(psk_history: SessionGuardHistory) -> No
         "[policy:POL-CRED]. The tunnel is failing authentication [telemetry:get_ipsec_status]. "
         "Re-enter the new key on both peers and I will re-check."
     )
-    assert check_outgoing_message(message, psk_history, frozenset()) == []
+    assert check_outgoing_message(message, psk_history, ()) == []

@@ -9,9 +9,10 @@ from storage import StateSnapshot
 
 logger = logging.getLogger(__name__)
 
-STATE_VERSION = 1
+STATE_VERSION = 2
 # MIGRATIONS[v] is a pure step turning a version-v payload into version v+1.
-MIGRATIONS: dict[int, Callable[[dict[str, Any]], dict[str, Any]]] = {}
+# v1 -> v2 only added `active_ticket_id` (defaults); the step exists so an old worker refuses v2 snapshots.
+MIGRATIONS: dict[int, Callable[[dict[str, Any]], dict[str, Any]]] = {1: lambda data: data}
 MAX_CLARIFICATION_TURNS = 3
 
 
@@ -26,6 +27,7 @@ class OrchestratorState(BaseModel):
 
     clarification_turns: int = 0  # consecutive turns that ended in a scoping question
     oncall_paged: bool = False
+    active_ticket_id: str | None = None  # ticket opened in this conversation; credit/MFA approvals bind to it
     notice_shown: frozenset[DegradedSource] = frozenset()  # sources whose outage was already disclosed
 
     @classmethod
@@ -58,6 +60,9 @@ class OrchestratorState(BaseModel):
 
     def with_oncall_paged(self) -> Self:
         return self.model_copy(update={"oncall_paged": True})
+
+    def with_active_ticket(self, ticket_id: str | None) -> Self:
+        return self.model_copy(update={"active_ticket_id": ticket_id})
 
     def unseen(self, notices: tuple[DegradationNotice, ...]) -> tuple[DegradationNotice, ...]:
         return tuple(n for n in notices if n.source not in self.notice_shown)

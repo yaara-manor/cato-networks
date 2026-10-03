@@ -2,6 +2,7 @@ from collections.abc import Mapping
 from typing import Any, LiteralString, cast
 
 import psycopg
+from psycopg import sql
 
 from core.clock import SimulationClock
 from core.models import (
@@ -250,17 +251,30 @@ class TicketService:
         return _row_to_ticket(row)
 
     def update_ticket_status(self, ticket_id: str, status: TicketStatus) -> Ticket:
+        return self.update_ticket(ticket_id, status=status)
+
+    def update_ticket(
+        self,
+        ticket_id: str,
+        status: TicketStatus | None = None,
+        site_id: str | None = None,
+        priority: TicketPriority | None = None,
+    ) -> Ticket:
+        changes = {
+            column: value
+            for column, value in (("status", status), ("site_id", site_id), ("priority", priority))
+            if value is not None
+        }
+        if not changes:
+            raise ValueError("update_ticket needs at least one of status, site_id, priority")
+        query = sql.SQL("update tickets set {} where ticket_id = %(ticket_id)s returning {}").format(
+            sql.SQL(", ").join(
+                sql.SQL("{} = {}").format(sql.Identifier(column), sql.Placeholder(column)) for column in changes
+            ),
+            sql.SQL(_TICKET_COLUMNS),
+        )
         with self._conn.cursor() as cur:
-            cur.execute(
-                f"""
-                update tickets
-                set status = %(status)s
-                where ticket_id = %(ticket_id)s
-                returning {_TICKET_COLUMNS}
-                """,
-                {"status": status, "ticket_id": ticket_id.strip()},
-            )
-            row = cur.fetchone()
+            row = cur.execute(query, changes | {"ticket_id": ticket_id.strip()}).fetchone()
         if row is None:
             raise ValueError(f"Ticket not found: {ticket_id}")
         self._conn.commit()

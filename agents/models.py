@@ -341,10 +341,14 @@ class ResolutionInput(_AgentModel):
     def grounding_context(self) -> GroundingContext:
         """Built from successful tool results only; absent stages contribute nothing."""
         knowledge, diagnostics = self.knowledge, self.diagnostics
+        passages = knowledge.retrieved_passages if knowledge else ()
+        kb_texts: dict[tuple[str, str], str] = {}
+        for p in passages:
+            key = (p.slug, p.heading_anchor)
+            kb_texts[key] = f"{kb_texts[key]} {p.body}" if key in kb_texts else p.body
         return GroundingContext(
-            kb_refs=frozenset(
-                (p.slug, p.heading_anchor) for p in (knowledge.retrieved_passages if knowledge else ())
-            ),
+            kb_refs=frozenset(kb_texts),
+            kb_texts=kb_texts,
             policy_ids=frozenset(p.policy_id for p in self.policies),
             telemetry_tools=diagnostics.usable_tools if diagnostics else frozenset(),
             is_refusal=knowledge.is_refusal if knowledge else False,

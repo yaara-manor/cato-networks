@@ -111,7 +111,8 @@ def test_citations_and_evidence_chips(make_app: MakeApp, scripted: Scripted) -> 
     _send(at, "tunnel drops")
 
     assert not at.exception
-    assert [b.proto.url for b in at.get("link_button")] == ["https://help.example.com/mtu"]
+    assert not at.get("link_button")
+    assert any("Lower the MTU [1](https://help.example.com/mtu#mtu)." in str(m.value) for m in at.markdown)
     assert not any("[kb:" in str(m.value) for m in at.markdown)
     assert any("flaps 42" in str(m.value) for m in at.markdown)
     _button(at, "POL-SEV1: Sev-1 definition and escalation (internal policy)").click().run()
@@ -212,5 +213,16 @@ def test_lock_timeout_notice_then_retry_reuses_message_id(
 def test_trace_tab_lists_the_turn(make_app: MakeApp) -> None:
     at = make_app().run()
     _send(at, "site down")
-    assert [e.label for e in at.expander] == ["Turn 1"]
+    labels = [e.label for e in at.expander]
+    assert len(labels) == 2 and labels[0].startswith("Worked for ") and labels[1] == "Turn 1"
     assert "TRIAGE" in _page(at)
+
+
+def test_finished_reply_folds_its_steps_and_shows_the_answer(make_app: MakeApp, scripted: Scripted) -> None:
+    scripted.reply = "Here is the fix."
+    at = make_app().run()
+    _send(at, "site down")
+    work = next(e for e in at.expander if e.label.startswith("Worked for "))
+    assert "Here is the fix." in _page(at)
+    assert "TRIAGE" in "\n".join(str(t.value) for t in work.text)
+    assert all(s.state != "running" for s in at.status)

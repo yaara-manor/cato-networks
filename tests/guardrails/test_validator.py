@@ -303,6 +303,34 @@ def test_refusal_keeps_telemetry_claims_citable() -> None:
     assert check_citations(message, _context(is_refusal=True)).is_grounded is True
 
 
+_PASSAGE = "If the neighbors have different **Hold Time** values, then the [smallest value](/v1/docs/x) is used for the pair."
+_QUOTE_CONTEXT = {"kb_refs": frozenset({("bgp", "hold")}), "kb_texts": {("bgp", "hold"): _PASSAGE}}
+
+
+def _quote_kinds(message: str) -> list[CitationViolationKind]:
+    return [kind for kind, _ in _violations(message, **_QUOTE_CONTEXT)]
+
+
+def test_verbatim_blockquote_passes_despite_markdown_and_punctuation() -> None:
+    assert _quote_kinds("> The smallest value is used for the pair. [kb:bgp#hold]") == []
+
+
+def test_ellipsis_joins_fragments_of_one_passage() -> None:
+    assert _quote_kinds("> If the neighbors have different Hold Time values ... the smallest value is used [kb:bgp#hold]") == []
+
+
+def test_paraphrased_blockquote_is_ungrounded() -> None:
+    assert _quote_kinds("> The lowest timer always wins between peers. [kb:bgp#hold]") == [CitationViolationKind.UNGROUNDED_QUOTE]
+
+
+def test_blockquote_without_a_kb_marker_is_ungrounded() -> None:
+    assert _quote_kinds("> The smallest value is used for the pair.") == [CitationViolationKind.UNGROUNDED_QUOTE]
+
+
+def test_multi_line_blockquote_is_one_block() -> None:
+    assert _quote_kinds("> The smallest value\n> is used for the pair. [kb:bgp#hold]") == []
+
+
 def test_plain_refusal_is_grounded() -> None:
     message = "Roadmap dates are not in the knowledge base. I can route you to your account team."
     assert check_citations(message, _context(is_refusal=True)).is_grounded is True

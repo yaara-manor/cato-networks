@@ -34,7 +34,6 @@ class Settings(BaseSettings):
     slice_overlap_tokens: int = 50
     turn_lock_timeout_s: float = 30.0
     llm_model: str = "openai:gpt-6-luna"
-    llm_temperature: float = 0.0
 
 
 settings: Settings = Settings()

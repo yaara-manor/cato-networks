@@ -56,7 +56,7 @@ def test_markers_resolve_against_bundle_and_dedupe(harness: Harness, scripted: S
     result = harness.workflow(scripted, None).run_turn(conversation_id, "Tunnel drops", uuid4())
 
     assert result.citations == (
-        Citation(kind=MarkerKind.KB, ref="tunnels#mtu", title="Tunnel MTU", url=KB_URL),
+        Citation(kind=MarkerKind.KB, ref="tunnels#mtu", title="Tunnel MTU", url=KB_URL, heading="MTU"),
         Citation(kind=MarkerKind.POLICY, ref="POL-SEV1", title=_real_policy_title("POL-SEV1")),
     )
     assert _stored_reply_citations(harness, conversation_id) == tuple(c.to_row() for c in result.citations)

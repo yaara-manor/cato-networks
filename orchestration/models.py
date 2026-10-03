@@ -40,6 +40,7 @@ class Citation(BaseModel):
     ref: str
     title: str
     url: str = ""  # policies have no public url
+    heading: str = ""  # section heading of the cited passage; KB only
 
     @classmethod
     def for_reply(
@@ -55,7 +56,13 @@ class Citation(BaseModel):
             if marker.kind is MarkerKind.KB and (ref := KB_REF.fullmatch(marker.ref)):
                 if passage := best.get((ref["slug"], ref["anchor"])):
                     citations.append(
-                        cls(kind=MarkerKind.KB, ref=marker.ref, title=passage.title, url=passage.public_url)
+                        cls(
+                            kind=MarkerKind.KB,
+                            ref=marker.ref,
+                            title=passage.title,
+                            url=passage.public_url,
+                            heading=passage.heading,
+                        )
                     )
             elif marker.kind is MarkerKind.POLICY and (policy := known_policies.get(marker.ref)):
                 citations.append(cls(kind=MarkerKind.POLICY, ref=marker.ref, title=policy.title))

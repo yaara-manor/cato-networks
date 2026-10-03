@@ -78,7 +78,7 @@ def test_escalation_flag_from_latest_reply(result: dict[str, Any] | None, offere
     assert ChatView.from_snapshot(_snapshot(*messages), []).escalation_offered is offered
 
 
-def test_messages_strip_markers_dedupe_chips_and_map_badges() -> None:
+def test_messages_render_markers_dedupe_chips_and_map_badges() -> None:
     reply = _message(
         MessageSender.AGENT,
         "Raise MTU [kb:tunnels#mtu] and see [policy:POL-SLA] [telemetry:get_bgp]",
@@ -92,7 +92,7 @@ def test_messages_strip_markers_dedupe_chips_and_map_badges() -> None:
     customer, support = view.messages
     assert (customer.role, customer.text, customer.citations) == (MessageRole.CUSTOMER, "[kb:a#b] hi", ())
     assert support.role is MessageRole.SUPPORT
-    assert support.text == "Raise MTU and see"
+    assert support.text == "Raise MTU [1](https://x/mtu) and see [2] *(get_bgp)*"
     assert [(b.kind, b.url) for b in support.citations] == [(MarkerKind.KB, "https://x/mtu"), (MarkerKind.POLICY, None)]
     assert [c.text for c in support.evidence] == ["flaps 3", "flaps 9"]
 

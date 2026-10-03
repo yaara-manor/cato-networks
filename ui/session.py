@@ -1,4 +1,5 @@
 from collections.abc import Iterator
+from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import contextmanager
 from typing import Any
 from uuid import UUID
@@ -11,12 +12,13 @@ from core.config import settings
 from orchestration import AgentPorts, TurnResult, build_services, build_workflow, warm_models
 from retrieval.models import PolicyDocument
 from retrieval.service import RetrievalService
-from storage import StateStore
+from storage import ConversationStage, StateStore
 from ui.chat_view import ChatView
 from ui.trace_panel import TracePanel
 
 LOCK_NOTICE = "Still working on your previous message, retry."
 _CLOCK = SimulationClock()  # one per process so simulated time keeps advancing across turns
+_TURN_POOL = ThreadPoolExecutor(max_workers=4, thread_name_prefix="customer-turn")
 ports_override: AgentPorts | None = None  # tests inject scripted agents; None = real PydanticAI agents
 
 
@@ -46,6 +48,17 @@ def start_conversation(email: str) -> UUID:
 def run_customer_turn(conversation_id: UUID, text: str, message_id: UUID) -> TurnResult:
     with connection() as conn:
         return build_workflow(conn, _CLOCK, ports_override).run_turn(conversation_id, text, message_id)
+
+
+def start_customer_turn(conversation_id: UUID, text: str, message_id: UUID) -> Future[TurnResult]:
+    """Runs off the script thread, so the page can show progress while the turn works."""
+    return _TURN_POOL.submit(run_customer_turn, conversation_id, text, message_id)
+
+
+def load_stage(conversation_id: UUID) -> ConversationStage | None:
+    with connection() as conn:
+        snapshot = StateStore(conn).rehydrate(conversation_id)
+    return None if snapshot is None else snapshot.conversation.stage
 
 
 def load_view(conversation_id: UUID) -> ChatView | None:

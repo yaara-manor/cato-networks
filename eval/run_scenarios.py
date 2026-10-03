@@ -134,7 +134,7 @@ def to_markdown(runs: list[list[ScenarioScore]]) -> str:
         "# Scenario replay (opening turn)",
         "",
         f"- Date: {datetime.now(tz=UTC).date()}",
-        f"- Runs per scenario: {len(runs)}; temperature {settings.llm_temperature}",
+        f"- Runs per scenario: {len(runs)} (the model ignores temperature, so runs vary)",
         "- Pass: all `must_cite` markers present and all telemetry tools called",
         "",
         "| Scenario | Pass rate | Cite hit rate | Missing cites (runs) | Missing tools (runs) | KB searches / refused (avg) |",

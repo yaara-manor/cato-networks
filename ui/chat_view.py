@@ -5,10 +5,11 @@ from typing import Self, assert_never
 
 from pydantic import BaseModel, ConfigDict
 
-from guardrails import ActionType, ApprovalStatus, MarkerKind, strip_markers
+from guardrails import ActionType, ApprovalStatus, MarkerKind
 from orchestration import Citation, TurnResult
 from storage import Approval, ConversationSnapshot, MessageSender, StoredMessage
 from tools.models import TelemetryEvidence
+from ui.citation_render import render_reply, source_label, source_url
 
 
 class _View(BaseModel):
@@ -25,11 +26,19 @@ class CitationBadge(_View):
     label: str
     url: str | None  # KB only
     ref: str  # slug#anchor or policy id
+    section_label: str  # title and section for a KB source, the title for a policy
+    section_url: str | None  # url of the cited section on the site
 
     @classmethod
-    def from_row(cls, row: dict[str, str]) -> Self:
-        citation = Citation.model_validate(row)
-        return cls(kind=citation.kind, label=citation.title, url=citation.url or None, ref=citation.ref)
+    def from_citation(cls, citation: Citation) -> Self:
+        return cls(
+            kind=citation.kind,
+            label=citation.title,
+            url=citation.url or None,
+            ref=citation.ref,
+            section_label=source_label(citation),
+            section_url=source_url(citation),
+        )
 
 
 class EvidenceChip(_View):
@@ -50,6 +59,7 @@ class EvidenceChip(_View):
 
 class MessageView(_View):
     role: MessageRole
+    turn: int
     text: str
     citations: tuple[CitationBadge, ...]
     evidence: tuple[EvidenceChip, ...]
@@ -60,6 +70,7 @@ class MessageView(_View):
         if message.sender is MessageSender.CUSTOMER:
             return cls(
                 role=MessageRole.CUSTOMER,
+                turn=message.turn,
                 text=message.content,
                 citations=(),
                 evidence=(),
@@ -68,10 +79,12 @@ class MessageView(_View):
         first: dict[tuple[str, str, str], TelemetryEvidence] = {}
         for e in message.telemetry_evidence:
             first.setdefault((e.tool_name, e.metric_key, e.raw_value), e)
+        citations = tuple(Citation.model_validate(row) for row in message.citations)
         return cls(
             role=MessageRole.SUPPORT,
-            text=strip_markers(message.content),
-            citations=tuple(CitationBadge.from_row(row) for row in message.citations),
+            turn=message.turn,
+            text=render_reply(message.content, citations),
+            citations=tuple(CitationBadge.from_citation(c) for c in citations),
             evidence=tuple(EvidenceChip.from_evidence(e) for e in first.values()),
             created_at=message.created_at,
         )

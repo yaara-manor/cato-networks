@@ -126,7 +126,7 @@ def test_no_tool_call_run_gives_empty_extracts_and_usage(make_deps: MakeDeps) ->
 
 
 def test_cost_set_for_known_model(make_deps: MakeDeps) -> None:
-    model = scripted_model([], {"text": "hi"}, model_name="gpt-5-nano")
+    model = scripted_model([], {"text": "hi"}, model_name="gpt-6-luna")
 
     outcome = run_role(_agent(model), "hi", make_deps(), AgentRole.TRIAGE)
 

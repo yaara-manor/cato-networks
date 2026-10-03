@@ -18,7 +18,8 @@ from tests.orchestration.conftest import PRIYA
         (Intent.KB_INQUIRY, None, ConversationStage.KNOWLEDGE_RETRIEVAL),
         (Intent.POLICY_REQUEST, None, ConversationStage.KNOWLEDGE_RETRIEVAL),
         (Intent.ADVERSARIAL, None, ConversationStage.RESOLUTION),
-        (Intent.TELEMETRY_DIAGNOSIS, "Which site?", ConversationStage.RESOLUTION),
+        (Intent.TELEMETRY_DIAGNOSIS, "Which site?", ConversationStage.DIAGNOSTICS),
+        (Intent.KB_INQUIRY, "Which site?", ConversationStage.RESOLUTION),
     ],
 )
 def test_next_stage_after_triage(

@@ -1,10 +1,13 @@
 from datetime import UTC, datetime
 from pathlib import Path
 
+from dotenv import load_dotenv
 from pydantic import AwareDatetime
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 REPO_ROOT: Path = Path(__file__).resolve().parents[1]
+
+load_dotenv(REPO_ROOT / ".env", override=True)  # .env beats stale shell exports; pydantic-ai reads OPENAI_API_KEY from os.environ
 
 
 class Settings(BaseSettings):
@@ -30,7 +33,7 @@ class Settings(BaseSettings):
     slice_new_tokens: int = 350
     slice_overlap_tokens: int = 50
     turn_lock_timeout_s: float = 30.0
-    llm_model: str = "openai:gpt-5-nano"
+    llm_model: str = "openai:gpt-6-luna"
 
 
 settings: Settings = Settings()

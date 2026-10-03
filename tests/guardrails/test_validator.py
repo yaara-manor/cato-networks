@@ -298,6 +298,11 @@ def test_refusal_with_a_claim_is_one_breach_on_the_first_offender() -> None:
     )
 
 
+def test_refusal_keeps_telemetry_claims_citable() -> None:
+    message = "WAN1 latency was 15 ms [telemetry:get_ipsec_status]."
+    assert check_citations(message, _context(is_refusal=True)).is_grounded is True
+
+
 def test_plain_refusal_is_grounded() -> None:
     message = "Roadmap dates are not in the knowledge base. I can route you to your account team."
     assert check_citations(message, _context(is_refusal=True)).is_grounded is True

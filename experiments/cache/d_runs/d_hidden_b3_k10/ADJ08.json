@@ -90,7 +90,7 @@
     }
   ],
   "n_searches": 3,
-  "model": "openai:gpt-5-nano",
+  "model": "openai:gpt-6-luna",
   "usage": {
     "input_tokens": 20141,
     "output_tokens": 3094,

@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Implement `services/customer_service.py` and `services/ticket_service.py` as minimal, strictly-typed PostgreSQL domain services anchored to `SimulationClock`, adhering to SOLID and Command-Query Separation (CQS) principles, featuring stdlib IANA `zone1970.tab` timezone resolution, a PydanticAI Gemini (`openai:gpt-5-nano`) country-code fallback agent, regional business-hours SLA math, and unbounded repeat-contact detection.
+**Goal:** Implement `services/customer_service.py` and `services/ticket_service.py` as minimal, strictly-typed PostgreSQL domain services anchored to `SimulationClock`, adhering to SOLID and Command-Query Separation (CQS) principles, featuring stdlib IANA `zone1970.tab` timezone resolution, a PydanticAI Gemini (`openai:gpt-6-luna`) country-code fallback agent, regional business-hours SLA math, and unbounded repeat-contact detection.
 
-**Architecture:** `CustomerService` queries the PostgreSQL `accounts` table to authenticate callers (enforcing the security invariant against spoofed tiers or unverified domains), maps ISO 3166-1 alpha-2 country codes directly to `zoneinfo.ZoneInfo` via a cached stdlib parser over `/usr/share/zoneinfo/zone1970.tab`, resolves free-text country names via a PydanticAI `Agent` configured with `settings.llm_model` (`"openai:gpt-5-nano"`), and computes [POL-SLA.md](file:///home/yaara/Documents/Assignments/cato%20networks/data/policies/POL-SLA.md) deadlines via pure date-math functions against `SimulationClock`. `TicketService` queries and mutates the PostgreSQL `tickets` table with atomic SQL ticket ID generation and an unbounded lookback window for repeat-contact detection.
+**Architecture:** `CustomerService` queries the PostgreSQL `accounts` table to authenticate callers (enforcing the security invariant against spoofed tiers or unverified domains), maps ISO 3166-1 alpha-2 country codes directly to `zoneinfo.ZoneInfo` via a cached stdlib parser over `/usr/share/zoneinfo/zone1970.tab`, resolves free-text country names via a PydanticAI `Agent` configured with `settings.llm_model` (`"openai:gpt-6-luna"`), and computes [POL-SLA.md](file:///home/yaara/Documents/Assignments/cato%20networks/data/policies/POL-SLA.md) deadlines via pure date-math functions against `SimulationClock`. `TicketService` queries and mutates the PostgreSQL `tickets` table with atomic SQL ticket ID generation and an unbounded lookback window for repeat-contact detection.
 
 **Architecture Diagram:**
 
@@ -12,7 +12,7 @@
 flowchart LR
     subgraph Core_And_DB["Prerequisites (Core & PostgreSQL)"]
         SimClock["core/clock.py\nSimulationClock"]
-        Config["core/config.py\nSettings (openai:gpt-5-nano)"]
+        Config["core/config.py\nSettings (openai:gpt-6-luna)"]
         Models["core/models.py\nDomain Schemas"]
         PG_Accounts[("PostgreSQL\naccounts table")]
         PG_Tickets[("PostgreSQL\ntickets table")]
@@ -35,7 +35,7 @@ flowchart LR
     Models --> TicketSvc
 ```
 
-**Tech Stack:** Python 3.12, `psycopg` v3, `pydantic` v2, `pydantic-ai` (`Agent` with `openai:gpt-5-nano` via `GEMINI_API_KEY`), stdlib `zoneinfo` & `functools.lru_cache`, `pytest`.
+**Tech Stack:** Python 3.12, `psycopg` v3, `pydantic` v2, `pydantic-ai` (`Agent` with `openai:gpt-6-luna` via `GEMINI_API_KEY`), stdlib `zoneinfo` & `functools.lru_cache`, `pytest`.
 
 **Spec:** [01-services_design.md](file:///home/yaara/Documents/Assignments/cato%20networks/docs/plans/12-account_and_sla_matrix/01-services_design.md)
 
@@ -50,7 +50,7 @@ flowchart LR
   - **Fail Fast & Guard Clauses**: Validate empty/missing strings, unknown country codes, and `P1` 24x7 fast-paths at the top of each method and return early instead of nesting `if/else` ladders.
   - **Dependency Inversion (DIP)**: Inject `psycopg.Connection[Any]`, `SimulationClock`, and optional `Agent[None, CountryCodeOutput]` into `CustomerService.__init__` so tests and callers can swap clocks or models without patching globals.
   - **Cached IANA Lookup**: Parse `/usr/share/zoneinfo/zone1970.tab` once via `@lru_cache(maxsize=1)` helper `_country_to_tz_map() -> dict[str, str]` so disk I/O happens at most once per process rather than on every SLA calculation.
-  - **PydanticAI Country Resolver**: Define `CountryCodeOutput(BaseModel)` with `country_code: str | None = None` and a module-level `Agent[None, CountryCodeOutput]` using `settings.llm_model` (`"openai:gpt-5-nano"`), `output_type=CountryCodeOutput`, and `defer_model_check=True`.
+  - **PydanticAI Country Resolver**: Define `CountryCodeOutput(BaseModel)` with `country_code: str | None = None` and a module-level `Agent[None, CountryCodeOutput]` using `settings.llm_model` (`"openai:gpt-6-luna"`), `output_type=CountryCodeOutput`, and `defer_model_check=True`.
 
 ---
 
@@ -80,7 +80,7 @@ flowchart LR
 **Interfaces:**
 - Consumes:
   - `SimulationClock` from [core/clock.py](file:///home/yaara/Documents/Assignments/cato%20networks/core/clock.py)
-  - `settings` (`settings.llm_model = "openai:gpt-5-nano"`) from [core/config.py](file:///home/yaara/Documents/Assignments/cato%20networks/core/config.py)
+  - `settings` (`settings.llm_model = "openai:gpt-6-luna"`) from [core/config.py](file:///home/yaara/Documents/Assignments/cato%20networks/core/config.py)
   - `AccountTier`, `CallerIdentity`, `CustomerAccount`, `RepeatContactResult`, `SLADeadlines`, `Ticket`, `TicketPriority`, `TicketStatus` from [core/models.py](file:///home/yaara/Documents/Assignments/cato%20networks/core/models.py)
 - Produces:
   - `CountryCodeOutput(BaseModel)` with field `country_code: str | None = None` in `services/customer_service.py`
@@ -118,7 +118,7 @@ flowchart LR
      - Authenticates `noc@meridian-air.com` on `ACC-1011`, asserting `is_verified_account_member is True` and `is_registered_admin is True`.
   3. **`test_unknown_country_clarification_and_pydantic_ai_resolver`**:
      - Updates an account row inside the test transaction to `country=None` (and tests an invalid code `"ZZ"`), calls `authenticate_caller`, and verifies via `caplog` that `logger.error` is emitted, `needs_country_clarification is True`, and `scoping_question` asks for the customer's country.
-     - Calls `resolve_country_from_text("I'm in Israel", account_id=...)` via PydanticAI `Agent` (asserting the default agent is configured with `settings.llm_model == "openai:gpt-5-nano"` and injecting a deterministic PydanticAI `FunctionModel` returning `CountryCodeOutput(country_code="IL")` when `GEMINI_API_KEY` is not set in test env), asserting it returns `"IL"`, persists `accounts.country = "IL"` via `update_account_country`, and `resolve_timezone_for_country("IL")` returns `ZoneInfo("Asia/Jerusalem")`.
+     - Calls `resolve_country_from_text("I'm in Israel", account_id=...)` via PydanticAI `Agent` (asserting the default agent is configured with `settings.llm_model == "openai:gpt-6-luna"` and injecting a deterministic PydanticAI `FunctionModel` returning `CountryCodeOutput(country_code="IL")` when `GEMINI_API_KEY` is not set in test env), asserting it returns `"IL"`, persists `accounts.country = "IL"` via `update_account_country`, and `resolve_timezone_for_country("IL")` returns `ZoneInfo("Asia/Jerusalem")`.
   4. **`test_live_ticket_creation_and_status_lifecycle`**:
      - Calls `TicketService.create_ticket(...)` for a site and verifies the new `TCK-XXXXXXXX` row (e.g. `TCK-20264254` after the 54 seed rows `TCK-20264200`..`TCK-20264253`) is persisted in PostgreSQL with `created_at == clock.now()` and `status == "open"`.
      - Calls `TicketService.update_ticket_status(new_ticket.ticket_id, "closed")` and verifies subsequent `get_ticket_history` and `detect_repeat_contact` calls immediately reflect the closed ticket in PostgreSQL.

@@ -77,20 +77,40 @@ def list_pending_approvals(conn: psycopg.Connection[Any], conversation_id: UUID 
     )
 
 
+def list_unsettled_approvals(conn: psycopg.Connection[Any], limit: int) -> list[Approval]:
+    return fetch_all(
+        conn,
+        Approval,
+        "select * from approvals where status <> 'PENDING' and settled_at is null"
+        " order by resolved_at, id limit %(limit)s",
+        {"limit": limit},
+    )
+
+
+def mark_settled(conn: psycopg.Connection[Any], approval_id: UUID, at: datetime) -> None:
+    conn.execute("update approvals set settled_at = %(at)s where id = %(id)s", {"id": approval_id, "at": at})
+
+
 def resolve_approval(
-    conn: psycopg.Connection[Any], approval_id: UUID, resolution: ApprovalResolution, at: datetime
+    conn: psycopg.Connection[Any],
+    approval_id: UUID,
+    resolution: ApprovalResolution,
+    at: datetime,
+    customer_reason: str | None,
 ) -> Approval:
     """Compare-and-set from PENDING: of two racing reviewers exactly one wins."""
     approval = fetch_one(
         conn,
         Approval,
         "update approvals set status = %(status)s, reviewer_notes = %(notes)s, edited_payload = %(edited)s,"
-        " resolved_at = %(at)s where id = %(id)s and status = 'PENDING' returning *",
+        " customer_reason = %(reason)s, resolved_at = %(at)s"
+        " where id = %(id)s and status = 'PENDING' returning *",
         {
             "id": approval_id,
             "status": resolution.status.value,
             "notes": jsonable(resolution.reviewer_notes),
             "edited": jsonable(resolution.edited_payload),
+            "reason": jsonable(customer_reason),
             "at": at,
         },
     )

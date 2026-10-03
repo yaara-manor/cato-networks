@@ -15,6 +15,7 @@ from agents import (
     TriageInput,
     TriageResult,
     TurnSender,
+    UnsettledApprovalView,
 )
 from core.clock import SimulationClock
 from guardrails import (
@@ -32,6 +33,7 @@ from orchestration.actions_step import (
     stamp_ticket_id,
     was_paged,
 )
+from orchestration.approvals import ApprovalContext
 from orchestration.canned import (
     AGENT_FAILURE_PAUSE,
     CLARIFICATION_ESCALATION,
@@ -44,7 +46,7 @@ from orchestration.degradation import (
     derive_degradations,
 )
 from orchestration.gate import GatedActions, gate_actions
-from orchestration.models import AgentPorts, TurnResult
+from orchestration.models import AgentPorts, Citation, TurnResult
 from orchestration.recorder import TurnRecorder
 from orchestration.routing import compose_reply, next_stage_after_triage
 from orchestration.state import OrchestratorState
@@ -69,7 +71,7 @@ class OutgoingMessageRejected(Exception):
 
 def _require_clean_message(message: str, data: ResolutionInput, deps: SupportDeps) -> None:
     """Workflow-boundary check, so no injected port can bypass the agent's own validators."""
-    kinds = {v.kind for v in check_outgoing_message(message, deps.guard_history, deps.approved_actions)}
+    kinds = {v.kind for v in check_outgoing_message(message, deps.guard_history, deps.approved_grants)}
     kinds |= {v.kind for v in check_citations(message, data.grounding_context()).violations}
     if kinds:
         raise OutgoingMessageRejected(", ".join(sorted(kinds)))
@@ -83,6 +85,7 @@ class _Turn:
     message: str  # redacted
     history: tuple[ConversationTurn, ...]
     deps: SupportDeps
+    unsettled: tuple[UnsettledApprovalView, ...]
 
 
 def _history(snapshot: ConversationSnapshot, turn: int) -> tuple[ConversationTurn, ...]:
@@ -135,13 +138,15 @@ class Workflow:
             refusal = TurnResult(reply=INJECTION_REFUSAL, path=recorder.completed_path)
             recorder.complete_turn(refusal)
             return refusal
+        approvals = ApprovalContext.from_approvals(self.store.list_approvals(conversation_id))
         turn = _Turn(
             recorder,
             conversation_id,
             message_id,
             redacted.text,
             _history(snapshot, stored.turn),
-            replace(self.base_deps, guard_history=history),
+            replace(self.base_deps, guard_history=history, approved_grants=approvals.grants),
+            approvals.unsettled,
         )
         state = OrchestratorState.from_snapshot(snapshot.conversation.state)  # StateVersionError propagates
         try:
@@ -202,6 +207,7 @@ class Workflow:
             results=results,
             escalation_offered=plan.escalate_to_human or retrieval_down,
             degradations=degradations,
+            knowledge=knowledge,
         )
 
     def _execute(
@@ -299,6 +305,7 @@ class Workflow:
             history=turn.history,
             message=turn.message,
             known_ticket_id=state.active_ticket_id,
+            unsettled_approvals=turn.unsettled,
         )
         run = self.ports.resolution(data, turn.deps)
         turn.recorder.record_run(AgentRole.RESOLUTION, data, run)
@@ -315,6 +322,7 @@ class Workflow:
         results: tuple[ActionResult, ...] = (),
         escalation_offered: bool = False,
         degradations: tuple[DegradationNotice, ...] = (),
+        knowledge: KnowledgeBundle | None = None,
     ) -> TurnResult:
         """State and reply are one transaction: a retry never reapplies a transition."""
         result = TurnResult(
@@ -324,6 +332,7 @@ class Workflow:
             action_results=results,
             escalation_offered=escalation_offered or has_failure(results),
             degradations=degradations,
+            citations=Citation.for_reply(reply, knowledge),
         )
         turn.recorder.complete_turn(result, evidence, state=state.to_snapshot())
         return result

@@ -149,3 +149,10 @@
 - **Ticket binding**: credit/MFA approvals carry the conversation's `OrchestratorState.active_ticket_id`, stamped in code over any model-written value. The workflow sets the ticket `pending_approval` (`mark_pending`); issue #10's settle step clears it; `dispatch_approved` never changes ticket status.
 - **Rejected**: execution inside agents (breaks pure agents); JSON files / webhook (no atomic idempotency); event bus (YAGNI).
 - **Cost if wrong**: a failed page row is terminal for the conversation (no retry); a crash mid ticket write needs human follow-up.
+
+## ADR-014: Deterministic Approval Settle + Sweep, Notice as Own-Turn Event, Per-Payload Grants
+
+- **Context / Problem**: approved/edited/rejected approvals had to execute, reach the customer, and survive crashes at any step, without blocking customer turns or letting an approval license more than it covers.
+- **Chosen Approach**: `ApprovalService.decide` = CAS `resolve` then idempotent `settle` (dispatch via `ActionDispatcher`, clear ticket `pending_approval` to `open`, then one `StateStore.settle_approval` transaction writing an `AGENT` event message in its own turn and `approvals.settled_at`, under `turn_lock`). `settle_unsettled` sweeps `settled_at is null` rows from the app lifespan. Notices are fixed templates over an allowlist of payload keys. `check_outgoing_message` takes `ApprovedGrant`s built from settled approvals' effective payloads, so a credit sentence passes only for the approved amount and currency.
+- **Rejected**: synchronous LLM resume turn (slow reviewer request, guard re-entry); outbox table plus worker (new process, YAGNI).
+- **Cost if wrong**: a permanently failing dispatch is retried on every sweep and never notified; MFA grants are not payload-bound; a notice waits at most one turn's latency for the lock.

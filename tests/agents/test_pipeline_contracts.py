@@ -55,4 +55,4 @@ def test_four_role_chain_feeds_each_output_to_the_next_input(make_deps: MakeDeps
     plan = run_resolution(data, deps, scripted_model([], {"customer_message": reply})).output
     assert plan.customer_message == reply and not plan.escalate_to_human
     assert check_citations(plan.customer_message, data.grounding_context()).is_grounded
-    assert not check_outgoing_message(plan.customer_message, deps.guard_history, deps.approved_actions)
+    assert not check_outgoing_message(plan.customer_message, deps.guard_history, deps.approved_grants)

@@ -6,7 +6,6 @@ from uuid import UUID
 import psycopg
 import pytest
 
-from actions import ActionDispatcher
 from agents import (
     AgentRun,
     AgentTrace,
@@ -28,13 +27,9 @@ from agents import (
 )
 from core.clock import SimulationClock
 from core.config import settings
-from guardrails import ActionType, SessionGuardHistory
-from orchestration import AgentPorts, Workflow
-from retrieval.models import KBSearchStatus
-from retrieval.service import RetrievalService
-from services import CustomerService, TicketService
+from orchestration import AgentPorts, Workflow, build_workflow
+from retrieval.models import KBSearchStatus, PolicyDocument, RetrievedPassage
 from storage import AgentRole, StateStore
-from tools.telemetry import TelemetryService
 
 PRIYA = "priya@bluebirdretail.com"  # verified member of ACC-1002, not admin
 STRANGER = "mark@example.com"  # unknown caller
@@ -69,6 +64,9 @@ class Scripted:
     escalate: bool = False
     unavailable: tuple[UnavailableTool, ...] = ()
     kb_status: KBSearchStatus = KBSearchStatus.CONFIDENT
+    reply: str = "Here is your answer."
+    passages: tuple[RetrievedPassage, ...] = ()
+    policies: tuple[PolicyDocument, ...] = ()
     fail_in: str | None = None  # role whose callable raises
     calls: list[str] = field(default_factory=list)
     inputs: dict[str, list[Any]] = field(default_factory=dict)
@@ -96,6 +94,8 @@ class Scripted:
         self._seen("knowledge", data)
         bundle = KnowledgeBundle(
             findings=KnowledgeFindings(needs_more_telemetry=self.needs_more_telemetry),
+            retrieved_passages=self.passages,
+            referenced_policies=self.policies,
             confidence_status=self.kb_status,
             needs_more_telemetry=self.needs_more_telemetry,
         )
@@ -104,7 +104,7 @@ class Scripted:
     def resolution(self, data: ResolutionInput, deps: SupportDeps) -> AgentRun[ResolutionPlan]:
         self._seen("resolution", (data, deps))
         plan = ResolutionPlan(
-            customer_message=self.scoping_question or "Here is your answer.",
+            customer_message=self.scoping_question or self.reply,
             actions=self.actions,
             escalate_to_human=self.escalate,
         )
@@ -145,20 +145,7 @@ def harness(conn: psycopg.Connection[Any]) -> Iterator[Harness]:
         return conversation.id
 
     def workflow(script: Scripted, connection: psycopg.Connection[Any] | None = None) -> Workflow:
-        connection = connection or conn
-        customers = CustomerService(connection, clock)
-        deps = SupportDeps(
-            clock=clock,
-            customers=customers,
-            tickets=TicketService(connection, clock),
-            telemetry=TelemetryService(clock=clock),
-            retrieval=RetrievalService(connection),
-            identity=customers.authenticate_caller(STRANGER),
-            guard_history=SessionGuardHistory(),
-            approved_actions=frozenset[ActionType](),
-        )
-        store = StateStore(connection)
-        return Workflow(script.ports, store, clock, deps, ActionDispatcher(store, deps.tickets, clock))
+        return build_workflow(connection or conn, clock, script.ports)
 
     yield Harness(lambda: psycopg.connect(settings.database_url, autocommit=True), new_conversation, workflow)
     for statement in _CLEANUP_SQL:

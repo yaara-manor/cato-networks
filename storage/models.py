@@ -8,7 +8,7 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, model_validator
 
 from agents.models import AgentRole, AgentTrace, ToolCall, TraceStatus
 from core.models import AccountTier
-from guardrails.models import ActionType, SessionGuardHistory
+from guardrails.models import ActionType, ApprovalStatus, SessionGuardHistory
 from tools.models import TelemetryEvidence
 
 
@@ -32,13 +32,6 @@ class MessageSender(StrEnum):
     CUSTOMER = "CUSTOMER"
     AGENT = "AGENT"
     SYSTEM = "SYSTEM"
-
-
-class ApprovalStatus(StrEnum):
-    PENDING = "PENDING"
-    APPROVED = "APPROVED"
-    EDITED = "EDITED"
-    REJECTED = "REJECTED"
 
 
 class ApprovalStateError(Exception):
@@ -171,6 +164,12 @@ class Approval(_StorageModel):
     edited_payload: dict[str, str] | None
     requested_at: AwareDatetime
     resolved_at: AwareDatetime | None
+    customer_reason: str | None = None  # reviewer-supplied, customer-safe
+    settled_at: AwareDatetime | None = None  # executed and customer notified
+
+    @property
+    def effective_payload(self) -> dict[str, str]:
+        return self.edited_payload if self.edited_payload is not None else self.payload
 
 
 class SimulatedActionStatus(StrEnum):

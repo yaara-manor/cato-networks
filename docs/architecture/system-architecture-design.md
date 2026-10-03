@@ -119,7 +119,7 @@ Every agent receives a typed context container via PydanticAI dependency injecti
 - `customers: CustomerService`, `tickets: TicketService` — Account tier / SLA and ticket history services over the shared Postgres connection (no pool object in deps).
 - `telemetry: TelemetryService` — Interface to read synthetic CMA telemetry files directly from `data/telemetry/` with `(resolved_path, mtime_ns)` caching, returning typed `TelemetryToolResult[T]` envelopes with pre-extracted `TelemetryEvidence`.
 - `retrieval: RetrievalService` — Unified interface in `retrieval/service.py` for hybrid KB search (`search_kb` returning `KBSearchResult`) and authoritative internal policy lookup (`get_policy(policy_id) -> PolicyDocument | None`, `list_policies() -> list[PolicyDocument]`). Policies are loaded once at construction and served from memory, so lookup cannot fail at runtime (it keeps working during a DB outage); an unknown id returns `None`.
-- `identity: CallerIdentity`, `guard_history: SessionGuardHistory`, `approved_actions: frozenset[ActionType]` — resolved by the orchestrator and injected; `grounding: GroundingContext | None` is set by `run_resolution` for the output validators.
+- `identity: CallerIdentity`, `guard_history: SessionGuardHistory`, `approved_grants: tuple[ApprovedGrant, ...]` — resolved by the orchestrator and injected; `grounding: GroundingContext | None` is set by `run_resolution` for the output validators.
 
 ---
 
@@ -357,6 +357,8 @@ erDiagram
         jsonb edited_payload
         timestamptz requested_at
         timestamptz resolved_at
+        text customer_reason
+        timestamptz settled_at
     }
 
     traces {
@@ -461,10 +463,14 @@ sequenceDiagram
     Note over Customer,Agent: Conversation remains ACTIVE and unblocked
     Customer->>Agent: "Can you confirm the default DTLS MTU?"
     Agent-->>Customer: "The effective DTLS MTU is 1350 bytes [kb:socket-mtu#dtls]."
-    Reviewer->>DB: Open Reviewer Dashboard, inspect CR-804 & click APPROVE
-    DB-->>Agent: Approval state updated to APPROVED
-    Agent-->>Customer: "[Notification] Escalation Board has approved credit request CR-804 ($500)."
+    Reviewer->>DB: Open Reviewer Dashboard, inspect CR-804 & click APPROVE (ApprovalService.decide)
+    DB->>DB: resolve (compare-and-set PENDING -> APPROVED)
+    DB->>DB: settle: ActionDispatcher.dispatch_approved, ticket pending_approval -> open
+    DB->>DB: settle_approval: AGENT event message (own turn) + settled_at, one transaction
+    Agent-->>Customer: "Your service credit request has been approved by our Escalation Board. Credit: 500 USD."
 ```
+
+`decide` is `resolve` then `settle`; both are idempotent and `ApprovalService.settle_unsettled` (run from the app lifespan) finishes anything a crash interrupted, using only `approvals.settled_at is null`. The notice is a deterministic template (no LLM, reviewer notes never shown) stored as an `AGENT` message in its own turn under the turn lock. Output guards authorize amounts per approved payload (`ApprovedGrant`, only for settled approvals), so an approved $500 does not license $5,000; customer status questions see the unsettled approvals as `UnsettledApprovalView` (no amounts).
 
 ---
 
@@ -516,7 +522,8 @@ The codebase is organized into clean, single-responsibility packages separating 
 │   └── migrations/
 │       ├── 20260929_1500_kb-schema.sql        # Vector extension + snapshots, kb_articles, passages, policies, accounts, tickets
 │       ├── 20261001_0900_agent-runtime.sql    # conversations, messages, approvals, traces, tool_calls
-│       └── 20261002_1200_simulated-actions.sql # simulated_actions audit/idempotency table
+│       ├── 20261002_1200_simulated-actions.sql # simulated_actions audit/idempotency table
+│       └── 20261002_1300_approval-settled.sql # approvals.settled_at, customer_reason, unsettled partial index
 │
 ├── docs/                              # Project documentation, plans & evaluation reports
 │   ├── overview/                      # Deliverable D diagrams (logical & deployment views)
@@ -572,7 +579,9 @@ The codebase is organized into clean, single-responsibility packages separating 
 │   ├── models.py                      # Service-domain Pydantic schemas (CallerIdentity, SLADeadlines, RepeatContactResult, CountryCodeOutput)
 │   ├── customer_service.py            # Account identification & SLA calculations
 │   ├── ticket_service.py              # Historical tickets & repeat contact analysis
-│   ├── approval_service.py            # Non-blocking HITL approvals lifecycle
+│   ├── approval_service.py            # Non-blocking HITL approvals lifecycle (decide / settle / settle_unsettled)
+│   ├── approval_models.py             # ReviewerDecision, SettleOutcome, DecisionResult
+│   ├── approval_notice.py             # Deterministic customer notice templates
 │   └── reporting_service.py           # Daily operations report generator
 │
 ├── guardrails/                        # Pre-persistence and post-generation safety

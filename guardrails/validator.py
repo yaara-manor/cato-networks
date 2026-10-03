@@ -1,11 +1,14 @@
 import re
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
+from decimal import Decimal, InvalidOperation
 from re import Pattern
 from typing import NamedTuple
 
 from core.models import TicketPriority
+from guardrails.citations import ANY_MARKER, KB_MARKER, KB_REF, POLICY_MARKER, TELEMETRY_MARKER
 from guardrails.models import (
     ActionType,
+    ApprovedGrant,
     CitationReport,
     CitationViolation,
     CitationViolationKind,
@@ -61,12 +64,6 @@ def check_claims(text: str, identity: CallerIdentity) -> EntitlementVerdict:
     return EntitlementVerdict(false_claims=tuple(dict.fromkeys(claims)))
 
 
-# anchors are [\w-]+ per kbindex.chunk.heading_anchor; tool names match TelemetryEvidence.format_citation
-_KB_MARKER: Pattern[str] = re.compile(r"\[kb:(?P<ref>[^\]]*)\]")
-_POLICY_MARKER: Pattern[str] = re.compile(r"\[policy:(?P<ref>[^\]]*)\]")
-_TELEMETRY_MARKER: Pattern[str] = re.compile(r"\[telemetry:(?P<ref>[^\]]*)\]")
-_KB_REF: Pattern[str] = re.compile(r"(?P<slug>[a-z0-9-]+)#(?P<anchor>[\w-]+)")
-_ANY_MARKER: Pattern[str] = re.compile(r"\[(?:kb|policy|telemetry):[^\]]*\]")
 _CLAIM_SIGNALS: tuple[Pattern[str], ...] = (
     re.compile(r"(?<![\w.])\d[\d,]*(?:\.\d+)?\s?(?:ms|sec|s|bytes|B|KB|MB|GB|kbps|Mbps|Gbps|dBm|%)(?!\w)"),
     re.compile(r"(?i)\b(?:UDP|TCP)\s+\d+\b|\bport\s+\d+\b"),
@@ -82,21 +79,21 @@ def _sentences(block: str) -> list[str]:
 
 
 def _has_claim_signal(sentence: str) -> bool:
-    bare = _ANY_MARKER.sub("", sentence)
+    bare = ANY_MARKER.sub("", sentence)
     return any(signal.search(bare) for signal in _CLAIM_SIGNALS)
 
 
 def _kb_key(ref: str) -> tuple[str, str] | None:
-    parsed = _KB_REF.fullmatch(ref)
+    parsed = KB_REF.fullmatch(ref)
     return (parsed["slug"], parsed["anchor"]) if parsed else None
 
 
 def check_citations(message: str, context: GroundingContext) -> CitationReport:
     violations: list[CitationViolation] = []
     for kind, pattern, known, key in (
-        (CitationViolationKind.UNKNOWN_KB, _KB_MARKER, context.kb_refs, lambda m: _kb_key(m["ref"])),
-        (CitationViolationKind.UNKNOWN_POLICY, _POLICY_MARKER, context.policy_ids, lambda m: m["ref"]),
-        (CitationViolationKind.UNKNOWN_TELEMETRY, _TELEMETRY_MARKER, context.telemetry_tools, lambda m: m["ref"]),
+        (CitationViolationKind.UNKNOWN_KB, KB_MARKER, context.kb_refs, lambda m: _kb_key(m["ref"])),
+        (CitationViolationKind.UNKNOWN_POLICY, POLICY_MARKER, context.policy_ids, lambda m: m["ref"]),
+        (CitationViolationKind.UNKNOWN_TELEMETRY, TELEMETRY_MARKER, context.telemetry_tools, lambda m: m["ref"]),
     ):
         violations.extend(
             CitationViolation(kind=kind, detail=match.group())
@@ -105,13 +102,13 @@ def check_citations(message: str, context: GroundingContext) -> CitationReport:
         )
     claims: list[str] = []
     for paragraph in _PARAGRAPH_BREAK.split(message):
-        cited = _ANY_MARKER.search(paragraph) is not None
+        cited = ANY_MARKER.search(paragraph) is not None
         for sentence in _sentences(paragraph):
             if _has_claim_signal(sentence):
                 claims.append(sentence)
                 if not cited:
                     violations.append(CitationViolation(kind=CitationViolationKind.UNCITED_CLAIM, detail=sentence))
-    offenders = [match.group() for match in _KB_MARKER.finditer(message)] + claims
+    offenders = [match.group() for match in KB_MARKER.finditer(message)] + claims
     if context.is_refusal and offenders:
         violations.append(CitationViolation(kind=CitationViolationKind.REFUSAL_BREACH, detail=offenders[0]))
     return CitationReport(violations=tuple(violations))
@@ -172,27 +169,65 @@ def check_action(
             )
 
 
+_AMOUNT: Pattern[str] = re.compile(
+    r"(?i)(?P<symbol>[$€£])\s?(?P<n1>\d[\d,]*(?:\.\d+)?)"
+    r"|\b(?P<n2>\d[\d,]*(?:\.\d+)?)\s?(?P<code2>USD|EUR|GBP)\b"
+    r"|\b(?P<code3>USD|EUR|GBP)\s?(?P<n3>\d[\d,]*(?:\.\d+)?)(?!\d)"
+)
+_SYMBOL_CODE = {"$": "USD", "€": "EUR", "£": "GBP"}
+_Grants = tuple[ApprovedGrant, ...]
+
+
+def _quoted_amounts(sentence: str) -> set[tuple[Decimal, str]]:
+    quoted: set[tuple[Decimal, str]] = set()
+    for match in _AMOUNT.finditer(sentence):
+        number = match["n1"] or match["n2"] or match["n3"]
+        code = _SYMBOL_CODE.get(match["symbol"] or "") or (match["code2"] or match["code3"]).upper()
+        quoted.add((Decimal(number.replace(",", "")), code))
+    return quoted
+
+
+def _granted_amounts(grants: _Grants) -> set[tuple[Decimal, str]]:
+    granted: set[tuple[Decimal, str]] = set()
+    for grant in grants:
+        if grant.action_type is not ActionType.CREDIT:
+            continue
+        try:
+            amount = Decimal(grant.payload["amount"].replace(",", ""))
+            granted.add((amount, grant.payload.get("currency", "USD").upper()))
+        except (KeyError, InvalidOperation):
+            continue  # a malformed payload grants nothing
+    return granted
+
+
+def _credit_approved(sentence: str, grants: _Grants) -> bool:
+    return _quoted_amounts(sentence) <= _granted_amounts(grants)
+
+
+def _mfa_approved(sentence: str, grants: _Grants) -> bool:
+    return any(grant.action_type is ActionType.MFA_RESET for grant in grants)  # ponytail: not payload-bound
+
+
+def _never_approved(sentence: str, grants: _Grants) -> bool:
+    return False
+
+
 class _OutputRule(NamedTuple):
     kind: OutputViolationKind
     patterns: tuple[Pattern[str], ...]  # all must match within one sentence
-    approved_by: ActionType | None  # None: always a violation
+    approved: Callable[[str, _Grants], bool]
 
 
 _OUTPUT_RULES: tuple[_OutputRule, ...] = (
     _OutputRule(
         OutputViolationKind.CREDIT_AMOUNT_PROMISE,
-        (
-            re.compile(
-                r"(?i)[$€£]\s?\d[\d,]*(?:\.\d+)?|\b\d[\d,]*(?:\.\d+)?\s?(?:USD|EUR)\b|\b(?:USD|EUR)\s?\d[\d,]*"
-            ),
-            re.compile(r"(?i)\b(?:credits?|refunds?|compensation)\b"),
-        ),
-        ActionType.CREDIT,
+        (_AMOUNT, re.compile(r"(?i)\b(?:credits?|refunds?|compensation)\b")),
+        _credit_approved,
     ),
     _OutputRule(
         OutputViolationKind.MFA_RESET_CLAIM,
         (re.compile(r"(?i)\b(?:have|has|i['’]ve)\s+(?:already\s+)?reset\s+(?:your|the|his|her|their)\s+mfa\b"),),
-        ActionType.MFA_RESET,
+        _mfa_approved,
     ),
     _OutputRule(
         OutputViolationKind.VERDICT_OVERRIDE_CLAIM,
@@ -200,7 +235,7 @@ _OUTPUT_RULES: tuple[_OutputRule, ...] = (
             re.compile(r"(?i)\b(?:whitelisted|allowlisted|unblocked|overrode|overridden)\b"),
             re.compile(r"(?i)\b(?:domain|verdict|c2|malware)\b"),
         ),
-        None,
+        _never_approved,
     ),
 )
 _EDGE_PUNCTUATION = ".,;:()\"'"
@@ -216,18 +251,18 @@ def _phrases(segment: str) -> Iterator[str]:
 
 
 def check_outgoing_message(
-    message: str, history: SessionGuardHistory, approved: frozenset[ActionType]
+    message: str, history: SessionGuardHistory, grants: _Grants
 ) -> list[OutputViolation]:
-    body = _ANY_MARKER.sub(" ", message)
+    body = ANY_MARKER.sub(" ", message)
     violations = [
         OutputViolation(kind=rule.kind, detail=sentence)
         for sentence in _sentences(body)
         for rule in _OUTPUT_RULES
-        if rule.approved_by not in approved and all(pattern.search(sentence) for pattern in rule.patterns)
+        if all(pattern.search(sentence) for pattern in rule.patterns) and not rule.approved(sentence, grants)
     ]
     # details are fixed descriptions: a SECRET_ECHO must never carry the secret it reports
     findings = redact(body).findings
-    phrases = (phrase for segment in _ANY_MARKER.split(message) for phrase in _phrases(segment))
+    phrases = (phrase for segment in ANY_MARKER.split(message) for phrase in _phrases(segment))
     repeats_secret = any(finding.sha256 in history.secret_hashes for finding in findings) or (
         bool(history.secret_hashes)
         and any(

@@ -64,28 +64,32 @@ def _banners(conversation_id: UUID) -> None:
         st.rerun()  # an approval moved: reload the transcript so the AGENT notice appears
 
 
-def _show_new_steps(conversation_id: UUID, shown: int) -> int:
-    """Writes the steps of the running turn that are not on screen yet; returns how many are."""
+def _show_new_steps(conversation_id: UUID, turn_index: int, shown: int) -> int:
+    """Writes the steps of the running turn (the `turn_index`-th) not on screen yet; returns how many are.
+
+    Until that turn is persisted nothing is shown, so an earlier turn's steps are never mistaken for it.
+    """
     panel = session.load_trace(conversation_id)
-    if panel is None or not panel.turns:
+    if panel is None or len(panel.turns) <= turn_index:
         return shown
-    for step in panel.turns[-1].steps[shown:]:
+    steps = panel.turns[turn_index].steps
+    for step in steps[shown:]:
         for line in step_lines(step):
             st.text(line)
-    return len(panel.turns[-1].steps)
+    return len(steps)
 
 
-def _await_turn(conversation_id: UUID, future: Future[TurnResult]) -> TurnResult:
+def _await_turn(conversation_id: UUID, turn_index: int, future: Future[TurnResult]) -> TurnResult:
     """Shows the turn's steps as they land, then folds them away. Re-raises the turn's own error."""
     started = time.monotonic()
     shown = 0
     with st.status("Working on it...", expanded=True) as status:
         while not future.done():
-            shown = _show_new_steps(conversation_id, shown)
+            shown = _show_new_steps(conversation_id, turn_index, shown)
             stage = session.load_stage(conversation_id)
             status.update(label=f"Working on it: {stage}..." if stage else "Working on it...")
             time.sleep(POLL_SECONDS)
-        _show_new_steps(conversation_id, shown)
+        _show_new_steps(conversation_id, turn_index, shown)
         failed = future.exception() is not None
         done = f"Worked for {time.monotonic() - started:.0f} s"
         status.update(label=done, state="error" if failed else "complete", expanded=False)
@@ -94,8 +98,9 @@ def _await_turn(conversation_id: UUID, future: Future[TurnResult]) -> TurnResult
 
 def _run_pending(conversation_id: UUID) -> None:
     message_id, text = _STATE.pending
+    turn_index = len(_turn_logs(conversation_id))  # the running turn lands at this index
     try:
-        _await_turn(conversation_id, session.start_customer_turn(conversation_id, text, message_id))
+        _await_turn(conversation_id, turn_index, session.start_customer_turn(conversation_id, text, message_id))
     except TurnLockTimeout:
         _STATE.notice = session.LOCK_NOTICE
     except StateVersionError:

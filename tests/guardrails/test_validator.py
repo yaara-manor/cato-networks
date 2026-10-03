@@ -304,6 +304,13 @@ def test_refusal_keeps_telemetry_claims_citable() -> None:
     assert check_citations(message, _context(is_refusal=True)).is_grounded is True
 
 
+def test_refusal_telemetry_marker_does_not_shield_other_claims_in_the_paragraph() -> None:
+    message = "WAN1 latency was 15 ms [telemetry:get_ipsec_status]. The payload was 1350 bytes."
+    assert (CitationViolationKind.REFUSAL_BREACH, "The payload was 1350 bytes.") in _violations(
+        message, is_refusal=True
+    )
+
+
 _PASSAGE = "If the neighbors have different **Hold Time** values, then the [smallest value](/v1/docs/x) is used for the pair."
 _QUOTE_CONTEXT = {"kb_refs": frozenset({("bgp", "hold")}), "kb_texts": {("bgp", "hold"): _PASSAGE}}
 

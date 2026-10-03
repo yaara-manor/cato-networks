@@ -107,7 +107,7 @@ def test_fabricated_kb_citation_is_retried(make_deps: MakeDeps, q10_result: KBSe
 def test_credit_amount_every_time_falls_back_to_holding_plan(make_deps: MakeDeps) -> None:
     model, attempts = _plans(CREDIT_SENTENCE)
     run = run_resolution(_input(make_deps), make_deps(), model)
-    assert len(attempts) == 3  # first try plus two output retries
+    assert len(attempts) == 4  # first try plus three output retries
     assert run.output.customer_message == HOLDING_MESSAGE
     assert run.output.escalate_to_human and run.output.actions == ()
     assert run.output.escalation_reason
@@ -216,6 +216,13 @@ def test_nudge_gives_way_when_the_reply_stays_as_is(make_deps: MakeDeps) -> None
     run = run_resolution(_input(make_deps, _playbook_knowledge(7.0)), make_deps(), model)
     assert len(attempts) == 2 and run.output.customer_message == "Please look at your routes."
     assert not run.output.escalate_to_human
+
+
+def test_a_guard_retry_does_not_use_up_the_nudge(make_deps: MakeDeps) -> None:
+    cited = "Summarize the routes you advertise. [kb:xops-network-playbook-demo#step-2]"
+    model, attempts = _plans("The payload was 1350 bytes.", "Please look at your routes.", cited)
+    run = run_resolution(_input(make_deps, _playbook_knowledge(7.0)), make_deps(), model)
+    assert len(attempts) == 3 and run.output.customer_message == cited
 
 
 def test_weak_playbook_hit_is_not_nudged(make_deps: MakeDeps) -> None:

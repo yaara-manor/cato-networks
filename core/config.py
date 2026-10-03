@@ -1,13 +1,16 @@
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 
-from dotenv import load_dotenv
+from dotenv import dotenv_values, load_dotenv
 from pydantic import AwareDatetime
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 REPO_ROOT: Path = Path(__file__).resolve().parents[1]
 
-load_dotenv(REPO_ROOT / ".env", override=True)  # .env beats stale shell exports; pydantic-ai reads OPENAI_API_KEY from os.environ
+load_dotenv(REPO_ROOT / ".env")  # pydantic-ai reads OPENAI_API_KEY from os.environ; Compose's DATABASE_URL must survive
+if _api_key := dotenv_values(REPO_ROOT / ".env").get("OPENAI_API_KEY"):
+    os.environ["OPENAI_API_KEY"] = _api_key  # .env beats a stale shell export
 
 
 class Settings(BaseSettings):

@@ -4,7 +4,7 @@ from typing import Any
 import pytest
 
 from agents.models import AgentRole
-from agents.diagnostics import build_diagnostics_agent, run_diagnostics
+from agents.diagnostics import _prompt, build_diagnostics_agent, run_diagnostics
 from agents.messages import tool_returns
 from agents.models import DiagnosticsInput, Intent, TriageDecision, TriageResult
 from agents.runner import run_role
@@ -120,3 +120,7 @@ def test_model_failure_keeps_gathered_evidence(make_deps: MakeDeps) -> None:
     assert run.output.findings.root_cause_hypothesis is None
     assert run.output.has_anomaly and run.trace.error
 
+
+
+def test_prompt_carries_the_caller_email_for_my_client_questions(make_deps: MakeDeps) -> None:
+    assert f"Caller email: {OWN_EMAIL}" in _prompt(_input(make_deps))

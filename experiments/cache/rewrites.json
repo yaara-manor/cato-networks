@@ -6,7 +6,7 @@
       "jumbo frames LAN ports",
       "9000-byte frame handling LAN"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 277,
       "output_tokens": 1100,
@@ -22,7 +22,7 @@
       "Socket-to-PoP DTLS MTU",
       "DF bit oversized WAN packet handling"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 285,
       "output_tokens": 1047,
@@ -38,7 +38,7 @@
       "MTU downstream",
       "passive links MTU"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 286,
       "output_tokens": 2269,
@@ -55,7 +55,7 @@
       "BFD timers Cloud Interconnect site",
       "post-change actions BFD timers"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 283,
       "output_tokens": 1509,
@@ -71,7 +71,7 @@
       "BGP summary routes prerequisites",
       "BGP summary routes limits"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 264,
       "output_tokens": 1542,
@@ -88,7 +88,7 @@
       "BGP keep-alive interval",
       "Hold Time mismatch"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 283,
       "output_tokens": 1648,
@@ -104,7 +104,7 @@
       "BGP route limit per neighbor",
       "advertised routes reduction"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 281,
       "output_tokens": 2350,
@@ -121,7 +121,7 @@
       "IKEv2 proposals",
       "IPsec proposal parameters"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 283,
       "output_tokens": 1082,
@@ -137,7 +137,7 @@
       "CMA BGP disconnect views",
       "CMA route table verification views"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 278,
       "output_tokens": 1601,
@@ -153,7 +153,7 @@
       "Cato active BFD BGP site types",
       "multi-hop BFD UDP port"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 277,
       "output_tokens": 1962,
@@ -168,7 +168,7 @@
     "search_queries": [
       "TS_UNACCEPTABLE"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 276,
       "output_tokens": 1278,
@@ -185,7 +185,7 @@
       "IPsec 100 Mbps",
       "Cato IPsec recommendations"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 271,
       "output_tokens": 1110,
@@ -202,7 +202,7 @@
       "IKE rekey failure",
       "Azure VPN DH groups"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 274,
       "output_tokens": 815,
@@ -217,7 +217,7 @@
     "search_queries": [
       "IKEv2 Initiate connection by Cato"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 271,
       "output_tokens": 1496,
@@ -234,7 +234,7 @@
       "site IP range",
       "Cato system range"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 272,
       "output_tokens": 1038,
@@ -250,7 +250,7 @@
       "IPsec pre-shared key length",
       "IKEv1 to IKEv2 changes"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 286,
       "output_tokens": 1998,
@@ -267,7 +267,7 @@
       "DTLS port recommendation",
       "DTLS version prerequisites"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 272,
       "output_tokens": 1360,
@@ -284,7 +284,7 @@
       "third-party firewall throughput",
       "Socket firewall fix"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 271,
       "output_tokens": 2127,
@@ -301,7 +301,7 @@
       "secondary socket takeover",
       "post-takeover actions"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 275,
       "output_tokens": 2248,
@@ -317,7 +317,7 @@
       "X1600 HA compatibility",
       "X1500B HA compatibility"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 278,
       "output_tokens": 1429,
@@ -333,7 +333,7 @@
       "CMA manual failover prerequisites",
       "CMA failover status after 2 minutes"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 274,
       "output_tokens": 1102,
@@ -350,7 +350,7 @@
       "HA Ready",
       "connectivity event"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 272,
       "output_tokens": 1417,
@@ -367,7 +367,7 @@
       "CMA split-brain detection",
       "socket traffic CMA split-brain"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 276,
       "output_tokens": 1513,
@@ -383,7 +383,7 @@
       "Disconnected event timing",
       "Connected event timing"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 276,
       "output_tokens": 2266,
@@ -399,7 +399,7 @@
       "Link Quality KPIs",
       "Link Quality SLA export"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 279,
       "output_tokens": 1382,
@@ -416,7 +416,7 @@
       "probes per rule",
       "default probe interval"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 275,
       "output_tokens": 1882,
@@ -432,7 +432,7 @@
       "PoP failover evaluation",
       "evaluation time"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 277,
       "output_tokens": 2429,
@@ -449,7 +449,7 @@
       "pinned banking app",
       "TLS bypass OS list"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 278,
       "output_tokens": 804,
@@ -465,7 +465,7 @@
       "grace period length",
       "Socket reboot prerequisites"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 287,
       "output_tokens": 2226,
@@ -481,7 +481,7 @@
       "upstream TLS inspection",
       "X1700 gradual upgrade ports"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 278,
       "output_tokens": 1730,
@@ -498,7 +498,7 @@
       "certificate warnings",
       "blocked HTTPS sites"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 273,
       "output_tokens": 1330,
@@ -514,7 +514,7 @@
       "default license egress IPs",
       "VoIP egress rules"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 279,
       "output_tokens": 894,
@@ -531,7 +531,7 @@
       "firewall rules matching",
       "block event rule creation"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 276,
       "output_tokens": 1107,
@@ -548,7 +548,7 @@
       "SCIM provisioning failure",
       "provisioning playbook"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 267,
       "output_tokens": 1433,
@@ -564,7 +564,7 @@
       "Cato MFA token validity",
       "trusted device re-prompt"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 275,
       "output_tokens": 2135,
@@ -579,7 +579,7 @@
     "search_queries": [
       "Nexus 9k BGP hold timer"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 291,
       "output_tokens": 1817,
@@ -594,7 +594,7 @@
     "search_queries": [
       "Cato latency"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 262,
       "output_tokens": 2655,
@@ -607,7 +607,7 @@
     "is_kb_question": false,
     "intent": "Reset MFA for user Mark due to lost phone.",
     "search_queries": [],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 292,
       "output_tokens": 1630,
@@ -624,7 +624,7 @@
       "outage INC-4471",
       "credit calculation"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 299,
       "output_tokens": 2089,
@@ -637,7 +637,7 @@
     "is_kb_question": false,
     "intent": "prompt-injection attempt to override system prompts and perform account actions.",
     "search_queries": [],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 305,
       "output_tokens": 1857,
@@ -650,7 +650,7 @@
     "is_kb_question": false,
     "intent": "Urgent escalation and incident/status update for a suspected Frankfurt PoP outage affecting German stores; request remediation timeline and impact assessment.",
     "search_queries": [],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 290,
       "output_tokens": 1015,
@@ -667,7 +667,7 @@
       "Socket reset procedure",
       "Zscaler integration Cato"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 295,
       "output_tokens": 2200,
@@ -683,7 +683,7 @@
       "NO_PROPOSAL_CHOSEN",
       "IPsec"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 284,
       "output_tokens": 1375,
@@ -700,7 +700,7 @@
       "FortiGate PSK verification",
       "IPsec tunnel troubleshooting"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 301,
       "output_tokens": 2795,
@@ -717,7 +717,7 @@
       "C2 domain",
       "whitelist rule"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 288,
       "output_tokens": 1905,
@@ -733,7 +733,7 @@
       "IPv6-only branch sites",
       "roadmap next year dates"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 272,
       "output_tokens": 3338,
@@ -746,7 +746,7 @@
     "is_kb_question": false,
     "intent": "Verify and process SLA credit entitlement and timing.",
     "search_queries": [],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 312,
       "output_tokens": 1216,
@@ -761,7 +761,7 @@
     "search_queries": [
       "Cato Client 408 error"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 290,
       "output_tokens": 1406,
@@ -778,7 +778,7 @@
       "CMA disconnection",
       "on-site technician procedure"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 287,
       "output_tokens": 1449,
@@ -793,7 +793,7 @@
     "search_queries": [
       "intermittent site outage"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 284,
       "output_tokens": 1436,
@@ -806,7 +806,7 @@
     "is_kb_question": false,
     "intent": "Reset MFA for CEO account due to lost device and lockout.",
     "search_queries": [],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 313,
       "output_tokens": 2536,
@@ -823,7 +823,7 @@
       "MTU",
       "throughput"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 293,
       "output_tokens": 1868,
@@ -840,7 +840,7 @@
       "Paris geolocation Germany",
       "google.de access France"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 287,
       "output_tokens": 1572,
@@ -857,7 +857,7 @@
       "network performance troubleshooting",
       "Cato Networks"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 266,
       "output_tokens": 1283,
@@ -870,7 +870,7 @@
     "is_kb_question": false,
     "intent": "Close all open tickets on ACC-1005 and issue a goodwill credit; user also requests to view the system prompt.",
     "search_queries": [],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 314,
       "output_tokens": 3169,
@@ -885,7 +885,7 @@
     "search_queries": [
       "geo-restriction brazil"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 288,
       "output_tokens": 2250,
@@ -902,7 +902,7 @@
       "CMA manual failover status",
       "HA sockets Master"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 310,
       "output_tokens": 1394,
@@ -917,7 +917,7 @@
     "search_queries": [
       "X1600 HA pairing"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 292,
       "output_tokens": 1680,
@@ -932,7 +932,7 @@
     "search_queries": [
       "Socket jumbo frames"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 290,
       "output_tokens": 1546,
@@ -947,7 +947,7 @@
     "search_queries": [
       "IKE SA lifetime"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 292,
       "output_tokens": 1576,
@@ -962,7 +962,7 @@
     "search_queries": [
       "Sev-1 escalation process"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 305,
       "output_tokens": 1727,
@@ -979,7 +979,7 @@
       "guest Wi-Fi isolation",
       "L3 switch routed guest network"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 300,
       "output_tokens": 1985,
@@ -992,7 +992,7 @@
     "is_kb_question": false,
     "intent": "Refund duplicate August invoice charges and confirm processing by tomorrow.",
     "search_queries": [],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 289,
       "output_tokens": 1049,
@@ -1009,7 +1009,7 @@
       "SIP trunk allow-list",
       "egress IP failover"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 298,
       "output_tokens": 842,
@@ -1024,7 +1024,7 @@
     "search_queries": [
       "Catalyst 9300 VLAN configuration"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 265,
       "output_tokens": 759,
@@ -1039,7 +1039,7 @@
     "search_queries": [
       "BGP prefix limit"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 302,
       "output_tokens": 1411,
@@ -1054,7 +1054,7 @@
     "search_queries": [
       "AKS subnet 10.61.0.0/16"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 305,
       "output_tokens": 2667,
@@ -1071,7 +1071,7 @@
       "MFA reset CMA",
       "CMA admin account recovery"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 297,
       "output_tokens": 2128,
@@ -1086,7 +1086,7 @@
     "search_queries": [
       "EKS ingress controller"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 264,
       "output_tokens": 1178,
@@ -1099,7 +1099,7 @@
     "is_kb_question": false,
     "intent": "Discount details for renewing a Cato contract for three years.",
     "search_queries": [],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 265,
       "output_tokens": 1324,
@@ -1112,7 +1112,7 @@
     "is_kb_question": false,
     "intent": "Customer requests the per-site list price of Cato licensing for 2027.",
     "search_queries": [],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 266,
       "output_tokens": 1420,
@@ -1127,7 +1127,7 @@
     "search_queries": [
       "Microsoft 365 password reset"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 261,
       "output_tokens": 1987,
@@ -1142,7 +1142,7 @@
     "search_queries": [
       "FIFA World Cup 2026 winner"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 260,
       "output_tokens": 1934,
@@ -1155,7 +1155,7 @@
     "is_kb_question": false,
     "intent": "Guidance on filing a US tax return extension.",
     "search_queries": [],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 260,
       "output_tokens": 1145,
@@ -1168,7 +1168,7 @@
     "is_kb_question": false,
     "intent": "Need a sourdough bread recipe.",
     "search_queries": [],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 260,
       "output_tokens": 1380,
@@ -1183,7 +1183,7 @@
     "search_queries": [
       "iPhone battery replacement"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 259,
       "output_tokens": 1209,
@@ -1198,7 +1198,7 @@
     "search_queries": [
       "Oracle database license audit"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 261,
       "output_tokens": 1676,
@@ -1215,7 +1215,7 @@
       "500 Mbps",
       "price per Mbps"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 272,
       "output_tokens": 1020,
@@ -1231,7 +1231,7 @@
       "Cato Socket X1900 release date",
       "100G WAN ports"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 275,
       "output_tokens": 1533,
@@ -1246,7 +1246,7 @@
     "search_queries": [
       "IKEv2 IPsec"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 282,
       "output_tokens": 1463,
@@ -1261,7 +1261,7 @@
     "search_queries": [
       "Cato early termination fee"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 268,
       "output_tokens": 2127,
@@ -1278,7 +1278,7 @@
       "Cato Socket HA",
       "SRX behind Cato Socket"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 275,
       "output_tokens": 1889,
@@ -1293,7 +1293,7 @@
     "search_queries": [
       "IPsec IKEv2 SonicWall NSa 3700 Cato"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 277,
       "output_tokens": 2926,
@@ -1310,7 +1310,7 @@
       "Cato Socket BGP peering",
       "BGP configuration MikroTik Cato"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 270,
       "output_tokens": 2191,
@@ -1325,7 +1325,7 @@
     "search_queries": [
       "ML-KEM parameter set negotiation"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 283,
       "output_tokens": 1159,
@@ -1341,7 +1341,7 @@
       "X1600 EIRP",
       "X1600 antenna gain dBi"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 274,
       "output_tokens": 1711,
@@ -1358,7 +1358,7 @@
       "Windows Client 9.2 release notes",
       "Cato Windows 9.2 changes"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 266,
       "output_tokens": 1401,
@@ -1373,7 +1373,7 @@
     "search_queries": [
       "Barracuda CloudGen F-Series IPsec"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 275,
       "output_tokens": 1573,
@@ -1388,7 +1388,7 @@
     "search_queries": [
       "Cato PoP openings Q1 2027"
     ],
-    "model": "openai:gpt-5-nano",
+    "model": "openai:gpt-6-luna",
     "usage": {
       "input_tokens": 268,
       "output_tokens": 1122,

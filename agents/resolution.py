@@ -1,19 +1,22 @@
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from dataclasses import replace
 
 from pydantic_ai import Agent, ModelRetry, RunContext
+from pydantic_ai.messages import ModelMessage, ModelRequest, RetryPromptPart
 from pydantic_ai.models import Model
 
 from agents.base import SupportDeps, build_agent, conversation_prompt, load_prompt
 from agents.models import AgentRole, AgentRun, ResolutionInput, ResolutionPlan
 from agents.runner import run_role
-from guardrails import check_citations, check_outgoing_message
+from guardrails import check_citations, check_outgoing_message, uncited_playbooks
 
 HOLDING_MESSAGE = (
     "Thanks for your patience. I am passing your request to a support engineer "
     "who will follow up with you directly."
 )
 ESCALATION_REASON = "model failure or output validation retries exhausted"
+NUDGE_PREFIX = "Retrieved playbook(s) not cited:"
+NUDGE_PREFIX = "Retrieved playbook(s) not cited:"
 
 
 def _retry(kinds: Iterable[str]) -> ModelRetry:
@@ -39,10 +42,34 @@ def _validate_outgoing(ctx: RunContext[SupportDeps], plan: ResolutionPlan) -> Re
     return plan
 
 
+def _already_nudged(messages: Sequence[ModelMessage]) -> bool:
+    return any(
+        isinstance(part, RetryPromptPart) and isinstance(part.content, str) and part.content.startswith(NUDGE_PREFIX)
+        for message in messages
+        if isinstance(message, ModelRequest)
+        for part in message.parts
+    )
+
+
+def _nudge_uncited_playbooks(ctx: RunContext[SupportDeps], plan: ResolutionPlan) -> ResolutionPlan:
+    """One reminder, only once the reply is otherwise clean; the reply after it is accepted as written."""
+    if ctx.deps.grounding is None or _already_nudged(ctx.messages):
+        return plan
+    if missing := uncited_playbooks(plan.customer_message, ctx.deps.grounding):
+        raise ModelRetry(
+            f"{NUDGE_PREFIX} {', '.join(missing)}. If one applies, cite it with a "
+            "[kb:<slug>#<anchor>] marker from the knowledge passages at the point it applies; otherwise "
+            "resend the message unchanged."
+        )
+    return plan
+
+
 def build_resolution_agent(model: Model | None = None) -> Agent[SupportDeps, ResolutionPlan]:
-    agent = build_agent(load_prompt("resolution"), ResolutionPlan, model)
+    # three output retries: a guard violation, the playbook reminder, and a guard violation in the redraft
+    agent = build_agent(load_prompt("resolution"), ResolutionPlan, model, output_retries=3)
     agent.output_validator(_validate_citations)
     agent.output_validator(_validate_outgoing)
+    agent.output_validator(_nudge_uncited_playbooks)
     return agent
 
 
@@ -60,6 +87,9 @@ def _prompt(data: ResolutionInput) -> str:
         sections.append(f"Diagnostics: {data.diagnostics.model_dump_json()}")
     if data.knowledge:
         sections.append(f"Knowledge: {data.knowledge.model_dump_json(exclude={'candidates'})}")
+    if data.policies:
+        listed = "\n\n".join(f"[policy:{p.policy_id}] {p.title}\n{p.body}" for p in data.policies)
+        sections.append(f"Support policies (cite only one that governs what you state):\n{listed}")
     sections.append(conversation_prompt(data.message, data.history))
     return "\n\n".join(sections)
 

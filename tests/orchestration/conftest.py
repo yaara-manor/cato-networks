@@ -28,7 +28,7 @@ from agents import (
 from core.clock import SimulationClock
 from core.config import settings
 from orchestration import AgentPorts, Workflow, build_workflow
-from retrieval.models import KBSearchStatus, PolicyDocument, RetrievedPassage
+from retrieval.models import KBSearchStatus, RetrievedPassage
 from storage import AgentRole, StateStore
 from tools.models import TelemetryEvidence
 
@@ -68,7 +68,6 @@ class Scripted:
     kb_status: KBSearchStatus = KBSearchStatus.CONFIDENT
     reply: str = "Here is your answer."
     passages: tuple[RetrievedPassage, ...] = ()
-    policies: tuple[PolicyDocument, ...] = ()
     fail_in: str | None = None  # role whose callable raises
     calls: list[str] = field(default_factory=list)
     inputs: dict[str, list[Any]] = field(default_factory=dict)
@@ -99,7 +98,6 @@ class Scripted:
         bundle = KnowledgeBundle(
             findings=KnowledgeFindings(needs_more_telemetry=self.needs_more_telemetry),
             retrieved_passages=self.passages,
-            referenced_policies=self.policies,
             confidence_status=self.kb_status,
             needs_more_telemetry=self.needs_more_telemetry,
         )

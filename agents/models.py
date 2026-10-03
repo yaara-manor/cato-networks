@@ -190,6 +190,7 @@ class DiagnosticEvidence(_AgentModel):
         cls, findings: DiagnosticsFindings, results: Sequence[TelemetryToolResult[Any]]
     ) -> Self:
         ok = [r for r in results if r.status == TelemetryStatus.OK]
+        answered = {r.tool_name for r in ok}  # a failed first attempt (wrong site id) does not undo a later success
         return cls(
             findings=findings,
             inspected_tools=tuple(dict.fromkeys(r.tool_name for r in results)),
@@ -197,7 +198,7 @@ class DiagnosticEvidence(_AgentModel):
             unavailable_tools=tuple(
                 UnavailableTool(tool_name=r.tool_name, status=r.status, error=r.error)
                 for r in results
-                if r.status != TelemetryStatus.OK
+                if r.status != TelemetryStatus.OK and r.tool_name not in answered
             ),
             sev1_corroborated=_sev1_corroborated(ok),
         )
@@ -213,6 +214,10 @@ class DiagnosticEvidence(_AgentModel):
 
 
 # Knowledge
+
+
+PLAYBOOK_SLUG_PREFIX = "xops-network-playbook"
+PLAYBOOK_NUDGE_MIN_SCORE = 5.0  # a playbook passage this relevant should show in the reply
 
 
 class KnowledgeInput(_AgentModel):
@@ -239,7 +244,6 @@ class KnowledgeBundle(_AgentModel):
     findings: KnowledgeFindings
     retrieved_passages: tuple[RetrievedPassage, ...] = ()
     candidates: tuple[RetrievedPassage, ...] = ()
-    referenced_policies: tuple[PolicyDocument, ...] = ()
     confidence_status: KBSearchStatus
     snapshot_date: AwareDatetime | None = None
     queries: tuple[str, ...] = ()
@@ -250,8 +254,9 @@ class KnowledgeBundle(_AgentModel):
         cls,
         findings: KnowledgeFindings,
         searches: Sequence[KBSearchResult],
-        policies: Sequence[PolicyDocument],
+        expansion: KBSearchResult | None = None,
     ) -> Self:
+        """`expansion` adds context passages only: it is no query and never decides the status."""
         statuses = {r.status for r in searches}
         if KBSearchStatus.CONFIDENT in statuses:
             status = KBSearchStatus.CONFIDENT
@@ -259,11 +264,11 @@ class KnowledgeBundle(_AgentModel):
             status = KBSearchStatus.UNAVAILABLE
         else:
             status = KBSearchStatus.LOW_CONFIDENCE_REFUSAL
+        everything = (*searches, *((expansion,) if expansion else ()))
         return cls(
             findings=findings,
-            retrieved_passages=_dedupe_passages(p for r in searches for p in r.passages),
-            candidates=_dedupe_passages(p for r in searches for p in r.candidates),
-            referenced_policies=tuple({p.policy_id: p for p in policies}.values()),
+            retrieved_passages=_dedupe_passages(p for r in everything for p in r.passages),
+            candidates=_dedupe_passages(p for r in everything for p in r.candidates),
             confidence_status=status,
             snapshot_date=next((r.snapshot_date for r in searches if r.snapshot_date), None),
             queries=tuple(r.query for r in searches),
@@ -335,6 +340,7 @@ class ResolutionInput(_AgentModel):
     triage: TriageResult
     diagnostics: DiagnosticEvidence | None = None
     knowledge: KnowledgeBundle | None = None
+    policies: tuple[PolicyDocument, ...] = ()  # every support policy, full text, on every turn
     history: tuple[ConversationTurn, ...] = ()
     message: str
     known_ticket_id: str | None = None  # ticket already opened in this conversation
@@ -343,13 +349,20 @@ class ResolutionInput(_AgentModel):
     def grounding_context(self) -> GroundingContext:
         """Built from successful tool results only; absent stages contribute nothing."""
         knowledge, diagnostics = self.knowledge, self.diagnostics
+        passages = knowledge.retrieved_passages if knowledge else ()
+        kb_texts: dict[tuple[str, str], str] = {}
+        for p in passages:
+            key = (p.slug, p.heading_anchor)
+            kb_texts[key] = f"{kb_texts[key]} {p.body}" if key in kb_texts else p.body
         return GroundingContext(
-            kb_refs=frozenset(
-                (p.slug, p.heading_anchor) for p in (knowledge.retrieved_passages if knowledge else ())
+            kb_refs=frozenset(kb_texts),
+            kb_texts=kb_texts,
+            strong_playbooks=frozenset(
+                p.slug
+                for p in passages
+                if p.slug.startswith(PLAYBOOK_SLUG_PREFIX) and p.rerank_score >= PLAYBOOK_NUDGE_MIN_SCORE
             ),
-            policy_ids=frozenset(
-                p.policy_id for p in (knowledge.referenced_policies if knowledge else ())
-            ),
+            policy_ids=frozenset(p.policy_id for p in self.policies),
             telemetry_tools=diagnostics.usable_tools if diagnostics else frozenset(),
             is_refusal=knowledge.is_refusal if knowledge else False,
         )

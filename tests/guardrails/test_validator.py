@@ -18,6 +18,7 @@ from guardrails import (
     check_citations,
     check_claims,
     check_outgoing_message,
+    uncited_playbooks,
     redact,
 )
 from services.models import CallerIdentity
@@ -296,6 +297,53 @@ def test_refusal_with_a_claim_is_one_breach_on_the_first_offender() -> None:
     assert (CitationViolationKind.REFUSAL_BREACH, "The payload was 1350 bytes.") in _violations(
         message, is_refusal=True
     )
+
+
+def test_refusal_keeps_telemetry_claims_citable() -> None:
+    message = "WAN1 latency was 15 ms [telemetry:get_ipsec_status]."
+    assert check_citations(message, _context(is_refusal=True)).is_grounded is True
+
+
+def test_refusal_telemetry_marker_does_not_shield_other_claims_in_the_paragraph() -> None:
+    message = "WAN1 latency was 15 ms [telemetry:get_ipsec_status]. The payload was 1350 bytes."
+    assert (CitationViolationKind.REFUSAL_BREACH, "The payload was 1350 bytes.") in _violations(
+        message, is_refusal=True
+    )
+
+
+_PASSAGE = "If the neighbors have different **Hold Time** values, then the [smallest value](/v1/docs/x) is used for the pair."
+_QUOTE_CONTEXT = {"kb_refs": frozenset({("bgp", "hold")}), "kb_texts": {("bgp", "hold"): _PASSAGE}}
+
+
+def _quote_kinds(message: str) -> list[CitationViolationKind]:
+    return [kind for kind, _ in _violations(message, **_QUOTE_CONTEXT)]
+
+
+def test_verbatim_blockquote_passes_despite_markdown_and_punctuation() -> None:
+    assert _quote_kinds("> The smallest value is used for the pair. [kb:bgp#hold]") == []
+
+
+def test_ellipsis_joins_fragments_of_one_passage() -> None:
+    assert _quote_kinds("> If the neighbors have different Hold Time values ... the smallest value is used [kb:bgp#hold]") == []
+
+
+def test_paraphrased_blockquote_is_ungrounded() -> None:
+    assert _quote_kinds("> The lowest timer always wins between peers. [kb:bgp#hold]") == [CitationViolationKind.UNGROUNDED_QUOTE]
+
+
+def test_blockquote_without_a_kb_marker_is_ungrounded() -> None:
+    assert _quote_kinds("> The smallest value is used for the pair.") == [CitationViolationKind.UNGROUNDED_QUOTE]
+
+
+def test_multi_line_blockquote_is_one_block() -> None:
+    assert _quote_kinds("> The smallest value\n> is used for the pair. [kb:bgp#hold]") == []
+
+
+def test_uncited_playbooks_lists_only_strong_playbooks_the_reply_skips() -> None:
+    context = _context(strong_playbooks=frozenset({"xops-network-playbook-a", "xops-network-playbook-b"}))
+    message = "Do the steps [kb:xops-network-playbook-a#step-2]."
+    assert uncited_playbooks(message, context) == ("xops-network-playbook-b",)
+    assert uncited_playbooks(message, _context()) == ()
 
 
 def test_plain_refusal_is_grounded() -> None:

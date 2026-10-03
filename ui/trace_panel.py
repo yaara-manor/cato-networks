@@ -93,14 +93,19 @@ class TracePanel(_View):
         )
 
 
-def _render_step(step: TraceStep, show_io: bool) -> None:
+def step_lines(step: TraceStep) -> tuple[str, ...]:
+    """The text lines of one step: the agent line, then one line per tool call."""
     cost = f" ${step.cost_usd}" if step.cost_usd is not None else ""
-    st.text(
+    head = (
         f"{step.agent_role} [{step.status}] {step.latency_ms} ms, "
         f"{step.prompt_tokens}+{step.completion_tokens} tokens{cost}"
     )
-    for call in step.tool_calls:
-        st.text(f"  tool {call.tool_name} [{call.status}] {call.latency_ms} ms")
+    return (head, *(f"  tool {c.tool_name} [{c.status}] {c.latency_ms} ms" for c in step.tool_calls))
+
+
+def _render_step(step: TraceStep, show_io: bool) -> None:
+    for line in step_lines(step):
+        st.text(line)
     if show_io:
         st.code(step.input_json, language="json")
         st.code(step.output_json or _NONE, language="json")

@@ -123,6 +123,7 @@ class CitationViolationKind(StrEnum):
     UNKNOWN_POLICY = "UNKNOWN_POLICY"
     UNKNOWN_TELEMETRY = "UNKNOWN_TELEMETRY"
     UNCITED_CLAIM = "UNCITED_CLAIM"
+    UNGROUNDED_QUOTE = "UNGROUNDED_QUOTE"
     REFUSAL_BREACH = "REFUSAL_BREACH"
 
 
@@ -133,6 +134,8 @@ class CitationViolation(_GuardModel):
 
 class GroundingContext(_GuardModel):
     kb_refs: frozenset[tuple[str, str]]
+    kb_texts: dict[tuple[str, str], str] = {}  # passage text per (slug, anchor), for quote checks
+    strong_playbooks: frozenset[str] = frozenset()  # retrieved playbook slugs the reply should draw on
     policy_ids: frozenset[str]
     telemetry_tools: frozenset[str]
     is_refusal: bool

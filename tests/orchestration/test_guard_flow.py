@@ -26,8 +26,8 @@ def test_scoping_question_then_answer(harness: Harness, scripted: Scripted) -> N
     workflow = harness.workflow(scripted, None)
     scripted.scoping_question = "Which site?"
     first = workflow.run_turn(conversation_id, "it is slow", uuid4())
-    assert first.path == (S.INGESTION_GUARD, S.TRIAGE, S.RESOLUTION, S.ACTION_EVALUATION, S.IDLE)
-    assert "diagnostics" not in scripted.calls and "knowledge" not in scripted.calls
+    assert S.DIAGNOSTICS in first.path and S.RESOLUTION in first.path  # telemetry is read before asking
+    assert "diagnostics" in scripted.calls
 
     scripted.scoping_question = None
     second = workflow.run_turn(conversation_id, "Berlin", uuid4())

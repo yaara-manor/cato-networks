@@ -257,8 +257,8 @@ def test_unknown_country_clarification_and_pydantic_ai_resolver(
     )
     cust_svc = CustomerService(db_conn, clock, country_agent=test_agent)
 
-    # Verify default agent model setting is openai:gpt-5-nano
-    assert settings.llm_model == "openai:gpt-5-nano"
+    # Verify default agent model setting is openai:gpt-6-luna
+    assert settings.llm_model == "openai:gpt-6-luna"
 
     # Set ACC-1006 country to NULL and verify error log + scoping question
     with db_conn.cursor() as cur:

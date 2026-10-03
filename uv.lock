@@ -186,6 +186,7 @@ dependencies = [
     { name = "psycopg", extra = ["binary"] },
     { name = "pydantic-ai" },
     { name = "pydantic-settings" },
+    { name = "python-dotenv" },
     { name = "sentence-transformers" },
     { name = "streamlit" },
 ]
@@ -202,6 +203,7 @@ requires-dist = [
     { name = "psycopg", extras = ["binary"], specifier = ">=3.3.6" },
     { name = "pydantic-ai", specifier = ">=2.51.0" },
     { name = "pydantic-settings", specifier = ">=2.0.0" },
+    { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "sentence-transformers", specifier = ">=6.1.0" },
     { name = "streamlit", specifier = ">=1.64.0" },
 ]

@@ -83,9 +83,57 @@ def _has_claim_signal(sentence: str) -> bool:
     return any(signal.search(bare) for signal in _CLAIM_SIGNALS)
 
 
+_BLOCKQUOTE_LINE: Pattern[str] = re.compile(r"^[ \t]*>[ \t]?(.*)$", re.MULTILINE)
+_MD_IMAGE: Pattern[str] = re.compile(r"!\[[^\]]*\]\([^)]*\)")
+_MD_LINK: Pattern[str] = re.compile(r"\[([^\]]*)\]\([^)]*\)")
+_NON_WORD: Pattern[str] = re.compile(r"[\W_]+")
+_ELLIPSIS: Pattern[str] = re.compile(r"\.\.\.|…")
+_MIN_QUOTE_WORDS = 3
+
+
+def _normalize(text: str) -> str:
+    """Words only, lowercase: markdown, punctuation and spacing differences never break a quote match."""
+    return _NON_WORD.sub(" ", _MD_LINK.sub(r"\1", _MD_IMAGE.sub("", text)).lower()).strip()
+
+
+def _blockquotes(message: str) -> list[str]:
+    """Consecutive `>` lines form one block; its text keeps the markers."""
+    blocks: list[list[str]] = []
+    previous_end = -2
+    for line in _BLOCKQUOTE_LINE.finditer(message):
+        if line.start() > previous_end + 1:
+            blocks.append([])
+        blocks[-1].append(line.group(1))
+        previous_end = line.end()
+    return ["\n".join(lines) for lines in blocks]
+
+
+def _quote_violations(message: str, context: GroundingContext) -> list[CitationViolation]:
+    """A blockquote must cite a knowledge passage and repeat that passage word for word."""
+    violations: list[CitationViolation] = []
+    for block in _blockquotes(message):
+        keys = [key for m in KB_MARKER.finditer(block) if (key := _kb_key(m["ref"])) in context.kb_refs]
+        if not keys:
+            if not KB_MARKER.search(block):  # an unknown marker is already an UNKNOWN_KB violation
+                violations.append(CitationViolation(kind=CitationViolationKind.UNGROUNDED_QUOTE, detail=block))
+            continue
+        source = _normalize(" ".join(context.kb_texts.get(key, "") for key in keys))
+        quoted = KB_MARKER.sub("", block)
+        fragments = [_normalize(part) for part in _ELLIPSIS.split(quoted)]
+        if any(len(f.split()) >= _MIN_QUOTE_WORDS and f not in source for f in fragments):
+            violations.append(CitationViolation(kind=CitationViolationKind.UNGROUNDED_QUOTE, detail=block))
+    return violations
+
+
 def _kb_key(ref: str) -> tuple[str, str] | None:
     parsed = KB_REF.fullmatch(ref)
     return (parsed["slug"], parsed["anchor"]) if parsed else None
+
+
+def uncited_playbooks(message: str, context: GroundingContext) -> tuple[str, ...]:
+    """Strongly retrieved playbooks the reply cites nowhere. A nudge, not a violation: the reply may not need them."""
+    cited = {key[0] for m in KB_MARKER.finditer(message) if (key := _kb_key(m["ref"]))}
+    return tuple(sorted(context.strong_playbooks - cited))
 
 
 def check_citations(message: str, context: GroundingContext) -> CitationReport:
@@ -105,9 +153,12 @@ def check_citations(message: str, context: GroundingContext) -> CitationReport:
         cited = ANY_MARKER.search(paragraph) is not None
         for sentence in _sentences(paragraph):
             if _has_claim_signal(sentence):
-                claims.append(sentence)
                 if not cited:
                     violations.append(CitationViolation(kind=CitationViolationKind.UNCITED_CLAIM, detail=sentence))
+                non_kb_evidence = TELEMETRY_MARKER.search(sentence) is not None or POLICY_MARKER.search(sentence) is not None
+                if not non_kb_evidence:  # a refusal bars knowledge claims only; telemetry and policy stay citable
+                    claims.append(sentence)
+    violations.extend(_quote_violations(message, context))
     offenders = [match.group() for match in KB_MARKER.finditer(message)] + claims
     if context.is_refusal and offenders:
         violations.append(CitationViolation(kind=CitationViolationKind.REFUSAL_BREACH, detail=offenders[0]))

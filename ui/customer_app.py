@@ -1,17 +1,22 @@
+import time
+from concurrent.futures import Future
 from uuid import UUID, uuid4
 
 import streamlit as st
 
+from orchestration import TurnResult
 from orchestration.state import StateVersionError
 from storage import TurnLockTimeout
 from ui import session
 from ui.customer_widgets import render_banners, render_message, render_trace
 from ui.scenarios import load_scenarios
+from ui.trace_panel import TraceTurn, step_lines
 
 CUSTOM = "Custom"
 VERSION_NOTICE = "Service updating, retry."
 _SCENARIOS = {s.scenario_id: s for s in load_scenarios()}
 _STATE = st.session_state
+POLL_SECONDS = 0.5
 
 
 def _start(email: str) -> None:
@@ -59,11 +64,43 @@ def _banners(conversation_id: UUID) -> None:
         st.rerun()  # an approval moved: reload the transcript so the AGENT notice appears
 
 
+def _show_new_steps(conversation_id: UUID, turn_index: int, shown: int) -> int:
+    """Writes the steps of the running turn (the `turn_index`-th) not on screen yet; returns how many are.
+
+    Until that turn is persisted nothing is shown, so an earlier turn's steps are never mistaken for it.
+    """
+    panel = session.load_trace(conversation_id)
+    if panel is None or len(panel.turns) <= turn_index:
+        return shown
+    steps = panel.turns[turn_index].steps
+    for step in steps[shown:]:
+        for line in step_lines(step):
+            st.text(line)
+    return len(steps)
+
+
+def _await_turn(conversation_id: UUID, turn_index: int, future: Future[TurnResult]) -> TurnResult:
+    """Shows the turn's steps as they land, then folds them away. Re-raises the turn's own error."""
+    started = time.monotonic()
+    shown = 0
+    with st.status("Working on it...", expanded=True) as status:
+        while not future.done():
+            shown = _show_new_steps(conversation_id, turn_index, shown)
+            stage = session.load_stage(conversation_id)
+            status.update(label=f"Working on it: {stage}..." if stage else "Working on it...")
+            time.sleep(POLL_SECONDS)
+        _show_new_steps(conversation_id, turn_index, shown)
+        failed = future.exception() is not None
+        done = f"Worked for {time.monotonic() - started:.0f} s"
+        status.update(label=done, state="error" if failed else "complete", expanded=False)
+    return future.result()
+
+
 def _run_pending(conversation_id: UUID) -> None:
     message_id, text = _STATE.pending
+    turn_index = len(_turn_logs(conversation_id))  # the running turn lands at this index
     try:
-        with st.spinner("Working on it..."):
-            session.run_customer_turn(conversation_id, text, message_id)
+        _await_turn(conversation_id, turn_index, session.start_customer_turn(conversation_id, text, message_id))
     except TurnLockTimeout:
         _STATE.notice = session.LOCK_NOTICE
     except StateVersionError:
@@ -71,6 +108,11 @@ def _run_pending(conversation_id: UUID) -> None:
     else:
         _STATE.pending = _STATE.notice = None
     st.rerun()  # redraw the transcript, or the notice with its retry button
+
+
+def _turn_logs(conversation_id: UUID) -> dict[int, TraceTurn]:
+    panel = session.load_trace(conversation_id)
+    return {turn.turn: turn for turn in panel.turns} if panel else {}
 
 
 def main() -> None:
@@ -94,8 +136,9 @@ def main() -> None:
         _banners(conversation_id)
         view = session.load_view(conversation_id)
         assert view is not None
+        logs = _turn_logs(conversation_id)
         for index, message in enumerate(view.messages):
-            render_message(message, index)
+            render_message(message, index, logs.get(message.turn))
         retry = _STATE.notice is not None and st.button("Retry")
         if _STATE.notice:
             st.warning(_STATE.notice)

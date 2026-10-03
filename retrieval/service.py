@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any, LiteralString, NamedTuple
 
 import psycopg
-from psycopg.rows import class_row
+from psycopg.rows import class_row, dict_row
 
 from core.config import settings
 from encoders.embed import embed_query
@@ -22,6 +22,42 @@ logger = logging.getLogger(__name__)
 _RRF_K = 60
 _CANDIDATE_K = 20
 _RERANK_K = 20
+# Beyond the top_k, keep passages of articles absent from it when they also score well, so one article
+# cannot crowd out a second relevant one.
+_EXTRA_PASSAGES = 3
+_EXTRA_SCORE_RATIO = 0.6
+# Sections around a retrieved passage: the one before it and the next few, where steps usually follow.
+_SECTIONS_BEFORE = 1
+_SECTIONS_AFTER = 4
+
+
+_SECTIONS_SQL: LiteralString = """
+select
+    p.id::text as passage_id,
+    a.slug as slug,
+    a.title as title,
+    a.public_url as public_url,
+    a.site_updated_at as site_updated_at,
+    p.heading as heading,
+    p.heading_anchor as heading_anchor,
+    p.body as body,
+    p.position as position
+from passages p
+join kb_articles a on a.slug = p.article_slug
+where p.article_slug = %(slug)s and p.position between %(low)s and %(high)s and p.position <> %(position)s
+order by p.position
+"""
+
+
+def with_other_articles(ranked: list[RetrievedPassage], top_k: int, min_score: float) -> list[RetrievedPassage]:
+    """The top_k, plus well-scoring passages of articles the top_k lacks (best first, capped)."""
+    head = ranked[:top_k]
+    if not head:
+        return head
+    head_slugs = {p.slug for p in head}
+    floor = max(min_score, _EXTRA_SCORE_RATIO * head[0].rerank_score)
+    extras = [p for p in ranked[top_k:] if p.slug not in head_slugs and p.rerank_score >= floor]
+    return head + extras[:_EXTRA_PASSAGES]
 
 
 def _normalize_policy_id(policy_id: str) -> str:
@@ -38,6 +74,7 @@ class _FusedRow(NamedTuple):
     heading: str
     heading_anchor: str
     body: str
+    position: int
     lex_rank: int | None
     vec_rank: int | None
     rrf_score: float
@@ -88,6 +125,7 @@ select
     p.heading as heading,
     p.heading_anchor as heading_anchor,
     p.body as body,
+    p.position as position,
     f.lex_rank as lex_rank,
     f.vec_rank as vec_rank,
     f.rrf_score as rrf_score
@@ -126,6 +164,32 @@ class RetrievalService:
     def list_policies(self) -> list[PolicyDocument]:
         return list(self._policies.values())
 
+    def adjacent_sections(self, passage: RetrievedPassage) -> list[RetrievedPassage]:
+        """Sections around `passage` in its article, carrying its scores: context to answer from, not ranking."""
+        if passage.position is None:
+            return []
+        params = {
+            "slug": passage.slug,
+            "position": passage.position,
+            "low": passage.position - _SECTIONS_BEFORE,
+            "high": passage.position + _SECTIONS_AFTER,
+        }
+        try:
+            with self._conn.cursor(row_factory=dict_row) as cur:
+                cur.execute(_SECTIONS_SQL, params)
+                rows = cur.fetchall()
+        except psycopg.Error as exc:
+            logger.error("Adjacent sections failed: %r", exc)
+            if not self._conn.closed:
+                self._conn.rollback()
+            return []
+        return [
+            RetrievedPassage(
+                **row, lex_rank=None, vec_rank=None, rrf_score=0.0, rerank_score=passage.rerank_score
+            )
+            for row in rows
+        ]
+
     def _fetch_fused(self, query: str, embedding: list[float]) -> list[_FusedRow]:
         with self._conn.cursor(row_factory=class_row(_FusedRow)) as cur:
             cur.execute(
@@ -154,7 +218,7 @@ class RetrievalService:
         ranked = sorted(
             scored, key=lambda p: (-p.rerank_score, -p.rrf_score, p.passage_id)
         )
-        candidates = ranked[:top_k]
+        candidates = with_other_articles(ranked, top_k, self._min_score)
         confident = bool(candidates) and candidates[0].rerank_score >= self._min_score
         passages = [p for p in candidates if p.rerank_score >= self._min_score]
         status = (

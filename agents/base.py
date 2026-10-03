@@ -45,14 +45,14 @@ def _guard_note(ctx: RunContext[SupportDeps]) -> str | None:
 
 
 def build_agent[O](
-    role_prompt: str, output_type: type[O], model: Model | None = None
+    role_prompt: str, output_type: type[O], model: Model | None = None, output_retries: int = 1
 ) -> Agent[SupportDeps, O]:
     return Agent(
         model or settings.llm_model,
         deps_type=SupportDeps,
         output_type=output_type,
         instructions=[role_prompt, _guard_note],
-        retries={"output": 1},
+        retries={"output": output_retries},
     )
 
 

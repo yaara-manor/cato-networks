@@ -172,7 +172,7 @@ def check_action(
 _AMOUNT: Pattern[str] = re.compile(
     r"(?i)(?P<symbol>[$€£])\s?(?P<n1>\d[\d,]*(?:\.\d+)?)"
     r"|\b(?P<n2>\d[\d,]*(?:\.\d+)?)\s?(?P<code2>USD|EUR|GBP)\b"
-    r"|\b(?P<code3>USD|EUR|GBP)\s?(?P<n3>\d[\d,]*)"
+    r"|\b(?P<code3>USD|EUR|GBP)\s?(?P<n3>\d[\d,]*(?:\.\d+)?)(?!\d)"
 )
 _SYMBOL_CODE = {"$": "USD", "€": "EUR", "£": "GBP"}
 _Grants = tuple[ApprovedGrant, ...]

@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
@@ -15,10 +16,12 @@ from agents.models import (
     TriageDecision,
     TriageResult,
     UnavailableTool,
+    UnsettledApprovalView,
 )
 from agents.resolution import HOLDING_MESSAGE, run_resolution
 from guardrails import (
     ActionType,
+    ApprovalStatus,
     ApprovedGrant,
     SessionGuardHistory,
     check_citations,
@@ -168,3 +171,22 @@ def test_prompt_renders_known_ticket(make_deps: MakeDeps) -> None:
     run_resolution(data, make_deps(), model)
     assert "Known ticket: TCK-42" in prompts[0]
     assert "Known ticket: none" in prompts[1]
+
+
+def test_prompt_renders_unsettled_approvals_without_amounts(make_deps: MakeDeps) -> None:
+    prompts: list[str] = []
+
+    def respond(messages: list[ModelMessage], info: AgentInfo) -> ModelResponse:
+        request = messages[0]
+        assert isinstance(request, ModelRequest)
+        prompts.extend(str(p.content) for p in request.parts if isinstance(p, UserPromptPart))
+        return ModelResponse(parts=[ToolCallPart(info.output_tools[0].name, {"customer_message": "ok"})])
+
+    unsettled = (
+        UnsettledApprovalView(
+            action_type=ActionType.CREDIT, status=ApprovalStatus.PENDING, requested_at=datetime.now(UTC)
+        ),
+    )
+    data = _input(make_deps).model_copy(update={"unsettled_approvals": unsettled})
+    run_resolution(data, make_deps(), FunctionModel(respond, model_name="scripted"))
+    assert "Unsettled approvals: CREDIT status=PENDING" in prompts[0]

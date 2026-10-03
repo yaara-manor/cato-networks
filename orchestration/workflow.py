@@ -2,6 +2,7 @@ import logging
 from dataclasses import dataclass, replace
 from uuid import UUID
 
+from actions import ActionDispatcher, ActionResult, DispatchContext
 from agents import (
     ConversationTurn,
     DiagnosticEvidence,
@@ -10,17 +11,39 @@ from agents import (
     KnowledgeInput,
     ResolutionInput,
     ResolutionPlan,
-    SupportAction,
     SupportDeps,
     TriageInput,
     TriageResult,
     TurnSender,
 )
 from core.clock import SimulationClock
-from guardrails import ProposedAction, check_citations, check_claims, check_outgoing_message, detect, redact
-from orchestration.canned import AGENT_FAILURE_PAUSE, CLARIFICATION_ESCALATION, INJECTION_REFUSAL
-from orchestration.degradation import DegradationNotice, DegradedSource, derive_degradations
-from orchestration.gate import gate_actions
+from guardrails import (
+    ProposedAction,
+    check_citations,
+    check_claims,
+    check_outgoing_message,
+    detect,
+    redact,
+)
+from orchestration.actions_step import (
+    confirmations,
+    has_failure,
+    next_active_ticket,
+    stamp_ticket_id,
+    was_paged,
+)
+from orchestration.canned import (
+    AGENT_FAILURE_PAUSE,
+    CLARIFICATION_ESCALATION,
+    INJECTION_REFUSAL,
+    NEEDS_TICKET_FIRST,
+)
+from orchestration.degradation import (
+    DegradationNotice,
+    DegradedSource,
+    derive_degradations,
+)
+from orchestration.gate import GatedActions, gate_actions
 from orchestration.models import AgentPorts, TurnResult
 from orchestration.recorder import TurnRecorder
 from orchestration.routing import compose_reply, next_stage_after_triage
@@ -55,6 +78,8 @@ def _require_clean_message(message: str, data: ResolutionInput, deps: SupportDep
 @dataclass(frozen=True)
 class _Turn:
     recorder: TurnRecorder
+    conversation_id: UUID
+    message_id: UUID
     message: str  # redacted
     history: tuple[ConversationTurn, ...]
     deps: SupportDeps
@@ -83,6 +108,7 @@ class Workflow:
     store: StateStore
     clock: SimulationClock
     base_deps: SupportDeps
+    dispatcher: ActionDispatcher
 
     def run_turn(self, conversation_id: UUID, message: str, message_id: UUID) -> TurnResult:
         """`message_id` is the idempotency key: an answered id returns the stored reply.
@@ -111,6 +137,8 @@ class Workflow:
             return refusal
         turn = _Turn(
             recorder,
+            conversation_id,
+            message_id,
             redacted.text,
             _history(snapshot, stored.turn),
             replace(self.base_deps, guard_history=history),
@@ -150,7 +178,7 @@ class Workflow:
         state = state.after_scoping_question() if triage.scoping_question else state.after_scoping_resolved()
         stage = next_stage_after_triage(triage)
         diagnostics, knowledge = self._evidence(turn, triage, stage)
-        plan = self._resolve(turn, triage, diagnostics, knowledge)
+        plan = self._resolve(turn, triage, diagnostics, knowledge, state)
         turn.recorder.enter(ConversationStage.ACTION_EVALUATION)
         gated = gate_actions(
             plan.actions,
@@ -159,24 +187,48 @@ class Workflow:
             diagnostics.sev1_corroborated if diagnostics else False,
             state.oncall_paged,
         )
-        for index, action in gated.pending:
-            turn.recorder.create_approval(index, action)
-        if gated.oncall_paged:
-            state = state.with_oncall_paged()
+        results, pending, state = self._execute(turn, triage, diagnostics, gated, state)
         degradations = derive_degradations(diagnostics, knowledge)
         notices = tuple(n.customer_text for n in state.unseen(degradations))
-        reply = compose_reply(notices, plan.customer_message, gated.denial_reasons)
+        lines = (*confirmations(results), *((NEEDS_TICKET_FIRST,) if gated.pending and not pending else ()))
+        reply = compose_reply(notices, plan.customer_message, lines, gated.denial_reasons)
         retrieval_down = any(n.source is DegradedSource.RETRIEVAL for n in degradations)
         return self._finish(
             turn,
             state.with_degraded(degradations),
             reply,
             evidence=diagnostics.evidence_items if diagnostics else (),
-            pending=tuple(action for _, action in gated.pending),
-            executable=gated.executable,
+            pending=tuple(action for _, action in pending),
+            results=results,
             escalation_offered=plan.escalate_to_human or retrieval_down,
             degradations=degradations,
         )
+
+    def _execute(
+        self,
+        turn: _Turn,
+        triage: TriageResult,
+        diagnostics: DiagnosticEvidence | None,
+        gated: GatedActions,
+        state: OrchestratorState,
+    ) -> tuple[tuple[ActionResult, ...], tuple[tuple[int, ProposedAction], ...], OrchestratorState]:
+        """Dispatch cleared actions, then bind, record and mark approvals against the (possibly new) ticket."""
+        context = DispatchContext(
+            identity=triage.identity,
+            priority=triage.decision.priority,
+            sev1_corroborated=diagnostics.sev1_corroborated if diagnostics else False,
+            already_paged=state.oncall_paged,
+            conversation_id=turn.conversation_id,
+            message_id=turn.message_id,
+        )
+        results = self.dispatcher.dispatch_turn(gated.executable, context)
+        state = state.with_active_ticket(next_active_ticket(results, state.active_ticket_id))
+        if was_paged(results):
+            state = state.with_oncall_paged()
+        pending = stamp_ticket_id(gated.pending, state.active_ticket_id)
+        for index, action in pending:
+            self.dispatcher.mark_pending(turn.recorder.create_approval(index, action), context)
+        return results, pending, state
 
     def _triage(self, turn: _Turn, snapshot: ConversationSnapshot) -> tuple[TriageResult, _Turn]:
         turn.recorder.enter(ConversationStage.TRIAGE)
@@ -237,6 +289,7 @@ class Workflow:
         triage: TriageResult,
         diagnostics: DiagnosticEvidence | None,
         knowledge: KnowledgeBundle | None,
+        state: OrchestratorState,
     ) -> ResolutionPlan:
         turn.recorder.enter(ConversationStage.RESOLUTION)
         data = ResolutionInput(
@@ -245,6 +298,7 @@ class Workflow:
             knowledge=knowledge,
             history=turn.history,
             message=turn.message,
+            known_ticket_id=state.active_ticket_id,
         )
         run = self.ports.resolution(data, turn.deps)
         turn.recorder.record_run(AgentRole.RESOLUTION, data, run)
@@ -258,7 +312,7 @@ class Workflow:
         reply: str,
         evidence: tuple[TelemetryEvidence, ...] = (),
         pending: tuple[ProposedAction, ...] = (),
-        executable: tuple[SupportAction, ...] = (),
+        results: tuple[ActionResult, ...] = (),
         escalation_offered: bool = False,
         degradations: tuple[DegradationNotice, ...] = (),
     ) -> TurnResult:
@@ -267,8 +321,8 @@ class Workflow:
             reply=reply,
             path=turn.recorder.completed_path,
             pending_actions=pending,
-            executable_actions=executable,
-            escalation_offered=escalation_offered,
+            action_results=results,
+            escalation_offered=escalation_offered or has_failure(results),
             degradations=degradations,
         )
         turn.recorder.complete_turn(result, evidence, state=state.to_snapshot())

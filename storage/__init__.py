@@ -1,14 +1,18 @@
-from storage.jsonb import strip_nul, to_jsonb
+from storage.jsonb import redacted_json, strip_nul, to_jsonb
 from storage.models import (
+    ActionStateError,
     AgentRole,
     Approval,
     ApprovalResolution,
     ApprovalStateError,
     ApprovalStatus,
+    ClaimedAction,
     Conversation,
     ConversationSnapshot,
     ConversationStage,
     MessageSender,
+    SimulatedAction,
+    SimulatedActionStatus,
     StateSnapshot,
     StoredMessage,
     ToolCallRecord,
@@ -19,17 +23,21 @@ from storage.state_store import StateStore
 from storage.turn_lock import TurnLockTimeout
 
 __all__ = [
+    "ActionStateError",
     "AgentRole",
     "Approval",
     "ApprovalResolution",
     "ApprovalStateError",
     "ApprovalStatus",
+    "ClaimedAction",
     "Conversation",
     "ConversationSnapshot",
     "ConversationStage",
     "MessageSender",
     "ReplayStep",
     "ReplayTurn",
+    "SimulatedAction",
+    "SimulatedActionStatus",
     "StateSnapshot",
     "StateStore",
     "StoredMessage",
@@ -37,6 +45,7 @@ __all__ = [
     "TraceRecord",
     "TraceReplay",
     "TurnLockTimeout",
+    "redacted_json",
     "strip_nul",
     "to_jsonb",
 ]

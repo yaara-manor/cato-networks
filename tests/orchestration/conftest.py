@@ -6,6 +6,7 @@ from uuid import UUID
 import psycopg
 import pytest
 
+from actions import ActionDispatcher
 from agents import (
     AgentRun,
     AgentTrace,
@@ -39,6 +40,7 @@ PRIYA = "priya@bluebirdretail.com"  # verified member of ACC-1002, not admin
 STRANGER = "mark@example.com"  # unknown caller
 
 _CLEANUP_SQL = (
+    "delete from simulated_actions where conversation_id = any(%(ids)s)",
     "delete from tool_calls where conversation_id = any(%(ids)s)",
     "delete from approvals where conversation_id = any(%(ids)s)",
     "delete from traces where conversation_id = any(%(ids)s)",
@@ -135,6 +137,7 @@ def conn() -> Iterator[psycopg.Connection[Any]]:
 def harness(conn: psycopg.Connection[Any]) -> Iterator[Harness]:
     created: list[UUID] = []
     clock = SimulationClock()
+    baseline = conn.execute("select coalesce(max(substring(ticket_id from 5)::int), 0) from tickets").fetchone()
 
     def new_conversation(email: str) -> UUID:
         conversation = StateStore(conn).create_conversation(None, email, "Unknown", clock.now())
@@ -154,8 +157,10 @@ def harness(conn: psycopg.Connection[Any]) -> Iterator[Harness]:
             guard_history=SessionGuardHistory(),
             approved_actions=frozenset[ActionType](),
         )
-        return Workflow(script.ports, StateStore(connection), clock, deps)
+        store = StateStore(connection)
+        return Workflow(script.ports, store, clock, deps, ActionDispatcher(store, deps.tickets, clock))
 
     yield Harness(lambda: psycopg.connect(settings.database_url, autocommit=True), new_conversation, workflow)
     for statement in _CLEANUP_SQL:
         conn.execute(statement, {"ids": created})
+    conn.execute("delete from tickets where substring(ticket_id from 5)::int > %s", (baseline[0] if baseline else 0,))

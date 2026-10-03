@@ -12,7 +12,7 @@ ROOT = REPO_ROOT / "data" / "kb_ingestion"
 POLICIES_DIR = REPO_ROOT / "data" / "policies"
 TICKETS_DIR = REPO_ROOT / "data" / "tickets"
 # Agent runtime tables live outside the dump: pg_restore --clean would drop them every boot.
-RUNTIME_TABLES = ("conversations", "messages", "traces", "tool_calls", "approvals")
+RUNTIME_TABLES = ("conversations", "messages", "traces", "tool_calls", "approvals", "simulated_actions")
 
 
 def newest_crawl_dir() -> Path:

@@ -14,7 +14,6 @@ class GatedActions(BaseModel):
     executable: tuple[SupportAction, ...] = ()
     pending: tuple[tuple[int, ProposedAction], ...] = ()  # (index in plan, action)
     denial_reasons: tuple[str, ...] = ()
-    oncall_paged: bool = False  # cumulative: already paged, or paged by this plan
 
 
 def gate_actions(
@@ -26,7 +25,7 @@ def gate_actions(
 ) -> GatedActions:
     """Pure: runs every action through `check_action`; no account means nothing may execute."""
     if identity.account is None:
-        return GatedActions(oncall_paged=already_paged)
+        return GatedActions()
     executable: list[SupportAction] = []
     pending: list[tuple[int, ProposedAction]] = []
     denials: list[str] = []
@@ -53,5 +52,4 @@ def gate_actions(
         executable=tuple(executable),
         pending=tuple(pending),
         denial_reasons=tuple(denials),
-        oncall_paged=paged,
     )

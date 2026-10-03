@@ -289,7 +289,7 @@ class SupportActionKind(StrEnum):
 
 
 # Kinds absent here are ungated.
-_GATED_ACTION_TYPES: dict[SupportActionKind, ActionType] = {
+GATED_ACTION_TYPES: dict[SupportActionKind, ActionType] = {
     SupportActionKind.CLOSE_TICKET: ActionType.CLOSE_TICKET,
     SupportActionKind.CREDIT: ActionType.CREDIT,
     SupportActionKind.MFA_RESET: ActionType.MFA_RESET,
@@ -298,13 +298,17 @@ _GATED_ACTION_TYPES: dict[SupportActionKind, ActionType] = {
 }
 
 
+def support_kind_for(action_type: ActionType) -> SupportActionKind:
+    return next(kind for kind, gated in GATED_ACTION_TYPES.items() if gated is action_type)
+
+
 class SupportAction(_AgentModel):
     kind: SupportActionKind
     payload: dict[str, str] = {}
     reason: str
 
     def to_proposed_action(self, target_account_id: str) -> ProposedAction | None:
-        action_type = _GATED_ACTION_TYPES.get(self.kind)
+        action_type = GATED_ACTION_TYPES.get(self.kind)
         if action_type is None:
             return None
         return ProposedAction(
@@ -325,6 +329,7 @@ class ResolutionInput(_AgentModel):
     knowledge: KnowledgeBundle | None = None
     history: tuple[ConversationTurn, ...] = ()
     message: str
+    known_ticket_id: str | None = None  # ticket already opened in this conversation
 
     def grounding_context(self) -> GroundingContext:
         """Built from successful tool results only; absent stages contribute nothing."""

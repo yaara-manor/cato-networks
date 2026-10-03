@@ -34,7 +34,7 @@ The architecture strictly adheres to the following system-wide invariants:
    - **Zero Unapproved Credits/Refunds**: Any financial adjustment requires Human-in-the-Loop (HITL) approval (`POL-CREDIT`).
    - **Zero Unverified MFA Resets**: Identity verification protocol (`POL-IDV`) must be fully satisfied before an MFA reset can be queued for approval.
    - **Zero Malware/C2 Verdict Overrides**: Support engineers are strictly forbidden from overriding or whitelisting security verdicts (`POL-SEC`); requests must be rejected or escalated to Security Ops.
-   - **Sev-1 Incident Criteria**: Escalation to Sev-1 with on-call paging is restricted to production-down scenarios without redundancy (`POL-SEV1`).
+   - **Sev-1 Incident Criteria**: Escalation to Sev-1 with on-call paging is restricted to the `POL-SEV1` criteria (P1, telemetry-corroborated outage); redundancy / HA-pair health is not modelled.
    - **Pre-Storage Credential Redaction**: All API keys, passwords, bearer tokens, and private keys must be scrubbed (`POL-CRED`) before messages or traces are stored in Postgres.
 4. **Non-Blocking HITL Approval**:
    When an action requires human approval, the approval request is persisted in Postgres, but the customer conversation remains active. The customer can continue asking unrelated questions while awaiting escalation board action.
@@ -237,6 +237,7 @@ erDiagram
     accounts ||--o{ tickets : owns
     conversations ||--o{ messages : contains
     conversations ||--o{ approvals : tracks
+    conversations ||--o{ simulated_actions : audits
     conversations ||--o{ traces : records
     traces ||--o{ tool_calls : invokes
 
@@ -330,6 +331,20 @@ erDiagram
         timestamptz created_at
     }
 
+    simulated_actions {
+        uuid id PK
+        uuid conversation_id FK
+        uuid message_id FK "nullable; composite FK with conversation_id"
+        text idempotency_key UK
+        text kind
+        uuid approval_id FK "nullable"
+        jsonb payload
+        text status
+        jsonb result
+        timestamptz claimed_at
+        timestamptz completed_at
+    }
+
     approvals {
         uuid id PK
         uuid conversation_id FK
@@ -383,6 +398,7 @@ erDiagram
 - **`tickets`**: Historical and live support tickets (`TCK-*`), indexed on `(customer_id, created_at)` and `(customer_id, site_id)` for repeat-contact detection and live status updates.
 - **`conversations`**: Persistent session state across restarts: workflow `stage`, `guard_history`, versioned orchestrator `state`, and `last_turn`/`last_seq` counters assigned under a per-conversation row lock (`SELECT ... FOR UPDATE`).
 - **`approvals`**: Decoupled HITL table. Enables non-blocking workflow: status values are `PENDING`, `APPROVED`, `EDITED`, `REJECTED`; creation is idempotent per `(conversation_id, idempotency_key)` and resolution is a compare-and-set from `PENDING`.
+- **`simulated_actions`**: Audit log and idempotency store of the action dispatcher (`actions/`). A row is claimed (unique `idempotency_key`) before the simulated effect and finalized once; page/credit/MFA effects are the row's `result` JSON, ticket effects write `tickets` via `TicketService`. Excluded from `db/seed.dump`.
 - **`traces`** / **`tool_calls`**: Append-only per-agent execution log (PydanticAI message history in `model_messages`, redacted `input`, cost) with each tool envelope in `tool_calls`; `StateStore.replay_trace` rebuilds the whole conversation graph from these rows alone.
 
 ---
@@ -499,7 +515,8 @@ The codebase is organized into clean, single-responsibility packages separating 
 │   │   └── build.py                   # Offline operator build entrypoint (loads KB + seed tables, writes db/seed.dump)
 │   └── migrations/
 │       ├── 20260929_1500_kb-schema.sql        # Vector extension + snapshots, kb_articles, passages, policies, accounts, tickets
-│       └── 20261001_0900_agent-runtime.sql    # conversations, messages, approvals, traces, tool_calls
+│       ├── 20261001_0900_agent-runtime.sql    # conversations, messages, approvals, traces, tool_calls
+│       └── 20261002_1200_simulated-actions.sql # simulated_actions audit/idempotency table
 │
 ├── docs/                              # Project documentation, plans & evaluation reports
 │   ├── overview/                      # Deliverable D diagrams (logical & deployment views)
@@ -538,10 +555,16 @@ The codebase is organized into clean, single-responsibility packages separating 
 │   ├── models.py                      # TelemetryStatus, TelemetryEvidence, TelemetryToolResult[T], payload schemas
 │   └── telemetry.py                   # TelemetryService and verbatim [telemetry] evidence extraction
 │
+├── actions/                           # Action dispatcher: gate-cleared actions -> simulated effects + audit rows
+│   ├── dispatcher.py                  # ActionDispatcher (dispatch_turn, dispatch_approved, mark_pending)
+│   ├── simulated.py                   # One handler per SupportActionKind
+│   ├── payloads.py / models.py        # Typed payloads; ActionResult, DispatchContext
+│
 ├── storage/                           # Postgres runtime state (sync)
 │   ├── models.py                      # Frozen row models (Conversation, StoredMessage, TraceRecord, Approval, ConversationSnapshot)
 │   ├── state_store.py                 # StateStore: conversations, messages, traces, rehydrate, replay
 │   ├── approval_queries.py            # Approval row SQL (idempotent create, CAS resolve)
+│   ├── action_queries.py              # simulated_actions SQL (claim by unique key, CAS finish)
 │   ├── replay.py                      # TraceReplay: pure replay assembly from rows
 │   └── sql.py / jsonb.py              # Row-mapping helpers; NUL-safe jsonb
 │

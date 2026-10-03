@@ -125,7 +125,8 @@ class ApprovalBanner(_View):
 
 def _escalation_offered(messages: Sequence[StoredMessage]) -> bool:
     """Settle notices carry no envelope, so only the latest message that has one decides."""
-    latest = next((m for m in reversed(messages) if m.sender is not MessageSender.CUSTOMER and m.result is not None), None)
+    replies = (m for m in reversed(messages) if m.sender is not MessageSender.CUSTOMER and m.result is not None)
+    latest = next(replies, None)
     return bool(latest and latest.result and TurnResult.model_validate(latest.result).escalation_offered)
 
 

@@ -9,7 +9,6 @@ from ui.customer_widgets import render_banners, render_message, render_trace
 from ui.scenarios import load_scenarios
 
 CUSTOM = "Custom"
-LOCK_NOTICE = "Still working on your previous message, retry."
 VERSION_NOTICE = "Service updating, retry."
 _SCENARIOS = {s.scenario_id: s for s in load_scenarios()}
 _STATE = st.session_state
@@ -66,7 +65,7 @@ def _run_pending(conversation_id: UUID) -> None:
         with st.spinner("Working on it..."):
             session.run_customer_turn(conversation_id, text, message_id)
     except TurnLockTimeout:
-        _STATE.notice = LOCK_NOTICE
+        _STATE.notice = session.LOCK_NOTICE
     except StateVersionError:
         _STATE.notice = VERSION_NOTICE
     else:

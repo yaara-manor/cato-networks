@@ -15,6 +15,7 @@ from storage import StateStore
 from ui.chat_view import ChatView
 from ui.trace_panel import TracePanel
 
+LOCK_NOTICE = "Still working on your previous message, retry."
 _CLOCK = SimulationClock()  # one per process so simulated time keeps advancing across turns
 ports_override: AgentPorts | None = None  # tests inject scripted agents; None = real PydanticAI agents
 

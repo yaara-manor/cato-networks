@@ -48,6 +48,10 @@ def build_resolution_agent(model: Model | None = None) -> Agent[SupportDeps, Res
 
 def _prompt(data: ResolutionInput) -> str:
     sections = [f"Triage: {data.triage.decision.model_dump_json()}"]
+    sections.append(f"Known ticket: {data.known_ticket_id or 'none'}")
+    if data.unsettled_approvals:
+        listed = "; ".join(f"{a.action_type} status={a.status}" for a in data.unsettled_approvals)
+        sections.append(f"Unsettled approvals: {listed}")
     if data.triage.sla:
         sections.append(f"SLA: {data.triage.sla.model_dump_json()}")
     if data.triage.scoping_question:

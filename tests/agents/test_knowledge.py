@@ -3,8 +3,8 @@ from typing import Any
 
 import psycopg
 
-from agents.knowledge import run_knowledge
-from agents.models import Intent, KnowledgeInput, TriageDecision, TriageResult
+from agents.knowledge import TOOL_TOPICS, run_knowledge, topic_queries
+from agents.models import DiagnosticEvidence, DiagnosticsFindings, Intent, KnowledgeInput, TriageDecision, TriageResult
 from core.config import REPO_ROOT, settings
 from retrieval.models import KBSearchStatus
 from retrieval.service import RetrievalService
@@ -45,35 +45,49 @@ def test_off_domain_question_is_refused_with_candidates(make_deps: MakeDeps) -> 
     assert run.output.retrieved_passages == () and run.output.candidates != ()
 
 
-def test_unavailable_search_still_serves_policy(make_deps: MakeDeps) -> None:
+def test_unavailable_search_reports_unavailable(make_deps: MakeDeps) -> None:
     with psycopg.connect(settings.database_url) as conn:
         service = RetrievalService(conn)
         conn.close()
         deps = make_deps(retrieval=service)
-        model = scripted_model(
-            [_search("ipsec tunnel down"), ("get_policy", {"policy_id": "POL-CREDIT"})], {}
-        )
-        bundle = run_knowledge(_input(make_deps, "m"), deps, model).output
+        bundle = run_knowledge(_input(make_deps, "m"), deps, scripted_model([_search("ipsec tunnel down")], {})).output
     assert bundle.confidence_status == KBSearchStatus.UNAVAILABLE
-    assert [p.policy_id for p in bundle.referenced_policies] == ["POL-CREDIT"]
     assert bundle.is_refusal
 
 
-def test_unknown_policy_absent_and_duplicate_searches_deduped(make_deps: MakeDeps) -> None:
+def test_duplicate_searches_deduped(make_deps: MakeDeps) -> None:
     question = _jsonl_question("data/eval/questions.jsonl", "question_id", "Q10")
-    model = scripted_model(
-        [_search(question), _search(question), ("get_policy", {"policy_id": "POL-NOPE"})], {}
-    )
+    model = scripted_model([_search(question), _search(question)], {})
     bundle = run_knowledge(_input(make_deps, question), make_deps(), model).output
     ids = [p.passage_id for p in bundle.retrieved_passages]
-    assert bundle.referenced_policies == ()
     assert ids and len(ids) == len(set(ids))
     assert len(bundle.queries) == 2
 
 
 def test_model_failure_keeps_results_with_empty_findings(make_deps: MakeDeps) -> None:
-    model = scripted_model([("get_policy", {"policy_id": "POL-SLA"})], {"uncovered_topics": 5})
+    model = scripted_model([_search("ipsec tunnel down")], {"uncovered_topics": 5})
     run = run_knowledge(_input(make_deps, "m"), make_deps(), model)
-    assert [p.policy_id for p in run.output.referenced_policies] == ["POL-SLA"]
+    assert run.output.retrieved_passages or run.output.candidates
     assert run.output.findings.uncovered_topics == () and run.trace.error
 
+
+
+def test_topic_queries_cover_usable_telemetry_tools_only() -> None:
+    evidence = DiagnosticEvidence(
+        findings=DiagnosticsFindings(),
+        inspected_tools=("get_bgp_status", "list_sites", "get_events"),
+        unavailable_tools=(),
+    )
+    assert topic_queries(evidence) == (TOOL_TOPICS["get_bgp_status"], TOOL_TOPICS["get_events"])
+    assert topic_queries(None) == ()
+
+
+def test_topic_searches_join_the_bundle_and_the_trace(make_deps: MakeDeps) -> None:
+    evidence = DiagnosticEvidence(findings=DiagnosticsFindings(), inspected_tools=("get_bgp_status",))
+    data = _input(make_deps, "BGP session flaps").model_copy(update={"diagnostics": evidence})
+    run = run_knowledge(data, make_deps(), scripted_model([], {}))
+    assert run.output.queries == (TOOL_TOPICS["get_bgp_status"],)
+    assert [(c.tool_name, c.arguments) for c in run.trace.tool_calls] == [
+        ("search_knowledge_base", {"query": TOOL_TOPICS["get_bgp_status"]})
+    ]
+    assert run.output.confidence_status == KBSearchStatus.CONFIDENT

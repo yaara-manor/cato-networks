@@ -60,6 +60,9 @@ def _prompt(data: ResolutionInput) -> str:
         sections.append(f"Diagnostics: {data.diagnostics.model_dump_json()}")
     if data.knowledge:
         sections.append(f"Knowledge: {data.knowledge.model_dump_json(exclude={'candidates'})}")
+    if data.policies:
+        listed = "\n\n".join(f"[policy:{p.policy_id}] {p.title}\n{p.body}" for p in data.policies)
+        sections.append(f"Support policies (cite only one that governs what you state):\n{listed}")
     sections.append(conversation_prompt(data.message, data.history))
     return "\n\n".join(sections)
 

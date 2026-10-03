@@ -239,7 +239,6 @@ class KnowledgeBundle(_AgentModel):
     findings: KnowledgeFindings
     retrieved_passages: tuple[RetrievedPassage, ...] = ()
     candidates: tuple[RetrievedPassage, ...] = ()
-    referenced_policies: tuple[PolicyDocument, ...] = ()
     confidence_status: KBSearchStatus
     snapshot_date: AwareDatetime | None = None
     queries: tuple[str, ...] = ()
@@ -250,7 +249,6 @@ class KnowledgeBundle(_AgentModel):
         cls,
         findings: KnowledgeFindings,
         searches: Sequence[KBSearchResult],
-        policies: Sequence[PolicyDocument],
     ) -> Self:
         statuses = {r.status for r in searches}
         if KBSearchStatus.CONFIDENT in statuses:
@@ -263,7 +261,6 @@ class KnowledgeBundle(_AgentModel):
             findings=findings,
             retrieved_passages=_dedupe_passages(p for r in searches for p in r.passages),
             candidates=_dedupe_passages(p for r in searches for p in r.candidates),
-            referenced_policies=tuple({p.policy_id: p for p in policies}.values()),
             confidence_status=status,
             snapshot_date=next((r.snapshot_date for r in searches if r.snapshot_date), None),
             queries=tuple(r.query for r in searches),
@@ -335,6 +332,7 @@ class ResolutionInput(_AgentModel):
     triage: TriageResult
     diagnostics: DiagnosticEvidence | None = None
     knowledge: KnowledgeBundle | None = None
+    policies: tuple[PolicyDocument, ...] = ()  # every support policy, full text, on every turn
     history: tuple[ConversationTurn, ...] = ()
     message: str
     known_ticket_id: str | None = None  # ticket already opened in this conversation
@@ -347,9 +345,7 @@ class ResolutionInput(_AgentModel):
             kb_refs=frozenset(
                 (p.slug, p.heading_anchor) for p in (knowledge.retrieved_passages if knowledge else ())
             ),
-            policy_ids=frozenset(
-                p.policy_id for p in (knowledge.referenced_policies if knowledge else ())
-            ),
+            policy_ids=frozenset(p.policy_id for p in self.policies),
             telemetry_tools=diagnostics.usable_tools if diagnostics else frozenset(),
             is_refusal=knowledge.is_refusal if knowledge else False,
         )

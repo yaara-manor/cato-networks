@@ -59,12 +59,12 @@ def _input(
 
 
 def _knowledge(q10_result: KBSearchResult) -> KnowledgeBundle:
-    return KnowledgeBundle.from_tool_results(KnowledgeFindings(), [q10_result], [])
+    return KnowledgeBundle.from_tool_results(KnowledgeFindings(), [q10_result])
 
 
 def _refusal(status: KBSearchStatus) -> KnowledgeBundle:
     return KnowledgeBundle.from_tool_results(
-        KnowledgeFindings(), [KBSearchResult(status=status, query="q", snapshot_date=None)], []
+        KnowledgeFindings(), [KBSearchResult(status=status, query="q", snapshot_date=None)]
     )
 
 

@@ -39,7 +39,6 @@ def _bundle(
     return KnowledgeBundle(
         findings=KnowledgeFindings(),
         retrieved_passages=tuple(result.passages) if confident else (),
-        referenced_policies=(policy,) if confident and (policy := retrieval.get_policy("POL-SLA")) else (),
         confidence_status=status,
     )
 
@@ -50,9 +49,12 @@ def test_grounding_context_per_knowledge_status(
     triage = _triage(make_deps().identity)
     evidence = DiagnosticEvidence(findings=DiagnosticsFindings(), inspected_tools=("get_bgp_status",))
 
+    sla = retrieval.get_policy("POL-SLA")
+    assert sla is not None
+
     def context(knowledge: KnowledgeBundle | None) -> GroundingContext:
         return ResolutionInput(
-            triage=triage, diagnostics=evidence, knowledge=knowledge, message="m"
+            triage=triage, diagnostics=evidence, knowledge=knowledge, policies=(sla,), message="m"
         ).grounding_context()
 
     confident = context(_bundle(KBSearchStatus.CONFIDENT, q10_result, retrieval))
@@ -64,11 +66,11 @@ def test_grounding_context_per_knowledge_status(
     for status in (KBSearchStatus.LOW_CONFIDENCE_REFUSAL, KBSearchStatus.UNAVAILABLE):
         refusal = context(_bundle(status, q10_result, retrieval))
         assert refusal.is_refusal
-        assert not refusal.kb_refs and not refusal.policy_ids
+        assert not refusal.kb_refs and refusal.policy_ids == {"POL-SLA"}
 
     none = context(None)
     assert not none.is_refusal
-    assert not none.kb_refs and not none.policy_ids
+    assert not none.kb_refs and none.policy_ids == {"POL-SLA"}
 
 
 def test_grounding_context_excludes_unavailable_telemetry_tools(make_deps: MakeDeps) -> None:
@@ -176,7 +178,7 @@ def _search(status: KBSearchStatus) -> KBSearchResult:
     ],
 )
 def test_knowledge_status_rule(statuses: tuple[KBSearchStatus, ...], expected: KBSearchStatus) -> None:
-    bundle = KnowledgeBundle.from_tool_results(KnowledgeFindings(), [_search(s) for s in statuses], [])
+    bundle = KnowledgeBundle.from_tool_results(KnowledgeFindings(), [_search(s) for s in statuses])
     assert bundle.confidence_status == expected
 
 
@@ -189,12 +191,7 @@ def test_knowledge_bundle_dedupes_passages_policies_and_keeps_query_order(
         q10_result.model_copy(update={"query": "a", "passages": [weaker], "candidates": [weaker]}),
         q10_result.model_copy(update={"query": "b"}),
     ]
-    policy = retrieval.get_policy("POL-SLA")
-    assert policy is not None
-
-    bundle = KnowledgeBundle.from_tool_results(
-        KnowledgeFindings(needs_more_telemetry=True), searches, [policy, policy]
-    )
+    bundle = KnowledgeBundle.from_tool_results(KnowledgeFindings(needs_more_telemetry=True), searches)
 
     ids = [p.passage_id for p in bundle.retrieved_passages]
     assert len(ids) == len(set(ids)) == len(q10_result.passages)
@@ -202,7 +199,6 @@ def test_knowledge_bundle_dedupes_passages_policies_and_keeps_query_order(
     scores = [p.rerank_score for p in bundle.retrieved_passages]
     assert scores == sorted(scores, reverse=True)
     assert len({p.passage_id for p in bundle.candidates}) == len(bundle.candidates)
-    assert bundle.referenced_policies == (policy,)
     assert bundle.queries == ("a", "b")
     assert bundle.needs_more_telemetry and bundle.snapshot_date == q10_result.snapshot_date
 

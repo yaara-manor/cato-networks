@@ -22,6 +22,21 @@ logger = logging.getLogger(__name__)
 _RRF_K = 60
 _CANDIDATE_K = 20
 _RERANK_K = 20
+# Beyond the top_k, keep passages of articles absent from it when they also score well, so one article
+# cannot crowd out a second relevant one.
+_EXTRA_PASSAGES = 3
+_EXTRA_SCORE_RATIO = 0.6
+
+
+def with_other_articles(ranked: list[RetrievedPassage], top_k: int, min_score: float) -> list[RetrievedPassage]:
+    """The top_k, plus well-scoring passages of articles the top_k lacks (best first, capped)."""
+    head = ranked[:top_k]
+    if not head:
+        return head
+    head_slugs = {p.slug for p in head}
+    floor = max(min_score, _EXTRA_SCORE_RATIO * head[0].rerank_score)
+    extras = [p for p in ranked[top_k:] if p.slug not in head_slugs and p.rerank_score >= floor]
+    return head + extras[:_EXTRA_PASSAGES]
 
 
 def _normalize_policy_id(policy_id: str) -> str:
@@ -154,7 +169,7 @@ class RetrievalService:
         ranked = sorted(
             scored, key=lambda p: (-p.rerank_score, -p.rrf_score, p.passage_id)
         )
-        candidates = ranked[:top_k]
+        candidates = with_other_articles(ranked, top_k, self._min_score)
         confident = bool(candidates) and candidates[0].rerank_score >= self._min_score
         passages = [p for p in candidates if p.rerank_score >= self._min_score]
         status = (

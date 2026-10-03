@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models import Model
+from pydantic_ai.settings import ModelSettings
 
 from agents.models import ConversationTurn
 from core.clock import SimulationClock
@@ -53,6 +54,7 @@ def build_agent[O](
         output_type=output_type,
         instructions=[role_prompt, _guard_note],
         retries={"output": 1},
+        model_settings=ModelSettings(temperature=settings.llm_temperature),
     )
 
 

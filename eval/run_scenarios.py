@@ -1,5 +1,6 @@
-import sys
+import argparse
 import uuid
+from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -41,6 +42,7 @@ class ScenarioScore(BaseModel):
     conversation_id: uuid.UUID
     reply: str
     cited: tuple[str, ...]
+    expected_cites: int
     missing_cites: tuple[str, ...]
     tools_used: tuple[str, ...]
     missing_tools: tuple[str, ...]
@@ -90,6 +92,7 @@ def score_scenario(
         conversation_id=conversation_id,
         reply=reply,
         cited=cited,
+        expected_cites=len(scenario.expected.must_cite),
         missing_cites=missing_expected(scenario.expected.must_cite, cited),
         tools_used=tools_used,
         missing_tools=missing_expected(expected_tools, tools_used),
@@ -112,37 +115,60 @@ def run_scenario(conn: psycopg.Connection[Any], clock: SimulationClock, scenario
     return score_scenario(scenario, conversation.id, result.reply, [(name, status) for name, status in rows])
 
 
-def to_markdown(scores: list[ScenarioScore]) -> str:
-    passed = sum(score.passed for score in scores)
+def _hit_rate(scores: list[ScenarioScore]) -> float:
+    expected = sum(sc.expected_cites for sc in scores)
+    return 1.0 if expected == 0 else 1 - sum(len(sc.missing_cites) for sc in scores) / expected
+
+
+def _counts(misses: Counter[str], runs: int) -> str:
+    return ", ".join(f"{item} ({count}/{runs})" for item, count in misses.most_common()) or "-"
+
+
+def to_markdown(runs: list[list[ScenarioScore]]) -> str:
+    """`runs[i]` holds one score per scenario; the table reports pass rate and per-run misses."""
+    by_scenario: dict[str, list[ScenarioScore]] = {}
+    for run in runs:
+        for score in run:
+            by_scenario.setdefault(score.scenario_id, []).append(score)
     lines = [
         "# Scenario replay (opening turn)",
         "",
         f"- Date: {datetime.now(tz=UTC).date()}",
-        f"- Passed: {passed}/{len(scores)} (all `must_cite` markers present, all telemetry tools called)",
+        f"- Runs per scenario: {len(runs)}; temperature {settings.llm_temperature}",
+        "- Pass: all `must_cite` markers present and all telemetry tools called",
         "",
-        "| Scenario | Pass | Missing cites | Missing tools | KB searches / refused |",
-        "|---|---|---|---|---|",
+        "| Scenario | Pass rate | Cite hit rate | Missing cites (runs) | Missing tools (runs) | KB searches / refused (avg) |",
+        "|---|---|---|---|---|---|",
     ]
-    lines += [
-        f"| {s.scenario_id} | {'yes' if s.passed else 'no'} | {', '.join(s.missing_cites) or '-'} "
-        f"| {', '.join(s.missing_tools) or '-'} | {s.kb_searches} / {s.kb_refusals} |"
-        for s in scores
-    ]
+    for scenario_id, scores in by_scenario.items():
+        n = len(scores)
+        misses = Counter(c for sc in scores for c in sc.missing_cites)
+        tool_misses = Counter(t for sc in scores for t in sc.missing_tools)
+        lines.append(
+            f"| {scenario_id} | {sum(sc.passed for sc in scores)}/{n} | "
+            f"{_hit_rate(scores):.0%} | {_counts(misses, n)} | {_counts(tool_misses, n)} | "
+            f"{sum(sc.kb_searches for sc in scores) / n:.1f} / {sum(sc.kb_refusals for sc in scores) / n:.1f} |"
+        )
     return "\n".join(lines) + "\n"
 
 
-def main(scenario_ids: list[str]) -> None:
+def main(scenario_ids: list[str], runs: int) -> None:
     scenarios = [s for s in load_scenarios() if not scenario_ids or s.scenario_id in scenario_ids]
     clock = SimulationClock()
     warm_models()
-    scores: list[ScenarioScore] = []
+    results: list[list[ScenarioScore]] = []
     with psycopg.connect(settings.database_url, autocommit=True) as conn:
-        for scenario in scenarios:
-            scores.append(run_scenario(conn, clock, scenario))
-            print(f"{scenario.scenario_id}: {'pass' if scores[-1].passed else 'FAIL'}", flush=True)
+        for run_index in range(runs):
+            scores = [run_scenario(conn, clock, scenario) for scenario in scenarios]
+            results.append(scores)
+            print(f"run {run_index + 1}: {sum(s.passed for s in scores)}/{len(scores)} passed", flush=True)
     _REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    _REPORT_PATH.write_text(to_markdown(scores), encoding="utf-8")
+    _REPORT_PATH.write_text(to_markdown(results), encoding="utf-8")
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    parser = argparse.ArgumentParser(description="Replay scenario opening turns and score them.")
+    parser.add_argument("scenario_ids", nargs="*")
+    parser.add_argument("--runs", type=int, default=3)
+    args = parser.parse_args()
+    main(args.scenario_ids, args.runs)

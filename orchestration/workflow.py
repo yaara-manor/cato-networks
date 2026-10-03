@@ -50,6 +50,7 @@ from orchestration.models import AgentPorts, Citation, TurnResult
 from orchestration.recorder import TurnRecorder
 from orchestration.routing import compose_reply, next_stage_after_triage
 from orchestration.state import OrchestratorState
+from retrieval.models import PolicyDocument
 from storage import (
     AgentRole,
     ConversationSnapshot,
@@ -183,7 +184,8 @@ class Workflow:
         state = state.after_scoping_question() if triage.scoping_question else state.after_scoping_resolved()
         stage = next_stage_after_triage(triage)
         diagnostics, knowledge = self._evidence(turn, triage, stage)
-        plan = self._resolve(turn, triage, diagnostics, knowledge, state)
+        plan_policies = tuple(turn.deps.retrieval.list_policies())
+        plan = self._resolve(turn, triage, diagnostics, knowledge, plan_policies, state)
         turn.recorder.enter(ConversationStage.ACTION_EVALUATION)
         gated = gate_actions(
             plan.actions,
@@ -208,6 +210,7 @@ class Workflow:
             escalation_offered=plan.escalate_to_human or retrieval_down,
             degradations=degradations,
             knowledge=knowledge,
+            policies=plan_policies,
         )
 
     def _execute(
@@ -295,6 +298,7 @@ class Workflow:
         triage: TriageResult,
         diagnostics: DiagnosticEvidence | None,
         knowledge: KnowledgeBundle | None,
+        policies: tuple[PolicyDocument, ...],
         state: OrchestratorState,
     ) -> ResolutionPlan:
         turn.recorder.enter(ConversationStage.RESOLUTION)
@@ -302,6 +306,7 @@ class Workflow:
             triage=triage,
             diagnostics=diagnostics,
             knowledge=knowledge,
+            policies=policies,
             history=turn.history,
             message=turn.message,
             known_ticket_id=state.active_ticket_id,
@@ -323,6 +328,7 @@ class Workflow:
         escalation_offered: bool = False,
         degradations: tuple[DegradationNotice, ...] = (),
         knowledge: KnowledgeBundle | None = None,
+        policies: tuple[PolicyDocument, ...] = (),
     ) -> TurnResult:
         """State and reply are one transaction: a retry never reapplies a transition."""
         result = TurnResult(
@@ -332,7 +338,7 @@ class Workflow:
             action_results=results,
             escalation_offered=escalation_offered or has_failure(results),
             degradations=degradations,
-            citations=Citation.for_reply(reply, knowledge),
+            citations=Citation.for_reply(reply, knowledge, policies),
         )
         turn.recorder.complete_turn(result, evidence, state=state.to_snapshot())
         return result

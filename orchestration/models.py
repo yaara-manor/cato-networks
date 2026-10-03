@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Self
 
@@ -19,6 +19,7 @@ from agents import (
 )
 from guardrails import KB_REF, MarkerKind, ProposedAction, extract_markers
 from orchestration.degradation import DegradationNotice
+from retrieval.models import PolicyDocument
 from storage import ConversationStage
 
 
@@ -41,15 +42,14 @@ class Citation(BaseModel):
     url: str = ""  # policies have no public url
 
     @classmethod
-    def for_reply(cls, reply: str, bundle: KnowledgeBundle | None) -> tuple[Self, ...]:
-        """Reply markers resolved against the turn's bundle; unknown and telemetry markers are dropped."""
-        if bundle is None:
-            return ()
+    def for_reply(
+        cls, reply: str, bundle: KnowledgeBundle | None, policies: Sequence[PolicyDocument] = ()
+    ) -> tuple[Self, ...]:
+        """Reply markers resolved against the turn's bundle and policies; unknown and telemetry markers are dropped."""
         # ascending rerank: the best passage per (slug, anchor) is written last
-        best = {
-            (p.slug, p.heading_anchor): p for p in sorted(bundle.retrieved_passages, key=lambda p: p.rerank_score)
-        }
-        policies = {p.policy_id: p for p in bundle.referenced_policies}
+        passages = sorted(bundle.retrieved_passages, key=lambda p: p.rerank_score) if bundle else []
+        best = {(p.slug, p.heading_anchor): p for p in passages}
+        known_policies = {p.policy_id: p for p in policies}
         citations: list[Self] = []
         for marker in extract_markers(reply):
             if marker.kind is MarkerKind.KB and (ref := KB_REF.fullmatch(marker.ref)):
@@ -57,7 +57,7 @@ class Citation(BaseModel):
                     citations.append(
                         cls(kind=MarkerKind.KB, ref=marker.ref, title=passage.title, url=passage.public_url)
                     )
-            elif marker.kind is MarkerKind.POLICY and (policy := policies.get(marker.ref)):
+            elif marker.kind is MarkerKind.POLICY and (policy := known_policies.get(marker.ref)):
                 citations.append(cls(kind=MarkerKind.POLICY, ref=marker.ref, title=policy.title))
         return tuple(citations)
 

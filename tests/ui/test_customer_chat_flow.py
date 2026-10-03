@@ -9,7 +9,7 @@ from agents import SupportAction
 from agents.models import SupportActionKind as Kind
 from guardrails import ApprovalStatus
 from orchestration import TurnResult
-from retrieval.models import PolicyDocument, RetrievedPassage
+from retrieval.models import RetrievedPassage
 from services.approval_models import ReviewerDecision
 from storage import ApprovalResolution, MessageSender, StateStore, TurnLockTimeout
 from tests.approval_desk import PRIYA, Desk
@@ -101,7 +101,6 @@ def test_citations_and_evidence_chips(make_app: MakeApp, scripted: Scripted) -> 
             rrf_score=0.1, rerank_score=0.9,
         ),
     )  # fmt: skip
-    scripted.policies = (PolicyDocument(policy_id="POL-SEV1", title="Sev-1 paging", file_path="p.md", body="b"),)
     scripted.evidence = (
         TelemetryEvidence(
             tool_name="get_bgp", metric_key="flaps", raw_value="42", timestamp=datetime(2026, 8, 28, tzinfo=UTC),
@@ -115,7 +114,7 @@ def test_citations_and_evidence_chips(make_app: MakeApp, scripted: Scripted) -> 
     assert [b.proto.url for b in at.get("link_button")] == ["https://help.example.com/mtu"]
     assert not any("[kb:" in str(m.value) for m in at.markdown)
     assert any("flaps 42" in str(m.value) for m in at.markdown)
-    _button(at, "Sev-1 paging").click().run()
+    _button(at, "POL-SEV1: Sev-1 definition and escalation (internal policy)").click().run()
     assert "Sev-1 definition and escalation" in _page(at)
 
 

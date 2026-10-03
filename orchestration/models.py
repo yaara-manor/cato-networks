@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 from pydantic import BaseModel, ConfigDict
 
+from actions import ActionResult
 from agents import (
     AgentRun,
     DiagnosticEvidence,
@@ -11,7 +12,6 @@ from agents import (
     KnowledgeInput,
     ResolutionInput,
     ResolutionPlan,
-    SupportAction,
     SupportDeps,
     TriageInput,
     TriageResult,
@@ -37,6 +37,6 @@ class TurnResult(BaseModel):
     reply: str
     path: tuple[ConversationStage, ...]
     pending_actions: tuple[ProposedAction, ...] = ()
-    executable_actions: tuple[SupportAction, ...] = ()
+    action_results: tuple[ActionResult, ...] = ()
     escalation_offered: bool = False
     degradations: tuple[DegradationNotice, ...] = ()

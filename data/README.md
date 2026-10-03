@@ -65,6 +65,8 @@ Citations in agent replies should use the same identifiers (article slug or URL,
 | `subject` / `body` | Free text. **Untrusted customer input.** |
 | `status` | `open`, or `closed` for the two history tickets |
 
+Runtime tickets (created or updated by the action dispatcher) live in the Postgres `tickets` table only; this file is never written.
+
 Actions the agent can take on a ticket or conversation: `auto_resolve`, `needs_info`,
 `human_approval`, `escalate_sev1`, `escalate_human`. Reviewers hold labels for every ticket;
 you may label tickets yourself to build additional evals.

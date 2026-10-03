@@ -2,7 +2,7 @@
 
 **Issue**: `#9` ([Phase 3] 3.1: Action Dispatcher & Simulated Side Effects)
 **Date**: 2026-10-02
-**Status**: Draft for Review
+**Status**: Implemented
 **Builds on**: 21 (`StateStore`, approvals), 22 (`SupportAction`, `ResolutionPlan`), 23 (`Workflow`, `gate_actions`), 24 (turn lock, `OrchestratorState`), 15 (`check_action`)
 **Target Files**: `db/migrations/20261002_1200_simulated-actions.sql`, `actions/__init__.py`, `actions/models.py`, `actions/dispatcher.py`, `actions/simulated.py`, `storage/models.py`, `storage/action_queries.py` (new), `storage/jsonb.py` (shared redaction helper), `storage/state_store.py`, `storage/__init__.py`, `services/ticket_service.py`, `orchestration/workflow.py`, `orchestration/models.py`, `orchestration/routing.py`, `orchestration/recorder.py`, `db/init/build.py`, `agents/models.py` (`ResolutionInput.known_ticket_id`, public action-type map), `orchestration/state.py`, `prompts/resolution.md`, `tests/actions/*`, `tests/orchestration/*`, `tests/storage/test_no_secret_in_rows.py`
 

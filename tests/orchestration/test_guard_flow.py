@@ -10,7 +10,11 @@ from storage import ConversationStage as S
 from tests.orchestration.conftest import PRIYA, STRANGER, Harness, Scripted
 
 CREDIT = SupportAction(kind=SupportActionKind.CREDIT, payload={"amount": "10"}, reason="outage")
-TICKET = SupportAction(kind=SupportActionKind.CREATE_TICKET, reason="track")
+TICKET = SupportAction(
+    kind=SupportActionKind.CREATE_TICKET,
+    payload={"subject": "Site down", "body": "tunnel down", "product_area": "VPN"},
+    reason="track",
+)
 
 
 def _intent(script: Scripted, intent: Intent) -> None:
@@ -94,7 +98,7 @@ def test_credit_needs_approval_and_ticket_executes(
     workflow = harness.workflow(scripted, None)
     result = workflow.run_turn(conversation_id, "site down, want credit", message_id)
 
-    assert result.executable_actions == (TICKET,)
+    assert [r.kind for r in result.action_results] == [SupportActionKind.CREATE_TICKET]
     assert [a.action_type.value for a in result.pending_actions] == ["CREDIT"]
     approvals = StateStore(conn).list_approvals(conversation_id)
     assert [(a.status, a.idempotency_key) for a in approvals] == [(ApprovalStatus.PENDING, f"{message_id}:1")]
@@ -110,7 +114,7 @@ def test_unrecognised_caller_actions_are_dropped(
     scripted.actions = (TICKET, CREDIT)
     conversation_id = harness.new_conversation(STRANGER)
     result = harness.workflow(scripted, None).run_turn(conversation_id, "site down", uuid4())
-    assert result.executable_actions == () and result.pending_actions == ()
+    assert result.action_results == () and result.pending_actions == ()
     assert StateStore(conn).list_approvals(conversation_id) == []
 
 

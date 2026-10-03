@@ -20,7 +20,11 @@ from agents import (
 )
 from orchestration import AgentPorts
 from orchestration.canned import AGENT_FAILURE_PAUSE
-from orchestration.degradation import DegradationNotice, DegradedSource, derive_degradations
+from orchestration.degradation import (
+    DegradationNotice,
+    DegradedSource,
+    derive_degradations,
+)
 from retrieval.models import KBSearchStatus
 from storage import ConversationStage, MessageSender, StateStore
 from tests.orchestration.conftest import PRIYA, Harness, Scripted

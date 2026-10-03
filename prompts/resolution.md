@@ -29,6 +29,9 @@ None. Everything you may cite is already in your inputs.
   - `[policy:POL-X]`: a support policy, for example `[policy:POL-CREDIT]`.
   - `[telemetry:<tool>]`: a telemetry tool that returned data, for example `[telemetry:get_bgp_status]`.
   - Only cite items present in your inputs. Never invent a marker.
+- Cite the knowledge passages your reply relies on. When a retrieved passage states the rule, step, limit or
+  default behind a point you make, cite it at that point, even when telemetry also shows the symptom. Before
+  you finish, check the retrieved passages: do not leave one uncited when your reply says what it says.
 - When you quote a knowledge-base passage word for word, put the quote on its own line as a markdown
   blockquote (`> quote`) with its `[kb:<slug>#<anchor>]` marker at the end of that line. Quote only text that
   appears in that passage, copied exactly; paraphrase everything else without a blockquote. Never use a

@@ -23,8 +23,10 @@ from retrieval.models import KBSearchResult
 from retrieval.service import RetrievalService
 
 SEARCH_TOOL = "search_knowledge_base"
+PLAYBOOK_SUFFIX = "playbook"
 
 # One short topic phrase per telemetry tool: whatever tool ran, its knowledge-base domain is searched too.
+# Each phrase is searched twice, plain and with "playbook": the XOps playbooks are titled that way.
 TOOL_TOPICS: Mapping[str, str] = MappingProxyType(
     {
         "get_site_status": "site connectivity status troubleshooting",
@@ -49,10 +51,11 @@ def build_knowledge_agent(model: Model | None = None) -> Agent[SupportDeps, Know
 
 
 def topic_queries(diagnostics: DiagnosticEvidence | None) -> tuple[str, ...]:
-    """Topic phrases of the telemetry tools that returned usable data, in a stable order."""
+    """Queries for the telemetry tools that returned usable data, in a stable order."""
     if diagnostics is None:
         return ()
-    return tuple(TOOL_TOPICS[tool] for tool in sorted(diagnostics.usable_tools) if tool in TOOL_TOPICS)
+    phrases = [TOOL_TOPICS[tool] for tool in sorted(diagnostics.usable_tools) if tool in TOOL_TOPICS]
+    return tuple(query for phrase in phrases for query in (phrase, f"{phrase} {PLAYBOOK_SUFFIX}"))
 
 
 def _timed_search(retrieval: RetrievalService, query: str) -> tuple[KBSearchResult, int]:

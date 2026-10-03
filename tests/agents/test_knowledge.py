@@ -78,7 +78,8 @@ def test_topic_queries_cover_usable_telemetry_tools_only() -> None:
         inspected_tools=("get_bgp_status", "list_sites", "get_events"),
         unavailable_tools=(),
     )
-    assert topic_queries(evidence) == (TOOL_TOPICS["get_bgp_status"], TOOL_TOPICS["get_events"])
+    bgp, events = TOOL_TOPICS["get_bgp_status"], TOOL_TOPICS["get_events"]
+    assert topic_queries(evidence) == (bgp, f"{bgp} playbook", events, f"{events} playbook")
     assert topic_queries(None) == ()
 
 
@@ -86,8 +87,9 @@ def test_topic_searches_join_the_bundle_and_the_trace(make_deps: MakeDeps) -> No
     evidence = DiagnosticEvidence(findings=DiagnosticsFindings(), inspected_tools=("get_bgp_status",))
     data = _input(make_deps, "BGP session flaps").model_copy(update={"diagnostics": evidence})
     run = run_knowledge(data, make_deps(), scripted_model([], {}))
-    assert run.output.queries == (TOOL_TOPICS["get_bgp_status"],)
+    topic = TOOL_TOPICS["get_bgp_status"]
+    assert run.output.queries == (topic, f"{topic} playbook")
     assert [(c.tool_name, c.arguments) for c in run.trace.tool_calls] == [
-        ("search_knowledge_base", {"query": TOOL_TOPICS["get_bgp_status"]})
+        ("search_knowledge_base", {"query": query}) for query in run.output.queries
     ]
     assert run.output.confidence_status == KBSearchStatus.CONFIDENT

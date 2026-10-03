@@ -15,7 +15,8 @@ def next_stage_after_triage(result: TriageResult) -> ConversationStage:
         case Intent.TELEMETRY_DIAGNOSIS:
             return ConversationStage.DIAGNOSTICS
         case Intent.KB_INQUIRY | Intent.POLICY_REQUEST:
-            return ConversationStage.KNOWLEDGE_RETRIEVAL
+            # a named site has telemetry worth reading before answering
+            return ConversationStage.DIAGNOSTICS if result.decision.site_id else ConversationStage.KNOWLEDGE_RETRIEVAL
         case _:
             assert_never(result.decision.intent)
 

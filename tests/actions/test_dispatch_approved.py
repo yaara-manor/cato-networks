@@ -1,4 +1,5 @@
 from typing import Any
+from uuid import uuid4
 
 import pytest
 
@@ -8,9 +9,28 @@ from guardrails import ActionType
 from storage import Approval, ApprovalResolution, ApprovalStatus, SimulatedActionStatus
 from tests.actions.conftest import ADMIN, Actions, action
 
-CREDIT = {"ticket_id": "TCK-1", "amount": "50", "currency": "USD", "incident_id": "INC-9", "period": "2026-09"}
-MFA = {"ticket_id": "TCK-1", "user_email": "bob@bluebirdretail.com"}
+CREDIT = {"amount": "50", "currency": "USD", "incident_id": "INC-9", "period": "2026-09"}
+MFA = {"user_email": "bob@bluebirdretail.com"}
+OTHER_ADMIN = "netops@northwind-logistics.com"  # registered admin of ACC-1001
 APPROVE = ApprovalResolution(status=ApprovalStatus.APPROVED)
+
+
+def _ticket(actions: Actions, context: DispatchContext) -> dict[str, str]:
+    identity = context.identity
+    assert identity.account is not None and identity.caller_email is not None
+    ticket = actions.tickets.create_ticket(
+        customer_id=identity.account.account_id,
+        customer_name=identity.caller_email,
+        requester_email=identity.caller_email,
+        company=identity.account.company,
+        tier=identity.account.tier,
+        priority="P3",
+        product_area="Billing",
+        subject="s",
+        body="b",
+        site_id=None,
+    )
+    return {"ticket_id": ticket.ticket_id}
 
 
 def _approval(
@@ -21,8 +41,10 @@ def _approval(
     resolution: ApprovalResolution | None = APPROVE,
 ) -> Approval:
     now = actions.clock.now()
+    body = payload or (CREDIT if action_type is ActionType.CREDIT else MFA)
+    body = body if "ticket_id" in body else body | _ticket(actions, context)
     approval = actions.store.create_approval(
-        context.conversation_id, context.message_id, action_type, payload or CREDIT, "k", now
+        context.conversation_id, context.message_id, action_type, body, str(uuid4()), now
     )
     return actions.store.resolve_approval(approval.id, resolution, now) if resolution else approval
 
@@ -40,8 +62,9 @@ def test_approved_credit_records_event_with_approval_id(actions: Actions) -> Non
 
 def test_edited_uses_edited_payload_and_keeps_original(actions: Actions) -> None:
     context = actions.make_context()
-    edit = ApprovalResolution(status=ApprovalStatus.EDITED, edited_payload=CREDIT | {"amount": "20"})
-    approval = _approval(actions, context, resolution=edit)
+    payload = CREDIT | _ticket(actions, context)
+    edit = ApprovalResolution(status=ApprovalStatus.EDITED, edited_payload=payload | {"amount": "20"})
+    approval = _approval(actions, context, payload=payload, resolution=edit)
     actions.dispatcher.dispatch_approved(approval, context)
     (row,) = actions.store.list_simulated_actions(context.conversation_id)
     assert row.result is not None and row.result["effect"]["amount"] == "20"
@@ -52,8 +75,7 @@ def test_edited_uses_edited_payload_and_keeps_original(actions: Actions) -> None
 
 def test_edit_that_changes_ticket_is_invalid(actions: Actions) -> None:
     context = actions.make_context()
-    dropped = {k: v for k, v in CREDIT.items() if k != "ticket_id"}
-    resolution = ApprovalResolution(status=ApprovalStatus.EDITED, edited_payload=dropped)
+    resolution = ApprovalResolution(status=ApprovalStatus.EDITED, edited_payload=CREDIT)
     approval = _approval(actions, context, resolution=resolution)
     assert actions.dispatcher.dispatch_approved(approval, context).status is ActionStatus.INVALID
     assert actions.store.list_simulated_actions(context.conversation_id) == []
@@ -130,3 +152,36 @@ def test_handler_failure_is_failed_without_exception_text(
     (row,) = actions.store.list_simulated_actions(context.conversation_id)
     assert row.status is SimulatedActionStatus.FAILED
     assert "secret-token-123" not in str(row.result) and "secret-token-123" not in result.model_dump_json()
+
+
+@pytest.mark.parametrize("kind", [ActionType.CREDIT, ActionType.MFA_RESET])
+def test_other_accounts_or_unknown_ticket_gets_no_done_effect(actions: Actions, kind: ActionType) -> None:
+    base = CREDIT if kind is ActionType.CREDIT else MFA
+    owner = actions.make_context(ADMIN)
+    foreign = _ticket(actions, owner)
+    caller = actions.make_context(OTHER_ADMIN)
+    for ticket in (foreign, {"ticket_id": "TCK-0"}):
+        approval = _approval(actions, caller, kind, base | ticket)
+        assert actions.dispatcher.dispatch_approved(approval, caller).status in (
+            ActionStatus.REFUSED,
+            ActionStatus.FAILED,
+        )
+    assert all(r.status is not SimulatedActionStatus.DONE for r in actions.store.list_simulated_actions(caller.conversation_id))
+
+
+def test_approval_from_another_conversation_is_refused(actions: Actions) -> None:
+    owner, other = actions.make_context(), actions.make_context()
+    approval = _approval(actions, owner)
+    assert actions.dispatcher.dispatch_approved(approval, other).status is ActionStatus.REFUSED
+    assert actions.store.list_simulated_actions(other.conversation_id) == []
+
+
+def test_mark_pending_ignores_resolved_approval(actions: Actions) -> None:
+    context = actions.make_context()
+    approval = _approval(actions, context)
+    ticket = actions.tickets.get_ticket(approval.payload["ticket_id"])
+    assert ticket is not None
+    assert actions.dispatcher.mark_pending(approval, context).status is ActionStatus.REFUSED
+    after = actions.tickets.get_ticket(ticket.ticket_id)
+    assert after is not None and after.status == ticket.status
+    assert actions.store.list_simulated_actions(context.conversation_id) == []

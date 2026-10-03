@@ -1,3 +1,4 @@
+import re
 import time
 from collections.abc import Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
@@ -47,6 +48,13 @@ TOOL_QUERIES: Mapping[str, tuple[str, ...]] = MappingProxyType(
 )
 
 
+# Topics a customer message brings up by name, searched whatever the telemetry says. A PSK has a documented
+# length limit that matters when it is rotated, and that fact sits in an article about IKE versions.
+MESSAGE_TOPICS: Mapping[re.Pattern[str], str] = MappingProxyType(
+    {re.compile(r"\b(?:psk|pre-?shared)\b", re.IGNORECASE): "IPsec shared secret PSK length IKEv1 IKEv2"}
+)
+
+
 def search_knowledge_base(ctx: RunContext[SupportDeps], query: str) -> KBSearchResult:
     """Search the product knowledge base. Returns passages with ids, or a refusal/unavailable status."""
     return ctx.deps.retrieval.search_kb(query)
@@ -56,6 +64,10 @@ def build_knowledge_agent(model: Model | None = None) -> Agent[SupportDeps, Know
     agent = build_agent(load_prompt("knowledge"), KnowledgeFindings, model)
     agent.tool(search_knowledge_base)
     return agent
+
+
+def message_queries(message: str) -> tuple[str, ...]:
+    return tuple(query for pattern, query in MESSAGE_TOPICS.items() if pattern.search(message))
 
 
 def topic_queries(diagnostics: DiagnosticEvidence | None) -> tuple[str, ...]:
@@ -136,7 +148,7 @@ def run_knowledge(
 ) -> AgentRun[KnowledgeBundle]:
     outcome = run_role(build_knowledge_agent(model), _prompt(data), deps, AgentRole.KNOWLEDGE)
     messages = list(outcome.messages)
-    queries = topic_queries(data.diagnostics)
+    queries = (*message_queries(data.message), *topic_queries(data.diagnostics))
     topic_results = search_topics(deps.retrieval, queries)
     searches = (*tool_returns(messages, SEARCH_TOOL), *(result for result, _ in topic_results))
     started = time.perf_counter()

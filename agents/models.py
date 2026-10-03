@@ -190,6 +190,7 @@ class DiagnosticEvidence(_AgentModel):
         cls, findings: DiagnosticsFindings, results: Sequence[TelemetryToolResult[Any]]
     ) -> Self:
         ok = [r for r in results if r.status == TelemetryStatus.OK]
+        answered = {r.tool_name for r in ok}  # a failed first attempt (wrong site id) does not undo a later success
         return cls(
             findings=findings,
             inspected_tools=tuple(dict.fromkeys(r.tool_name for r in results)),
@@ -197,7 +198,7 @@ class DiagnosticEvidence(_AgentModel):
             unavailable_tools=tuple(
                 UnavailableTool(tool_name=r.tool_name, status=r.status, error=r.error)
                 for r in results
-                if r.status != TelemetryStatus.OK
+                if r.status != TelemetryStatus.OK and r.tool_name not in answered
             ),
             sev1_corroborated=_sev1_corroborated(ok),
         )

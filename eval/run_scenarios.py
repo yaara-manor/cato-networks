@@ -168,7 +168,7 @@ def to_markdown(runs: list[list[ScenarioScore]]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def main(scenario_ids: list[str], runs: int) -> None:
+def main(scenario_ids: list[str], runs: int, report: Path) -> None:
     scenarios = [s for s in load_scenarios() if not scenario_ids or s.scenario_id in scenario_ids]
     clock = SimulationClock()
     warm_models()
@@ -178,13 +178,14 @@ def main(scenario_ids: list[str], runs: int) -> None:
             scores = [run_scenario(conn, clock, scenario) for scenario in scenarios]
             results.append(scores)
             print(f"run {run_index + 1}: {sum(s.passed for s in scores)}/{len(scores)} passed", flush=True)
-    _REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    _REPORT_PATH.write_text(to_markdown(results), encoding="utf-8")
+    report.parent.mkdir(parents=True, exist_ok=True)
+    report.write_text(to_markdown(results), encoding="utf-8")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Replay scenario opening turns and score them.")
     parser.add_argument("scenario_ids", nargs="*")
     parser.add_argument("--runs", type=int, default=3)
+    parser.add_argument("--report", type=Path, default=_REPORT_PATH, help="where to write the markdown report")
     args = parser.parse_args()
-    main(args.scenario_ids, args.runs)
+    main(args.scenario_ids, args.runs, args.report)

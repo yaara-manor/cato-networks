@@ -3,7 +3,7 @@ from typing import Any
 
 import psycopg
 
-from agents.knowledge import TOOL_QUERIES, run_knowledge, topic_queries
+from agents.knowledge import MESSAGE_TOPICS, TOOL_QUERIES, message_queries, run_knowledge, topic_queries
 from agents.models import DiagnosticEvidence, DiagnosticsFindings, Intent, KnowledgeInput, TriageDecision, TriageResult
 from core.config import REPO_ROOT, settings
 from retrieval.models import KBSearchStatus
@@ -98,3 +98,10 @@ def test_best_articles_get_their_surrounding_sections(make_deps: MakeDeps) -> No
     anchors = {(p.slug, p.heading_anchor) for p in run.output.retrieved_passages}
     assert any(slug == "xops-network-playbook-socket-offline-after-upgrade" and a.startswith("step-3") for slug, a in anchors)
     assert run.trace.tool_calls[-1].tool_name == "expand_article_sections"
+
+
+def test_message_naming_a_psk_searches_the_psk_topic() -> None:
+    (query,) = MESSAGE_TOPICS.values()
+    assert message_queries("The PSK on our side is [REDACTED:CONTEXTUAL].") == (query,)
+    assert message_queries("we use a pre-shared key") == (query,)
+    assert message_queries("our tunnel is down") == ()

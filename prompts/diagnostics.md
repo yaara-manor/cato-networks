@@ -48,7 +48,8 @@ Windows: `1h`, `6h`, `12h`, `24h`, `7d`, `all`. A tool may return a non-OK statu
   one phrase for the symptom or protocol topic and one for the fix (for example "reduce BGP routes advertised
   to Cato"). Keep an exact error code only when it is a standard code (for example `NO_PROPOSAL_CHOSEN`).
   Never write a phrase about a cause that telemetry does not show.
-- Never cite a tool you did not call or that returned a non-OK status.
+- Never cite a tool you did not call or whose every call returned a non-OK status. The triage `site` may be
+  a name: if a site tool rejects it, find the site id with `list_sites` and call again.
 
 ## Output fields
 

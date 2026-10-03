@@ -218,6 +218,15 @@ def test_diagnostic_evidence_from_real_envelopes(make_deps: MakeDeps) -> None:
     assert evidence.has_anomaly and not evidence.sev1_corroborated
 
 
+def test_tool_that_failed_once_then_succeeded_stays_usable(make_deps: MakeDeps) -> None:
+    telemetry = make_deps().telemetry
+    results = [telemetry.get_ipsec_status("S-9999-99"), telemetry.get_ipsec_status("S-1002-03")]
+    assert results[0].status != TelemetryStatus.OK and results[1].status == TelemetryStatus.OK
+    evidence = DiagnosticEvidence.from_tool_results(DiagnosticsFindings(), results)
+    assert evidence.unavailable_tools == ()
+    assert evidence.usable_tools == {"get_ipsec_status"}
+
+
 def test_sev1_corroborated_needs_two_disconnected_sites_in_one_country(make_deps: MakeDeps) -> None:
     telemetry = make_deps().telemetry
     germany = [telemetry.get_site_status(s) for s in ("S-1002-03", "S-1008-02")]

@@ -26,6 +26,8 @@ If `db/seed.dump` is absent, startup exits with an error indicating that the ope
 
 `docker compose up ui` serves the customer chat at http://localhost:8501 (needs `OPENAI_API_KEY` in the environment for real agents). Locally: `DATABASE_URL=... uv run streamlit run ui/customer_app.py`.
 
+`docker compose up reviewer` serves the reviewer board at http://localhost:8502 (pending approvals, evidence, live trace, approve/edit/reject; no API key needed). Locally: `DATABASE_URL=... uv run streamlit run ui/reviewer_app.py`.
+
 ## Running Tests
 
 To run the test suite against the running database:

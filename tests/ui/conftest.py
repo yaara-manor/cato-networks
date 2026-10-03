@@ -1,11 +1,14 @@
 # ruff: noqa: F811  (storage fixtures are re-imported, then requested by name)
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 from uuid import UUID, uuid4
 
+import psycopg
 import pytest
 from pydantic import BaseModel
+from streamlit.testing.v1 import AppTest
 
 from agents.models import (
     AgentRole,
@@ -25,6 +28,8 @@ from guardrails.models import ActionType
 from retrieval.models import KBSearchResult, KBSearchStatus, RetrievedPassage
 from services.models import CallerIdentity, RepeatContactResult, SLADeadlines
 from storage import StateStore, ToolCallRecord, TraceRecord
+from tests.approval_desk import Desk
+from tests.orchestration.conftest import _CLEANUP_SQL, Scripted, harness, scripted  # noqa: F401
 from tests.storage.conftest import (  # noqa: F401  (fixtures reused by this package)
     conn,
     created_ids,
@@ -39,6 +44,7 @@ from tools.models import (
     TelemetryStatus,
     TelemetryToolResult,
 )
+from ui import session
 from ui.reviewer_view import CaseView
 
 NOW = datetime(2026, 10, 1, 9, 0, tzinfo=UTC)
@@ -80,7 +86,7 @@ def build_case(store: StateStore, cid: UUID, tickets: Sequence[Ticket] = (), now
     snapshot = store.rehydrate(cid)
     replay = store.replay_trace(cid)
     assert snapshot is not None and replay is not None
-    return CaseView.from_rows(snapshot, replay, ACCOUNT, tickets, now)
+    return CaseView.from_rows(snapshot, replay, ACCOUNT, tickets, store.list_simulated_actions(cid), now)
 
 
 def _identity() -> CallerIdentity:
@@ -242,3 +248,37 @@ def seed_degraded(store: StateStore, new_conversation: Callable[[], UUID], make_
         return cid
 
     return seed
+
+
+APP = str(Path(__file__).parents[2] / "ui" / "customer_app.py")
+REVIEWER_APP = str(Path(__file__).parents[2] / "ui" / "reviewer_app.py")
+MakeApp = Callable[[], AppTest]
+
+
+@pytest.fixture
+def make_app(
+    scripted: Scripted, conn: psycopg.Connection[Any], monkeypatch: pytest.MonkeyPatch  # noqa: F811
+) -> Iterator[MakeApp]:
+    """The real customer script on real Postgres; only the four agents are scripted, no encoder is loaded."""
+    monkeypatch.setattr(session, "ports_override", scripted.ports)
+    monkeypatch.setattr(session, "warm_models", lambda: None)
+    before = {row[0] for row in conn.execute("select id from conversations").fetchall()}
+    tickets = conn.execute("select coalesce(max(substring(ticket_id from 5)::int), 0) from tickets").fetchone()
+    yield lambda: AppTest.from_file(APP, default_timeout=30)
+    created = [row[0] for row in conn.execute("select id from conversations").fetchall() if row[0] not in before]
+    for statement in _CLEANUP_SQL:
+        conn.execute(statement, {"ids": created})
+    conn.execute("delete from tickets where substring(ticket_id from 5)::int > %s", (tickets[0] if tickets else 0,))
+
+
+@pytest.fixture
+def desk(conn: psycopg.Connection[Any]) -> Iterator[Desk]:
+    built = Desk.create(conn)
+    yield built
+    built.cleanup()
+
+
+@pytest.fixture
+def reviewer(desk: Desk) -> AppTest:
+    """The real reviewer script on real Postgres; approvals are filed through `desk`, no agent runs."""
+    return AppTest.from_file(REVIEWER_APP, default_timeout=30)

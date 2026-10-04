@@ -1,0 +1,33 @@
+{
+  "text": "Daily support operations, 2026-08-28: *Open tickets:* 63  |  *SLA:* 21 breached, 0 at risk  |  *Sev-1 pages:* 0  |  *Pending approvals:* 2",
+  "blocks": [
+    {
+      "type": "header",
+      "text": {
+        "type": "plain_text",
+        "text": "Daily support operations, 2026-08-28"
+      }
+    },
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "*Open tickets:* 63  |  *SLA:* 21 breached, 0 at risk  |  *Sev-1 pages:* 0  |  *Pending approvals:* 2"
+      }
+    },
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "*Needs attention*\n\u2022 `TCK-20264210` Northwind Logistics P1 BREACHED\n\u2022 `TCK-20264216` Solstice Media P2 BREACHED\n\u2022 `TCK-20264217` Cobalt Mining Co P2 BREACHED\n\u2022 `TCK-20264225` Bluebird Retail P1 BREACHED\n\u2022 `TCK-20264221` Solstice Media P2 BREACHED\n\u2022 `TCK-20264203` Lakeside Insurance P3 BREACHED\n\u2022 `TCK-20264207` Pinnacle Health P3 BREACHED\n\u2022 `TCK-20264223` Pinnacle Health P2 BREACHED\n\u2022 `TCK-20264202` Meridian Airlines P3 BREACHED\n\u2022 `TCK-20264204` Helios Pharma P3 BREACHED"
+      }
+    },
+    {
+      "type": "section",
+      "text": {
+        "type": "mrkdwn",
+        "text": "*Approvals waiting*\n\u2022 CREDIT waiting 0.0 h\n\u2022 MFA_RESET waiting 0.0 h"
+      }
+    }
+  ]
+}

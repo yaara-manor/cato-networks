@@ -1,7 +1,7 @@
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models import Model
 
-from agents.base import SupportDeps, build_agent, conversation_prompt, load_prompt
+from agents.base import SupportDeps, build_agent, conversation_prompt, identity_block, load_prompt
 from agents.models import AgentRole, AgentRun, Intent, TriageDecision, TriageInput, TriageResult
 from agents.runner import run_role
 from core.models import Ticket
@@ -29,22 +29,10 @@ def get_ticket_history(ctx: RunContext[SupportDeps], site_id: str | None = None)
     ]
 
 
-def _identity_block(ctx: RunContext[SupportDeps]) -> str:
-    identity = ctx.deps.identity
-    if identity.account is None:
-        return "Caller identity: unrecognized caller; request the registered email."
-    return (
-        f"Caller identity: account {identity.account.account_id} ({identity.account.company}), "
-        f"effective tier {identity.effective_tier}, "
-        f"verified account member: {identity.is_verified_account_member}, "
-        f"registered admin: {identity.is_registered_admin}."
-    )
-
-
 def build_triage_agent(model: Model | None = None) -> Agent[SupportDeps, TriageDecision]:
     agent = build_agent(load_prompt("triage"), TriageDecision, model)
     agent.tool(get_ticket_history)
-    agent.instructions(_identity_block)
+    agent.instructions(identity_block)
     return agent
 
 

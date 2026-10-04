@@ -5,7 +5,7 @@ from pydantic_ai import Agent, ModelRetry, RunContext
 from pydantic_ai.messages import ModelMessage, ModelRequest, RetryPromptPart
 from pydantic_ai.models import Model
 
-from agents.base import SupportDeps, build_agent, conversation_prompt, load_prompt
+from agents.base import SupportDeps, build_agent, conversation_prompt, identity_block, load_prompt
 from agents.models import AgentRole, AgentRun, ResolutionInput, ResolutionPlan
 from agents.runner import run_role
 from guardrails import check_citations, check_outgoing_message, uncited_playbooks
@@ -67,6 +67,7 @@ def _nudge_uncited_playbooks(ctx: RunContext[SupportDeps], plan: ResolutionPlan)
 def build_resolution_agent(model: Model | None = None) -> Agent[SupportDeps, ResolutionPlan]:
     # three output retries: a guard violation, the playbook reminder, and a guard violation in the redraft
     agent = build_agent(load_prompt("resolution"), ResolutionPlan, model, output_retries=3)
+    agent.instructions(identity_block)
     agent.output_validator(_validate_citations)
     agent.output_validator(_validate_outgoing)
     agent.output_validator(_nudge_uncited_playbooks)

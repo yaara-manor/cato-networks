@@ -56,6 +56,18 @@ def build_agent[O](
     )
 
 
+def identity_block(ctx: RunContext[SupportDeps]) -> str:
+    identity = ctx.deps.identity
+    if identity.account is None:
+        return "Caller identity: unrecognized caller; request the registered email."
+    return (
+        f"Caller identity: account {identity.account.account_id} ({identity.account.company}), "
+        f"effective tier {identity.effective_tier}, "
+        f"verified account member: {identity.is_verified_account_member}, "
+        f"registered admin: {identity.is_registered_admin}."
+    )
+
+
 def conversation_prompt(message: str, history: Sequence[ConversationTurn]) -> str:
     if not history:
         return message
